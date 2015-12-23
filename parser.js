@@ -30,32 +30,68 @@ var number = lexeme(regex(/[0-9]+/).map(parseInt).toNode(nodes.Number));
 
 var ident = lexeme(regex(/[a-z][a-zA-Z0-9_-]*/i).toNode(nodes.Identifier));
 
-var unquotedstring = lexeme(regex(/[^\n\)\|\'\(]+/).toNode(nodes.String));
+var unquotedstring = lexeme(regex(/[^\n\)\|\(]+/).toNode(nodes.String));
 var quotedstring = quote.then(lexeme(regex(/[^\']*/))).skip(quote).toNode(nodes.String);
 var optquotedstring = unquotedstring.or(quotedstring);
 
 var comment = lexeme(regex(/\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\//)).toNode(nodes.Comment);
 
-var expr = lazy('an s-expression', function() { return tag.or(atom) });
+var expr = lazy('an s-expression', function() { return comment.or(tag).or(atom) });
 
-var atom = number.or(comment).or(unquotedstring);
+var atom = number.or(unquotedstring);
 
-var basic_attribute = seq(ident.skip(assignment),quotedstring).toAttributeNode();
-var class_attribute = dot.then(ident).toAttributeNode({name: "class"});
-var id_attribute    = hash.then(ident).toAttributeNode({name: "id"});
+var basic_attribute = seq(ident.skip(assignment),quotedstring)
+                        .toNode(nodes.Attribute, function(start,value,end) {
+                            return {
+                                name: value[0],
+                                value: value[1]
+                            }
+                        });
+var class_attribute = dot.then(ident)
+                        .toNode(nodes.Attribute, function(start,value,end) {
+                            return {
+                                name: new nodes.Identifier({start: start, value: "class", end: end}),
+                                value: value
+                            }
+                        });
+var id_attribute    = hash.then(ident)
+                        .toNode(nodes.Attribute, function(start,value,end) {
+                            return {
+                                name: new nodes.Identifier({start: start, value: "id", end: end}),
+                                value: value
+                            }
+                        });
 var attribute       = basic_attribute.or(class_attribute).or(id_attribute);
 
 var filter_param  = number.or(quotedstring).or(ident);
 var filter        = seq(pipe.then(ident),filter_param.many()).toNode(nodes.Filter);
 
-var tag = seq(
-    lparen.then(ident),
-    attribute.many(),
-    doublecolon.then(expr.many()),
-    filter.many().skip(rparen)
-    ).toTagNode();
+var tag = seq(lparen.then(ident),attribute.many(),doublecolon.then(expr.many()),filter.many().skip(rparen))
+            .toNode(nodes.Tag, function(start,value,end) {
+                return {
+                    name: value[0],
+                    attributes: evaluators.mergeAttributes(value[1],"class"),
+                    inner: value[2],
+                    filters: value[3]
+                }
+            });
 
 var OmeletParser = expr.many();
+
+//end simple stuff, begin experimental stuff
+
+var LBRACE = lexeme(string("["));
+var RBRACE = lexeme(string("]"));
+var DOTS   = lexeme(string(".."));
+
+var RANGE = LBRACE.then(seq(number.or(ident).skip(DOTS),number.or(ident))).skip(RBRACE)
+                .toNode(nodes.Range, function(start,value,end) {
+                    return {
+                        range_begin: value[0],
+                        range_end: value[1]
+                    }
+                });
+
 
 var originalCode;
 function parse(input) {
@@ -66,4 +102,4 @@ function parse(input) {
 module.exports.parse = parse;
 module.exports.nodes = nodes;
 
-module.exports.filter = filter;
+module.exports.RANGE = RANGE;

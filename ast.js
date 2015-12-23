@@ -49,6 +49,13 @@ ast.String = function String(properties) {
     }
 }
 
+ast.Range = function Range(properties) {
+    this.kind = "Range";
+    for (var prop in properties) {
+        this[prop] = properties[prop];
+    }
+}
+
 ast.Filter = function String(properties) {
     this.kind = "Filter";
     for (var prop in properties) {

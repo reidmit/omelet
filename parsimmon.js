@@ -302,49 +302,19 @@ Parsimmon.Parser = (function() {
 
   //BEGIN MY STUFF
 
-  _.markAs = function(tokenType) {
-    return seqMap(index, this, index, function(start, value, end) {
-      return { type: tokenType, start: start, value: value, end: end };
-    });
-  };
-
-  _.toNode = function(nodeConstructor) {
-    return seqMap(index, this, index, function(start, value, end) {
-      return new nodeConstructor({ start: start, value: value, end: end });
-    });
-  };
-
-  _.toTagNode = function() {
-    return seqMap(index, this, index, function(start, result, end) {
-      return new nodes.Tag({
-        name: result[0],
-        attributes: evaluators.mergeAttributes(result[1],"class"),
-        inner: result[2],
-        filters: result[3],
-        start: start,
-        end: end
-      });
-    });
-  };
-
-  _.toAttributeNode = function(params) {
-    if (params) {
-      return seqMap(index, this, index, function(start, result, end) {
-        return new nodes.Attribute({
-          name: new nodes.Identifier({start: start, value: params.name, end: end}),
-          start: start,
-          value: result,
-          end: end
-        });
+  _.toNode = function(nodeConstructor, func) {
+    if (func) {
+      return seqMap(index, this, index, function(start, value, end) {
+        var node = new nodeConstructor({ start: start, end: end });
+        var specialProperties = func(start,value,end);
+        for (var prop in specialProperties) {
+            node[prop] = specialProperties[prop];
+        }
+        return node;
       });
     } else {
-      return seqMap(index, this, index, function(start, result, end) {
-        return new nodes.Attribute({
-          name: result[0],
-          start: start,
-          value: result[1],
-          end: end
-        });
+      return seqMap(index, this, index, function(start, value, end) {
+        return new nodeConstructor({ start: start, value: value, end: end });
       });
     }
   };
