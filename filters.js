@@ -53,6 +53,9 @@ filters.truncate = function(input, n) {
 filters.truncate_words = function(input, n) {
     console.log(n);
     var arr = input.replace( /\s\s+/g, ' ' ).split(" ");
+    if (n >= arr.length) {
+        return arr.join(" ");
+    }
     arr.splice(n);
     return arr.join(" ")+"...";
 }

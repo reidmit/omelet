@@ -62,15 +62,45 @@ function applyFilter(filterNode,input,filterArgs,originalCode) {
     return filters[filterName].apply(filterNode, filterArgs);
 }
 
+
+function Scope() {
+    var env = [{}];
+    this.open = function() {
+        env.unshift({});
+    }
+    this.close = function() {
+        env.shift();
+    }
+    this.add = function(key,value) {
+        env[0][key] = value;
+    }
+    this.find = function(key) {
+        for (var i=0; i<env.length; i++) {
+            for (var k in env[i]) {
+                if (k==key) {
+                    return env[i][key];
+                }
+            }
+        }
+        return;
+    }
+}
+
 var evaluators = {};
 
 /*
 * Translate AST into HTML.
 */
 evaluators.html = function(ast,originalCode) {
-
     if (!ast) {
-        return console.error("Eval Error","Cannot evaluate an undefined AST.");
+        return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
+    }
+
+    var scope = new Scope();
+
+    function evalAssignment(node) {
+        scope.add(node.left_side.value, evalExpr(node.right_side));
+        return "";
     }
 
     function evalNumber(node) {
@@ -80,12 +110,16 @@ evaluators.html = function(ast,originalCode) {
         return node.value;
     }
     function evalIdentifier(node) {
-        return node.value;
+        return scope.find(node.value) || node.value;
     }
     function evalAttribute(node) {
         return evalExpr(node.name)+"=\""+evalExpr(node.value)+"\"";
     }
     function evalTag(node) {
+
+        //open a new scope within tag
+        scope.open();
+
         var s;
         var tagName = evalExpr(node.name);
         s = "<"+tagName;
@@ -126,7 +160,27 @@ evaluators.html = function(ast,originalCode) {
             s += inner;
             s += "</"+tagName+">";
         }
+
+        //And close the scope again
+        scope.close();
+
         return s;
+    }
+    function evalParenthetical(node) {
+        //TODO: scopes in here?
+
+        var inner = "";
+        for (var i=0; i<node.inner.length; i++) {
+            inner += evalExpr(node.inner[i]);
+        }
+        for (var i=0; i<node.filters.length; i++) {
+            var filterArgs = [];
+            for (var j=0; j<node.filters[i].value[1].length; j++) {
+                filterArgs.push(evaluators.html([node.filters[i].value[1][j]]))
+            }
+            inner = applyFilter(node.filters[i],inner,filterArgs,originalCode);
+        }
+        return inner;
     }
     function evalComment(node) {
         return "";
@@ -145,8 +199,12 @@ evaluators.html = function(ast,originalCode) {
                 return evalTag(node);
             case "Comment":
                 return evalComment(node);
+            case "Parenthetical":
+                return evalParenthetical(node);
+            case "Assignment":
+                return evalAssignment(node);
             default:
-                return ("Error: No case for kind "+node.kind);
+                return console.error("Error: No case for kind "+node.kind);
         }
     }
     return ast.map(evalExpr).join("");

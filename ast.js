@@ -5,8 +5,7 @@ function ASTNode() {
     this.end = null;
     //Kind of node (== subclass name)
     this.kind = null;
-    //Value of node
-    this.value = null;
+    //... other properties depend on node
 }
 
 var ast = {};
@@ -20,8 +19,6 @@ ast.Identifier = function Identifier(properties) {
 
 ast.Tag = function Tag(properties) {
     this.kind = "Tag";
-    this.name = null; //e.g. "h6" in <h6></h6> or (h6||...)
-    this.inner = null;
     for (var prop in properties) {
         this[prop] = properties[prop];
     }
@@ -29,7 +26,6 @@ ast.Tag = function Tag(properties) {
 
 ast.Attribute = function Attribute(properties) {
     this.kind = "Attribute";
-    this.name = null;
     for (var prop in properties) {
         this[prop] = properties[prop];
     }
@@ -56,8 +52,22 @@ ast.Range = function Range(properties) {
     }
 }
 
+ast.Parenthetical = function Parenthetical(properties) {
+    this.kind = "Parenthetical";
+    for (var prop in properties) {
+        this[prop] = properties[prop];
+    }
+}
+
 ast.Filter = function String(properties) {
     this.kind = "Filter";
+    for (var prop in properties) {
+        this[prop] = properties[prop];
+    }
+}
+
+ast.Assignment = function String(properties) {
+    this.kind = "Assignment";
     for (var prop in properties) {
         this[prop] = properties[prop];
     }
