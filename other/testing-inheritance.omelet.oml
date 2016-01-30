@@ -1,0 +1,38 @@
+//basic.omelet
+
+(html ::
+  (head ::
+    (title :: $title | default "Default Title")
+    ($meta | default "")
+    ($styles | default "")
+    ($scripts | default "")
+  )
+  (body ::
+    ($contents | default "No contents provided.")
+  )
+)
+
+
+//level-2.omelet
+
+(extend basic.omelet)
+
+$title = (Reid's Website: $subtitle)
+$meta = (
+  ...)
+$styles = (
+  (link rel="stylesheet" href="main.css" ::))
+$scripts = (
+  ...)
+
+
+//level-3.omelet
+
+(extend level-2.omelet)
+
+$contents = (
+
+  (div.page-content ::
+    (div.page-wrapper :: This can contain stuff.))
+
+)

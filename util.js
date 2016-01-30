@@ -1,3 +1,4 @@
+// var errors = require('./errors.js');
 var util = {};
 
 util.inheritsFrom = function(child,parent) {
@@ -14,19 +15,46 @@ util.typeOf = function(obj) {
     var t = ({}).toString.call(obj).match(/\s([a-z|A-Z]+)/)[1];
     if (t !== "Object") {
         if (t === "Array") {
-            var t0 = __.typeOf(obj[0]);
+            var t0 = util.typeOf(obj[0]);
             for (var i=0; i<obj.length; i++) {
-                if (t0 !== __.typeOf(obj[i])) {
+                if (t0 !== util.typeOf(obj[i])) {
                     t0 = "Dynamic";
                     break;
                 }
             }
-            return "List<"+t0+">";
+            return "Array<"+t0+">";
         } else {
             return t;
         }
     }
     return obj.constructor.name;
+}
+
+util.isNumber = function(o) { return util.typeOf(o) === "Number"; }
+util.isString = function(o) { return util.typeOf(o) === "String"; }
+util.isBoolean = function(o) { return util.typeOf(o) === "Boolean"; }
+util.isArguments = function(o) { return util.typeOf(o) === "Arguments"; }
+util.isDate = function(o) { return util.typeOf(o) === "Date"; }
+util.isArray = function(o) { return util.typeOf(o).indexOf("Array") === 0; }
+util.isObject = function(o) { return util.typeOf(o) === "Object"; }
+
+//Takes in a list of given types (as Strings) and a
+//list of expected types (as Strings). Compares them
+//with above typeOf function, throws error if bad.
+util.checkFilterArgs = function(func,args,types) {
+    args = [].slice.call(args);
+    if (args.length !== types.length) {
+        // errors.TypeError(
+        //     "Incorrect number of arguments given to filter `"+
+        //     func.name+"`. Expected "+types.length+" but got "+
+        //     args.length+"."
+        // );
+    }
+    for (var i=0; i<types.length; i++) {
+        if (util.typeOf(args[i]) !== types[i]) {
+            throw new TypeError("bad");
+        }
+    }
 }
 
 util.repeat = function(s,n) {

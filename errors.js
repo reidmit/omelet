@@ -1,4 +1,11 @@
 var __ = require('./util.js');
+// var PrettyError = require('pretty-error');
+// var pe = new PrettyError();
+
+var TypeError = function(msg) {
+    var rendered_msg = pe.render(new TypeError(msg));
+    console.log(rendered_msg);
+}
 
 var errorTypes = {
 
@@ -48,5 +55,5 @@ var errorTypes = {
         return console.error("Assertion Failed:",properties.message)
     }
 }
-
+module.exports.TypeError = TypeError;
 module.exports = errorTypes;

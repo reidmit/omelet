@@ -1,0 +1,4 @@
+def x = 47
+
+(div.page-content ::
+    (div.page-wrapper :: Hello, my name is Reid. The number is {x}.))

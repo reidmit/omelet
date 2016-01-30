@@ -1,0 +1,49 @@
+TODO:
+
+- for-in loops
+
+- import statements
+
+- include statements
+
+- extends statements?
+
+- escaped characters (esp. parentheses)
+
+- HTML escape filters
+
+- better failure messages for parsers
+
+- clean up parser code
+
+- filter params should be in their own field, not loose in array
+
+- whitespace control
+
+- write TESTS
+
+- non-integer numbers
+
+- stop replacing double quotes with single quotes
+
+- doctypes
+
+NOTES ABOUT IMPORT/INCLUDE/EXTENDS
+
+import
+    - should be at the top of a file
+    - multiple allowed
+    - (import file.oml)
+    - parses file.oml, then includes all defs from file.oml in scope of importing file
+
+include
+    - allowed anywhere in a file
+    - multiple allowed
+    - (include file.oml)
+    - just copies all contents of file (EXCEPT for defs) into that place
+    - should there be a "with" or something - pass in context?
+    - **IMPORTANT:** they are evaluated in the context of the including file,
+        so all defs must be defined in the including file (anything def'd in
+        the included file is eliminated)
+
+extend

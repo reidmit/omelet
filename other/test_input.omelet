@@ -1,9 +1,11 @@
-$x = "Reid"
-(div :: Hi my name is $x
-    (div ::
-        $y = "Mitchell"
-        My last name is $y
-        (div :: My full name is $x $y | uppercase)
-    )
-    $x's last name is $y.
+def myName = "Reid"
+
+(html ::
+  (head ::
+    (title :: This is the title.))
+  (body ::
+
+
+
+  )
 )

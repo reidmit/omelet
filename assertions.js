@@ -2,6 +2,15 @@ var __ = require('./util.js');
 
 var assertions = {};
 
+assertions.filterArguments = function(args,expectedLength) {
+    var self = this;
+    if (args.length !== expectedLength) {
+        throw new SyntaxError("Incorrect number of arguments given to filter `"+
+                                self.value[0].value+"`. Expected "+expectedLength+" and got "+
+                                args.length+": "+args);
+    }
+}
+
 assertions.hasType = function(given,expected) {
     check({
         pred: __.typeOf(given) === expected,

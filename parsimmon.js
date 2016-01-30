@@ -1,4 +1,3 @@
-var parser = require('./parser.js');
 var nodes = require('./ast.js');
 var evaluators = require('./evaluators.js');
 

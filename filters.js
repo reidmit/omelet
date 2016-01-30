@@ -1,20 +1,30 @@
 var assert = require('./assertions.js');
+var __ = require('./util.js');
+var markdown = require("markdown").markdown;
 
 var filters = {};
 
-//TODO: type-check parameters
+//TODO: type-check parameters & check arguments.length
 
-/* STRING FILTERS */
+/*
+STRING FILTERS
+(these filters return strings)
+*/
 
-filters.uppercase = function(input) {
+filters.markdown = filters.md = function(input) {
+    return markdown.toHTML(input);
+}
+
+filters.uppercase = function (input) {
+    __.checkFilterArgs(filters.uppercase,arguments,["String"]);
     return input.toUpperCase();
 }
 
-filters.lowercase = function(input) {
+filters.lowercase = function (input) {
     return input.toLowerCase();
 }
 
-filters.trim = function(input) {
+filters.trim = function (input) {
     return input.replace(/^\s\s*/,'').replace(/\s\s*$/,'');
 }
 
@@ -42,6 +52,10 @@ filters.remove = function(input, toRemove) {
 filters.remove_first = function(input, toRemove) {
     var re = new RegExp(toRemove);
     return input.replace(re,'');
+}
+
+filters.default = function(input, defaultValue) {
+    return (input === "") ? defaultValue : input;
 }
 
 //TODO: figure out what this should do to nested tags.
@@ -106,6 +120,95 @@ filters.date_format = function(input, formatString) {
         else            { out.push(c); }
     }
     return out.join("");
+}
+
+/*
+NUMBER FILTERS
+(these filters return numbers)
+*/
+
+filters.length = function(input) {
+    if (__.isString(input) || __.isArray(input)) {
+        return input.length;
+    }
+    throw Error("`length` filter can only be applied to Strings and Arrays");
+}
+
+/*
+BOOLEAN FILTERS
+(these filters return booleans)
+*/
+
+filters.defined = filters.def = function(input) {
+    return input !== undefined;
+}
+
+filters.empty = function(input) {
+    if (__.isString(input)) {
+        return input === "";
+    }
+    if (__.isArray(input)) {
+        return input.length === 0;
+    }
+    if (__.isObject(input)) {
+        return Object.keys(input).length === 0;
+    }
+    throw Error("`empty` filter can only be applied to Strings, Arrays, or Objects.");
+}
+
+filters.lt = filters.less_than = filters["<"] = function(input, other) {
+    if (!isNaN(input) && !isNaN(input)) {
+        return parseInt(input) < parseInt(other);
+    }
+    return input < other;
+}
+
+filters.gt = filters.greater_than = filters[">"] = function(input, other) {
+    if (!isNaN(input) && !isNaN(input)) {
+        return parseInt(input) > parseInt(other);
+    }
+    return input > other;
+}
+
+filters.leq = filters.less_than_equals = filters["<="] = function(input, other) {
+    if (!isNaN(input) && !isNaN(input)) {
+        return parseInt(input) <= parseInt(other);
+    }
+    return input <= other;
+}
+
+filters.geq = filters.greater_than_equals = filters[">="] = function(input, other) {
+    if (!isNaN(input) && !isNaN(input)) {
+        return parseInt(input) >= parseInt(other);
+    }
+    return input >= other;
+}
+
+filters.eq = filters.equals = filters["=="] = function(input, other) {
+    if (!isNaN(input) && !isNaN(other)) {
+        return parseInt(input) === parseInt(other);
+    }
+    return input === other;
+}
+
+filters.starts_with = function(input, needle) {
+    return input.indexOf(needle) === 0;
+}
+
+filters.ends_with = function(input, needle) {
+    return input.indexOf(needle) === (input.length - needle.length);
+}
+
+filters.starts_with_vowel = function(input) {
+    return /[aeiouAEIOU]/.test(input.charAt(0));
+}
+
+filters.contains = function(input, other) {
+    if (__.isArray(input) || __.isString(input)) {
+        return input.indexOf(other) !== -1;
+    } else {
+        throw Error("`contains` filter can only be applied to a String or an Array");
+    }
 }
 
 module.exports = filters;

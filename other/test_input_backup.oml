@@ -1,0 +1,26 @@
+def title = "nice"
+
+(html ::
+  (head ::
+    (title :: This is the title.))
+  (body ::
+    (div.page-content ::
+      (div.page-wrapper :: This can contain the {title}.))
+
+    (ul ::
+      (for item in items ::
+        (li ::
+          This item is {item.name}. It costs {item.price} dollars.
+          (if ({item.price} | gt 1000) ::
+            It is very expensive.)
+          (elif ({item.price} | gt 100) ::
+            It is pretty expensive.)
+          (elif ({item.price} | eq 47) ::
+            It costs exactly $47!)
+          (else ::
+            It is pretty cheap.))
+      )
+    )
+
+  )
+)
