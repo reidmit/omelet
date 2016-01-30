@@ -1,5 +1,0 @@
->section $attrs $inner = @div $attrs .section {$inner}
-
->title $attrs $inner = @h1 $attrs $inner
-
->content $att
