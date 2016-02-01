@@ -1,4 +1,9 @@
-def x = 47
+def link_to url text = (a href={url} :: {text})
 
-(div.page-content ::
-    (div.page-wrapper :: Hello, my name is Reid. The number is {x}.))
+def youtube video_id width height =
+    (iframe width={width} height={height}
+      src={video_id | prepend "https://www.youtube.com/embed/" | append "?rel=0&amp;showinfo=0" }
+      frameborder="0"
+      allowfullscreen="allowfullscreen" ::)
+
+(h1 :: Hello, world)

@@ -122,6 +122,10 @@ filters.date_format = function(input, formatString) {
     return out.join("");
 }
 
+filters.if_then_else = function(input,thenCase,elseCase) {
+    return input ? thenCase : elseCase;
+}
+
 /*
 NUMBER FILTERS
 (these filters return numbers)

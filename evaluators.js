@@ -1,8 +1,8 @@
 var __ = require('./util.js');
 var ast = require('./ast.js');
 var fs = require('fs');
-var parser = require('./parser.js');
-var errors = require('./errors.js');
+var parser = require('./parsers.js');
+var err = require('./errors.js');
 var filters = require('./filters.js');
 
 var html_elements = {
@@ -103,6 +103,7 @@ evaluators.html = function(ast, originalCode, context) {
     }
 
     var scope = new Scope(context);
+    var extendsChain = [];
 
     function evalInclude(node) {
 
@@ -123,19 +124,154 @@ evaluators.html = function(ast, originalCode, context) {
         var text = contents.toString();
         var input = text.split('\n').join(" ").replace(/\"/g,"\'");
 
-        var includedAST = parser.parse(input);
+        var includedAST = parser.omelet.parse(input);
 
-        if (includedAST.status === false) return errors.ParseError(includedAST,input);
+
+        if (includedAST.status === false) {
+            throw err.ParseError({
+                msg: "Could not parse imported file `"+node.file+"`.",
+                index: includedAST.furthest,
+                expected: includedAST.expected
+            }, input);
+        }
+
+        var includedDocumentContents = includedAST.value.contents;
 
         var output = "";
-        for (var i=0; i<includedAST.value.length; i++) {
-            if (includedAST.value[i].kind !== "MacroDefinition"
-                && includedAST.value[i].kind !== "Assignment") {
-                output += evalExpr(includedAST.value[i]);
+        for (var i=0; i<includedDocumentContents.length; i++) {
+            if (includedDocumentContents[i].kind !== "MacroDefinition"
+                && includedDocumentContents[i].kind !== "Assignment") {
+                output += evalExpr(includedDocumentContents[i]);
             }
         }
 
         return output;
+    }
+
+    function evalImport(node) {
+        try {
+            var stats = fs.lstatSync(node.file);
+            if (stats.isDirectory()) {
+                throw err.EvalError({
+                    msg: "Imported file `"+node.file+"` is a directory.",
+                    index: node.start
+                }, originalCode);
+            }
+        } catch (e) {
+            throw err.EvalError({
+                msg: "Imported file `"+node.file+"` could not be found.",
+                index: node.start
+            }, originalCode);
+        }
+
+        var contents = fs.readFileSync(node.file);
+
+        if (!contents) {
+            throw err.EvalError({
+                msg: "Imported file `"+node.file+"` could not be read.",
+                index: node.start
+            }, originalCode);
+        }
+
+        var text = contents.toString();
+        var input = text.split('\n').join(" ").replace(/\"/g,"\'");
+
+        var importedAST = parser.omelet.parse(input);
+
+        if (importedAST.status === false) {
+            throw err.ParseError({
+                msg: "Could not parse imported file `"+node.file+"`.",
+                index: importedAST.furthest,
+                expected: importedAST.expected
+            }, input);
+        }
+
+        var importedDocumentContents = importedAST.value.contents;
+
+        for (var i=0; i<importedDocumentContents.length; i++) {
+            if (importedDocumentContents[i].kind === "MacroDefinition"
+                || importedDocumentContents[i].kind === "Assignment") {
+                evalExpr(importedDocumentContents[i]);
+            }
+        }
+
+        return "";
+    }
+
+    /*
+    * evalExtend takes in the entire AST (Document node) when there
+    * is an Extend statement present. It evaluates all of the definitions
+    * in the current file, so that they are added to the scope. Then it
+    * evaluates the extended file in that scope, and returns the results.
+    *
+    * evalExtend bypasses the normal behavior of the evaluator, since it
+    * should not parse all of the current file.
+    */
+    function evalExtend(root) {
+
+        if (extendsChain.indexOf(root.extend.file) > -1) {
+            throw err.EvalError({
+                msg: "Template inheritance loop detected. File '"+root.extend.file
+                     +"' has already been extended earlier in the inheritance chain.",
+                index: root.extend.start+7
+            }, originalCode)
+        }
+
+        for (var i=0; i<root.contents.length; i++) {
+            if (root.contents[i].kind === "MacroDefinition"
+                || root.contents[i].kind === "Assignment") {
+                evalExpr(root.contents[i]);
+            }
+        }
+
+        var node = root.extend;
+
+        try {
+            var stats = fs.lstatSync(node.file);
+            if (stats.isDirectory()) {
+                throw err.EvalError({
+                    msg: "Extended file '"+node.file+"'' is a directory.",
+                    index: node.start+7
+                }, originalCode);
+            }
+        } catch (e) {
+            throw err.EvalError({
+                msg: "Extended file '"+node.file+"' could not be found.",
+                index: node.start+7
+            }, originalCode);
+        }
+
+        extendsChain.push(node.file);
+
+        var contents = fs.readFileSync(node.file);
+
+        if (!contents) {
+            throw err.EvalError({
+                msg: "Extended file '"+node.file+"' could not be read.",
+                index: node.start+7
+            }, originalCode);
+        }
+
+        var text = contents.toString();
+        var input = text.split('\n').join(" ").replace(/\"/g,"\'");
+
+        var extendedAST = parser.omelet.parse(input);
+
+        if (extendedAST.status === false) {
+            throw err.ParseError({
+                msg: "Could not parse imported file '"+node.file+"'.",
+                index: extendedAST.furthest,
+                expected: extendedAST.expected
+            }, input);
+        }
+
+        var extendedDocument = extendedAST.value;
+
+        if (extendedDocument.extend) {
+            return evalExtend(extendedDocument);
+        }
+        extendedDocument.imports.map(evalExpr);
+        return extendedDocument.contents.map(evalExpr).join("");
     }
 
     function evalAssignment(node) {
@@ -147,7 +283,9 @@ evaluators.html = function(ast, originalCode, context) {
         scope.add(node.name.value, {params: node.params, body: node.body});
         return "";
     }
-
+    function evalBoolean(node) {
+        return node.value === "true";
+    }
     function evalNumber(node) {
         return parseInt(node.value);
     }
@@ -184,7 +322,7 @@ evaluators.html = function(ast, originalCode, context) {
                 inner += evalExpr(node.inner[i]);
             }
             if (inner !== "") {
-                return errors.SyntaxError({
+                return err.SyntaxError({
                     message: "'"+tagName+"' is a void (self-closing) tag and cannot have any contents.",
                     index: node.inner[0].start,
                     input: originalCode
@@ -202,7 +340,6 @@ evaluators.html = function(ast, originalCode, context) {
                 var filterArgs = [];
                 for (var j=0; j<node.filters[i].value[1].length; j++) {
                     filterArgs.push([node.filters[i].value[1][j]].map(evalExpr).join(""))
-                    // filterArgs.push(evaluators.html([node.filters[i].value[1][j]]))
                 }
                 inner = applyFilter(node.filters[i],inner,filterArgs,originalCode);
             }
@@ -227,7 +364,6 @@ evaluators.html = function(ast, originalCode, context) {
             var filterArgs = [];
             for (var j=0; j<node.filters[i].value[1].length; j++) {
                 filterArgs.push([node.filters[i].value[1][j]].map(evalExpr).join(""));
-                // filterArgs.push(evaluators.html([node.filters[i].value[1][j]],originalCode))
             }
             inner = applyFilter(node.filters[i],inner,filterArgs,originalCode);
         }
@@ -237,18 +373,15 @@ evaluators.html = function(ast, originalCode, context) {
         var pred = evalExpr(node.predicate);
         pred = pred === "false" ? false : (pred === "true" ? true : pred);
         if (pred === true) {
-            // return evaluators.html(node.thenCase,originalCode);
             return node.thenCase.map(evalExpr).join("");
         } else if (pred === false) {
             for (var i=0; i<node.elifCases.length; i++) {
                 pred = evalExpr(node.elifCases[i].predicate);
                 if (pred) {
-                    // return evaluators.html(node.elifCases[i].thenCase,originalCode);
                     return node.elifCases[i].thenCase.map(evalExpr).join("");
                 }
             }
             if (node.elseCase) {
-                // return evaluators.html(node.elseCase,originalCode);
                 return node.elseCase.map(evalExpr).join("");
             } else {
                 return "";
@@ -283,9 +416,9 @@ evaluators.html = function(ast, originalCode, context) {
 
         if (!val) {
             if (node.arguments.length > 0) {
-                throw Error("Could not evaluate undefined macro `"+node.name.value+"`.\n\n"+scope.state());
+                throw Error("Could not evaluate undefined macro '"+node.name.value+"'.");
             } else {
-                throw Error("Could not evaluate undefined variable `"+node.name.value+"`.\n\n"+scope.state());
+                throw Error("Could not evaluate undefined variable '"+node.name.value+"'.");
             }
         }
 
@@ -310,8 +443,8 @@ evaluators.html = function(ast, originalCode, context) {
 
         if (val.params) {
             if (val.params.length !== node.arguments.length) {
-                throw Error("Incorrect number of arguments given to macro `"+
-                            node.name.value+"`. Expected "+val.params.length+
+                throw Error("Incorrect number of arguments given to macro '"+
+                            node.name.value+"'. Expected "+val.params.length+
                             " but got "+node.arguments.length);
             }
             scope.open();
@@ -344,6 +477,8 @@ evaluators.html = function(ast, originalCode, context) {
         switch (node.kind) {
             case "Number":
                 return evalNumber(node);
+            case "Boolean":
+                return evalBoolean(node);
             case "String":
                 return evalString(node);
             case "Identifier":
@@ -370,6 +505,10 @@ evaluators.html = function(ast, originalCode, context) {
                 return node.value;
             case "Include":
                 return evalInclude(node);
+            case "Import":
+                return evalImport(node);
+            case "Extend":
+                return evalExtend(node);
             default:
                 return node;
                 // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
@@ -414,7 +553,12 @@ evaluators.html = function(ast, originalCode, context) {
                 return wrap(node.value.value.toLowerCase());
         }
     }
-    return ast.map(evalExpr).join("");
+
+    if (ast.extend) {
+        return evalExtend(ast);
+    }
+    ast.imports.map(evalExpr);
+    return ast.contents.map(evalExpr).join("");
 }
 
 module.exports = evaluators;

@@ -1,6 +1,6 @@
 describe("Omelet to HTML", function() {
 
-    var parser = require('../parser.js').omelet();
+    var parser = require('../parsers.js').omelet;
     var evaluate = require('../evaluators.js').html;
     var input;
     var ast;

@@ -1,6 +1,6 @@
 var fs = require('fs');
 var open = require('open');
-var parser = require('./parser.js');
+var parser = require('./parsers.js');
 var evaluators = require('./evaluators.js');
 // var errors = require('./errors.js');
 var beautify = require('js-beautify').html;
@@ -41,7 +41,7 @@ fs.readFile(flags.input, function(err, contents) {
     var input = text.split('\n').join(" ").replace(/\"/g,"\'");
     // var input = text;
 
-    var ast = parser.omelet().parse(input);
+    var ast = parser.omelet.parse(input);
 
     if (ast.status === false) throw ParseError(ast,input);
 
