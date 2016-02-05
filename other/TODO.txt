@@ -1,13 +1,5 @@
 TODO:
 
-- for-in loops
-
-- import statements
-
-- include statements
-
-- extends statements?
-
 - escaped characters (esp. parentheses)
 
 - HTML escape filters
@@ -25,8 +17,6 @@ TODO:
 - non-integer numbers
 
 - stop replacing double quotes with single quotes
-
-- doctypes
 
 NOTES ABOUT IMPORT/INCLUDE/EXTENDS
 

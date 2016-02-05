@@ -42,7 +42,7 @@ module.exports.TypeError = function(msg) {
     //TODO: unify error parameters
     // probably {message:..., index:..., input:...} is all we need
 
-module.exports.ParseError = function(parserState,input) {
+module.exports.ParseError = function(state,input) {
     var startIndex, endIndex, message,
         prefix, suffix, lookahead, lookbehind,
         lines, line, column;

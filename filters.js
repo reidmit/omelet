@@ -15,6 +15,14 @@ filters.markdown = filters.md = function(input) {
     return markdown.toHTML(input);
 }
 
+filters.escape = function(input) {
+    return input.replace(/\'/g, "&apos;")
+                .replace(/\"/g, "&quot;")
+                .replace(/(?![^\s]+\;)\&/g, "&amp;")
+                .replace(/\</g, "&lt;")
+                .replace(/\>/g, "&gt;");
+}
+
 filters.uppercase = function (input) {
     __.checkFilterArgs(filters.uppercase,arguments,["String"]);
     return input.toUpperCase();
@@ -42,6 +50,10 @@ filters.append = function(input, suffix) {
 
 filters.prepend = function(input, prefix) {
     return prefix+input;
+}
+
+filters.strip_whitespace = function(input) {
+    return input.replace(/\s/g,'');
 }
 
 filters.remove = function(input, toRemove) {

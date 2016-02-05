@@ -46,6 +46,18 @@ function mergeAttributes(attrList,attrName) {
 }
 
 /*
+* Replace illegal HTML characters with their safe HTML
+* character codes.
+*/
+function escapeHTML(input) {
+    return input.replace(/\'/g, "&apos;")
+                .replace(/\"/g, "&quot;")
+                .replace(/(?![^\s]+\;)\&/g, "&amp;")
+                .replace(/\</g, "&lt;")
+                .replace(/\>/g, "&gt;");
+}
+
+/*
 * Apply a filter to input string, with possible arguments.
 * Return error if the filter is undefined.
 */
@@ -97,7 +109,7 @@ var evaluators = {};
 /*
 * Translate AST into HTML.
 */
-evaluators.html = function(ast, originalCode, context) {
+evaluators.html = function(ast, originalCode, context, config) {
     if (!ast) {
         return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
     }
@@ -108,18 +120,18 @@ evaluators.html = function(ast, originalCode, context) {
     function evalInclude(node) {
 
         try {
-            var stats = fs.lstatSync(node.file);
+            var stats = fs.lstatSync(config.directory+"/"+node.file);
             if (stats.isDirectory()) {
-                throw EvalError("Included file `"+node.file+"` is a directory.");
+                throw EvalError("Included file `"+config.directory+"/"+node.file+"` is a directory.");
             }
         } catch (e) {
             console.log(e);
-            throw EvalError("Included file `"+node.file+"` could not be found.");
+            throw EvalError("Included file `"+config.directory+"/"+node.file+"` could not be found.");
         }
 
-        var contents = fs.readFileSync(node.file);
+        var contents = fs.readFileSync(config.directory+"/"+node.file);
 
-        if (!contents) throw EvalError("Included file `"+node.file+"` could not be read.");
+        if (!contents) throw EvalError("Included file `"+config.directory+"/"+node.file+"` could not be read.");
 
         var text = contents.toString();
         var input = text.split('\n').join(" ").replace(/\"/g,"\'");
@@ -129,7 +141,7 @@ evaluators.html = function(ast, originalCode, context) {
 
         if (includedAST.status === false) {
             throw err.ParseError({
-                msg: "Could not parse imported file `"+node.file+"`.",
+                msg: "Could not parse imported file `"+config.directory+"/"+node.file+"`.",
                 index: includedAST.furthest,
                 expected: includedAST.expected
             }, input);
@@ -138,37 +150,37 @@ evaluators.html = function(ast, originalCode, context) {
         var includedDocumentContents = includedAST.value.contents;
 
         var output = "";
+
+        scope.open();
         for (var i=0; i<includedDocumentContents.length; i++) {
-            if (includedDocumentContents[i].kind !== "MacroDefinition"
-                && includedDocumentContents[i].kind !== "Assignment") {
-                output += evalExpr(includedDocumentContents[i]);
-            }
+            output += evalExpr(includedDocumentContents[i]);
         }
+        scope.close();
 
         return output;
     }
 
     function evalImport(node) {
         try {
-            var stats = fs.lstatSync(node.file);
+            var stats = fs.lstatSync(config.directory+"/"+node.file);
             if (stats.isDirectory()) {
                 throw err.EvalError({
-                    msg: "Imported file `"+node.file+"` is a directory.",
+                    msg: "Imported file `"+config.directory+"/"+node.file+"` is a directory.",
                     index: node.start
                 }, originalCode);
             }
         } catch (e) {
             throw err.EvalError({
-                msg: "Imported file `"+node.file+"` could not be found.",
+                msg: "Imported file `"+config.directory+"/"+node.file+"` could not be found.",
                 index: node.start
             }, originalCode);
         }
 
-        var contents = fs.readFileSync(node.file);
+        var contents = fs.readFileSync(config.directory+"/"+node.file);
 
         if (!contents) {
             throw err.EvalError({
-                msg: "Imported file `"+node.file+"` could not be read.",
+                msg: "Imported file `"+config.directory+"/"+node.file+"` could not be read.",
                 index: node.start
             }, originalCode);
         }
@@ -180,7 +192,7 @@ evaluators.html = function(ast, originalCode, context) {
 
         if (importedAST.status === false) {
             throw err.ParseError({
-                msg: "Could not parse imported file `"+node.file+"`.",
+                msg: "Could not parse imported file `"+config.directory+"/"+node.file+"`.",
                 index: importedAST.furthest,
                 expected: importedAST.expected
             }, input);
@@ -209,9 +221,9 @@ evaluators.html = function(ast, originalCode, context) {
     */
     function evalExtend(root) {
 
-        if (extendsChain.indexOf(root.extend.file) > -1) {
+        if (extendsChain.indexOf(config.directory+"/"+root.extend.file) > -1) {
             throw err.EvalError({
-                msg: "Template inheritance loop detected. File '"+root.extend.file
+                msg: "Template inheritance loop detected. File '"+config.directory+"/"+root.extend.file
                      +"' has already been extended earlier in the inheritance chain.",
                 index: root.extend.start+7
             }, originalCode)
@@ -227,27 +239,27 @@ evaluators.html = function(ast, originalCode, context) {
         var node = root.extend;
 
         try {
-            var stats = fs.lstatSync(node.file);
+            var stats = fs.lstatSync(config.directory+"/"+node.file);
             if (stats.isDirectory()) {
                 throw err.EvalError({
-                    msg: "Extended file '"+node.file+"'' is a directory.",
+                    msg: "Extended file '"+config.directory+"/"+node.file+"'' is a directory.",
                     index: node.start+7
                 }, originalCode);
             }
         } catch (e) {
             throw err.EvalError({
-                msg: "Extended file '"+node.file+"' could not be found.",
+                msg: "Extended file '"+config.directory+"/"+node.file+"' could not be found.",
                 index: node.start+7
             }, originalCode);
         }
 
-        extendsChain.push(node.file);
+        extendsChain.push(config.directory+"/"+node.file);
 
-        var contents = fs.readFileSync(node.file);
+        var contents = fs.readFileSync(config.directory+"/"+node.file);
 
         if (!contents) {
             throw err.EvalError({
-                msg: "Extended file '"+node.file+"' could not be read.",
+                msg: "Extended file '"+config.directory+"/"+node.file+"' could not be read.",
                 index: node.start+7
             }, originalCode);
         }
@@ -259,7 +271,7 @@ evaluators.html = function(ast, originalCode, context) {
 
         if (extendedAST.status === false) {
             throw err.ParseError({
-                msg: "Could not parse imported file '"+node.file+"'.",
+                msg: "Could not parse imported file '"+config.directory+"/"+node.file+"'.",
                 index: extendedAST.furthest,
                 expected: extendedAST.expected
             }, input);
@@ -267,10 +279,10 @@ evaluators.html = function(ast, originalCode, context) {
 
         var extendedDocument = extendedAST.value;
 
+        extendedDocument.imports.map(evalExpr);
         if (extendedDocument.extend) {
             return evalExtend(extendedDocument);
         }
-        extendedDocument.imports.map(evalExpr);
         return extendedDocument.contents.map(evalExpr).join("");
     }
 
@@ -291,6 +303,13 @@ evaluators.html = function(ast, originalCode, context) {
     }
     function evalString(node) {
         return node.value;
+    }
+    function evalArray(node) {
+        var arr = [];
+        for (var i=0; i<node.values.length; i++) {
+            arr.push(evalExpr(node.values[i]));
+        }
+        return arr;
     }
     function evalIdentifier(node) {
         var val = scope.find(node.value);
@@ -334,8 +353,13 @@ evaluators.html = function(ast, originalCode, context) {
 
             var inner = "";
             for (var i=0; i<node.inner.length; i++) {
-                inner += evalExpr(node.inner[i]);
+                var tmp = evalExpr(node.inner[i]);
+                if (node.inner[i].kind==="String") {
+                    tmp = escapeHTML(tmp);
+                }
+                inner += evalExpr(tmp);
             }
+
             for (var i=0; i<node.filters.length; i++) {
                 var filterArgs = [];
                 for (var j=0; j<node.filters[i].value[1].length; j++) {
@@ -390,10 +414,13 @@ evaluators.html = function(ast, originalCode, context) {
             throw Error("Condition in If statement must evaluate to a boolean.");
         }
     }
-    function evalForEachLoop(node) {
+    function evalForEach(node) {
         var idx;
         var iterator = node.iterator.value;
         var data = scope.find(node.data.value) || [];
+
+        data = evalExpr(data);
+
         var output = [];
 
         for (idx = 0; idx < data.length; idx++) {
@@ -420,24 +447,26 @@ evaluators.html = function(ast, originalCode, context) {
             } else {
                 throw Error("Could not evaluate undefined variable '"+node.name.value+"'.");
             }
-        }
 
-        //Handle modifiers
-        //   i.e. for "person.name", val="person" right now, so
-        //        we need to traverse through the person object
-        var name = node.name.value;
-        if (node.name.modifiers) {
-            for (var i=0; i<node.name.modifiers.length; i++) {
-                var m = node.name.modifiers[i];
-                name += ("[\""+m.value.value+"\"]");
+        } else {
 
-                var key = m.value.kind==="Number" ?
-                            parseInt(m.value.value) : m.value.value;
+            //Handle modifiers
+            //   i.e. for "person.name", val="person" right now, so
+            //        we need to traverse through the person object
+            var name = node.name.value;
+            if (node.name.modifiers) {
+                for (var i=0; i<node.name.modifiers.length; i++) {
+                    var m = node.name.modifiers[i];
+                    name += ("[\""+m.value.value+"\"]");
 
-                if (!val[key]) {
-                    throw Error("Object `"+name+"` is not defined.");
+                    var key = m.value.kind==="Number" ?
+                                parseInt(m.value.value) : m.value.value;
+
+                    if (!val[key]) {
+                        throw Error("Object `"+name+"` is not defined.");
+                    }
+                    val = val[key]
                 }
-                val = val[key]
             }
         }
 
@@ -470,58 +499,12 @@ evaluators.html = function(ast, originalCode, context) {
         }
         return output;
     }
-    function evalComment(node) {
-        return "";
-    }
-    function evalExpr(node) {
-        switch (node.kind) {
-            case "Number":
-                return evalNumber(node);
-            case "Boolean":
-                return evalBoolean(node);
-            case "String":
-                return evalString(node);
-            case "Identifier":
-                return evalIdentifier(node);
-            case "Attribute":
-                return evalAttribute(node);
-            case "Tag":
-                return evalTag(node);
-            case "Comment":
-                return evalComment(node);
-            case "Parenthetical":
-                return evalParenthetical(node);
-            case "Assignment":
-                return evalAssignment(node);
-            case "IfStatement":
-                return evalIfStatement(node);
-            case "ForEachLoop":
-                return evalForEachLoop(node);
-            case "Interpolation":
-                return evalInterpolation(node);
-            case "MacroDefinition":
-                return evalMacroDefinition(node);
-            case "Raw":
-                return node.value;
-            case "Include":
-                return evalInclude(node);
-            case "Import":
-                return evalImport(node);
-            case "Extend":
-                return evalExtend(node);
-            default:
-                return node;
-                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
-        }
-    }
     function evalDoctype(node) {
-        //TODO: match Jade, et al. for doctype shorthands
 
-        if (!node) return "";
         function wrap(middle) {
             return "<!DOCTYPE "+middle+">";
         }
-        switch (node.value.value.toLowerCase()) {
+        switch (node.value.toLowerCase()) {
             case "html5":
             case "html":
             case "5":
@@ -550,7 +533,55 @@ evaluators.html = function(ast, originalCode, context) {
                 return wrap("html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\""+
                             " \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"");
             default:
-                return wrap(node.value.value.toLowerCase());
+                return wrap(node.value.toLowerCase());
+        }
+    }
+    function evalComment(node) {
+        return "";
+    }
+    function evalExpr(node) {
+        switch (node.kind) {
+            case "Number":
+                return evalNumber(node);
+            case "Boolean":
+                return evalBoolean(node);
+            case "String":
+                return evalString(node);
+            case "Identifier":
+                return evalIdentifier(node);
+            case "Attribute":
+                return evalAttribute(node);
+            case "Tag":
+                return evalTag(node);
+            case "Comment":
+                return evalComment(node);
+            case "Parenthetical":
+                return evalParenthetical(node);
+            case "Assignment":
+                return evalAssignment(node);
+            case "IfStatement":
+                return evalIfStatement(node);
+            case "ForEach":
+                return evalForEach(node);
+            case "Interpolation":
+                return evalInterpolation(node);
+            case "MacroDefinition":
+                return evalMacroDefinition(node);
+            case "Raw":
+                return node.value;
+            case "Include":
+                return evalInclude(node);
+            case "Import":
+                return evalImport(node);
+            case "Extend":
+                return evalExtend(node);
+            case "Doctype":
+                return evalDoctype(node);
+            case "Array":
+                return evalArray(node);
+            default:
+                return node;
+                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }
     }
 

@@ -7,6 +7,13 @@ ast.ArithExpr = function ArithExpr(properties) {
     }
 }
 
+ast.Array = function Array(properties) {
+    this.kind = "Array";
+    for (var prop in properties) {
+        this[prop] = properties[prop];
+    }
+}
+
 ast.Assignment = function String(properties) {
     this.kind = "Assignment";
     for (var prop in properties) {
