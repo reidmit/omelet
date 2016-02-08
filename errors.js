@@ -66,6 +66,8 @@ module.exports.ParseError = function(state,input) {
         }
     }
 
+    input = input.replace(/\n/g, " ");
+
     message = state.msg + "\n"
             + "\nAt line "+line+", column "+column+" in input:\n"
             + "    "+prefix+input.substring(startIndex,endIndex)+suffix+"\n"
