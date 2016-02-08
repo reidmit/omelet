@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Omelet Documentation: Macros</title>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" type="text/css" href="assets/main.css" />
+        <link rel="stylesheet" type="text/css" href="assets/prism.css" />
+        <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Shadows+Into+Light|Waiting+for+the+Sunrise" />
+    </head>
+    <body>
+        <header class="doc-header" id="doc-header"><img src="assets/logo1.png" />
+            <div class="doc-title">Omelet</div>
+            <div class="mobile-nav" id="top-nav-toggle">&#9776;</div>
+            <nav id="top-nav"><a href="#">language reference</a><a href="#">download</a><a href="#">about</a> </nav>
+        </header>
+        <div class="wrapper">
+            <div class="sidebar">
+                <ul>
+                    <li><a href="tags.html">tags</a></li>
+                    <li><a href="filters.html">filters</a></li>
+                    <li><a href="assignments.html">assignments</a></li>
+                    <li><a class="active" href="macros.html">macros</a></li>
+                    <li><a href="conditionals.html">conditionals</a></li>
+                    <li><a href="iteration.html">iteration</a></li>
+                    <li><a href="includes.html">includes</a></li>
+                    <li><a href="imports.html">imports</a></li>
+                    <li><a href="extends.html">extends</a></li>
+                    <li><a href="rawtext.html">raw text</a></li>
+                    <li><a href="comments.html">comments</a></li>
+                </ul>
+            </div>
+            <div class="contents">
+                <h1>Macros</h1>
+                <p>Omelet allows you to to define macros. A macro is like a function that takes parameters. A macro definition looks a lot like an object assignment – the only difference is the parameters. If it helps, you can think of object assignments
+                    as macros without parameters.</p>
+                <p>Parameters are listed between the name of the macro and the
+                    <code>=</code> in the macro declaration. Omelet does not support macros that take a variable number of parameters; when a macro is called, it must be given the correct number of arguments.</p><pre class="example"><code class="language-omelet">def link_to url text = (a href={url} :: {text})
+
+def stylesheet path = (link rel="stylesheet" type="text/css" href={path} ::)</code></pre>
+                <p>Just like object assignments, macro definitions do not result in anything getting printed to the rendered HTML. However, you can use defined macros in interpolations, and those will be displayed.</p><pre class="example"><code class="language-omelet">{stylesheet "assets/main.css"}
+
+(p :: This paragraph contains a few links. {link_to "reidbm.com" "Click here"}
+to visit my website, or {link_to "en.wikipedia.org" "Click this one"} to visit
+Wikipedia.)</code></pre><pre class="example"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;assets/main.css&quot; /&gt;
+
+&lt;p&gt;This paragraph contains a few links. &lt;a href=&quot;reidbm.com&quot;&gt;Click here&lt;/a&gt;
+to visit my website, or &lt;a href=&quot;en.wikipedia.org&quot;&gt;Click this one&lt;/a&gt;to visit
+Wikipedia.&lt;/p&gt;</code></pre>
+
+
+            </div>
+        </div>
+        <div class="doc-footer">
+            <div class="float-left">Omelet is a template language developed by <a href="http://reidbm.com">Reid Mitchell</a></div>
+            <div class="float-right">Last updated February 8, 2016</div>
+        </div>
+        <script src="assets/prism.js"></script>
+        <script>
+            var topNavShown = false;
+            document.getElementById('top-nav-toggle').addEventListener('click', function() {
+                if (!topNavShown) {
+                    document.getElementById('top-nav').style.display = 'block';
+                    document.getElementById('doc-header').style.height = '230px';
+                    topNavShown = true;
+                } else {
+                    document.getElementById('top-nav').style.display = 'none';
+                    document.getElementById('doc-header').style.height = '86px';
+                    topNavShown = false;
+                }
+            })
+        </script>
+    </body>
+</html>

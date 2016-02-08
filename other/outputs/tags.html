@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Omelet Documentation: Tags</title>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" type="text/css" href="assets/main.css" />
+        <link rel="stylesheet" type="text/css" href="assets/prism.css" />
+        <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Shadows+Into+Light|Waiting+for+the+Sunrise" />
+    </head>
+    <body>
+        <header class="doc-header" id="doc-header"><img src="assets/logo1.png" />
+            <div class="doc-title">Omelet</div>
+            <div class="mobile-nav" id="top-nav-toggle">&#9776;</div>
+            <nav id="top-nav"><a href="#">language reference</a><a href="#">download</a><a href="#">about</a> </nav>
+        </header>
+        <div class="wrapper">
+            <div class="sidebar">
+                <ul>
+                    <li><a class="active" href="tags.html">tags</a></li>
+                    <li><a href="filters.html">filters</a></li>
+                    <li><a href="assignments.html">assignments</a></li>
+                    <li><a href="macros.html">macros</a></li>
+                    <li><a href="conditionals.html">conditionals</a></li>
+                    <li><a href="iteration.html">iteration</a></li>
+                    <li><a href="includes.html">includes</a></li>
+                    <li><a href="imports.html">imports</a></li>
+                    <li><a href="extends.html">extends</a></li>
+                    <li><a href="rawtext.html">raw text</a></li>
+                    <li><a href="comments.html">comments</a></li>
+                </ul>
+            </div>
+            <div class="contents">
+                <h1>Tags</h1> In Omelet, tags look like this:
+
+                <pre class="example"><code class="language-omelet">(h1 :: Hello, world!)</code></pre> The above example compiles into this HTML:
+
+                <pre class="example"><code class="language-html">&lt;h1&gt;Hello, world!&lt;/h1&gt;</code></pre> Just like in HTML, tags can be nested within each other:
+
+                <pre class="example"><code class="language-omelet">(div ::
+    (p :: This paragraph element has (b :: bold) text.)
+    (p :: This is a second paragraph.))</code></pre><pre class="example"><code class="language-html">&lt;div&gt;
+    &lt;p&gt;This paragraph element has &lt;b&gt;bold&lt;/b&gt; text.&lt;/p&gt;
+    &lt;p&gt;This is a second paragraph.&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+                <h2>Attributes</h2> Attributes look much like HTML attributes. They must come after the tag name and before the two colons.
+
+                <pre class="example"><code class="language-omelet">(div class="box" ::
+    (h1 id="headline" :: This is a headline)
+    (p :: This text has a (a href="http://example.com" :: link).))</code></pre><pre class="example"><code class="language-html">&lt;div class=&quot;box&quot;&gt;
+    &lt;h1 id=&quot;headline&quot;&gt;This is a headline&lt;/h1&gt;
+    &lt;p&gt;This text has a &lt;a href=&quot;http://example.com&quot;&gt;link&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+                <h2>Special Attributes: <code>class</code> &amp; <code>id</code></h2> Since <code>class</code> and <code>id</code> attributes are used so often, Omelet lets you use a shorthand, CSS-like syntax for these. Note that only one <code>id</code> attribute is allowed.
+
+                <pre class="example"><code class="language-omelet">(div#box47.box.special ::
+    This is a box.)</code></pre><pre class="example"><code class="language-html">&lt;div id=&quot;box47&quot; class=&quot;box special&quot;&gt;
+    This is a box.
+&lt;/div&gt;</code></pre>
+
+            </div>
+        </div>
+        <div class="doc-footer">
+            <div class="float-left">Omelet is a template language developed by <a href="http://reidbm.com">Reid Mitchell</a></div>
+            <div class="float-right">Last updated February 8, 2016</div>
+        </div>
+        <script src="assets/prism.js"></script>
+        <script>
+            var topNavShown = false;
+            document.getElementById('top-nav-toggle').addEventListener('click', function() {
+                if (!topNavShown) {
+                    document.getElementById('top-nav').style.display = 'block';
+                    document.getElementById('doc-header').style.height = '230px';
+                    topNavShown = true;
+                } else {
+                    document.getElementById('top-nav').style.display = 'none';
+                    document.getElementById('doc-header').style.height = '86px';
+                    topNavShown = false;
+                }
+            })
+        </script>
+    </body>
+</html>

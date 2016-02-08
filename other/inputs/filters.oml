@@ -1,0 +1,78 @@
+extend aux/doc-page.oml
+
+def page_title = (Filters)
+
+def page_contents = (
+
+In Omelet, you can use filters to change the way text appears when compiled.
+Filters can also be used for performing simple operations on numbers and lists.
+Filters always take the form (code::<!| filterName!>) and are written at the
+end of a (b::tag), (b::interpolation), or (b::parenthetical). Multiple filters
+can be "piped" together on the same text, like (code::<!(some text | filter1 | filter2)!>).
+The filters are applied in order, (b::from left to right).
+
+(pre.example :: (code.language-omelet ::<!
+    (div.loud :: omelet is cool | uppercase | append "!!!")
+!>| trim))
+
+(pre.example :: (code.language-html ::
+    <div class="loud">OMELET IS COOL!!!</div>
+| trim | escape))
+
+(h2 :: Filters with parameters)
+
+Every filter takes one implicit parameter: the text to which it is being
+applied. Some filters take additional parameters, which are listed following
+the filter name, like so:
+
+(pre.example :: (code.language-omelet ::<!
+(h1 :: this is text | append " with something appended")
+(h1 :: this is text | remove "text")
+(h1 :: this is text | replace "text" "cool text")
+(h1 :: this is text | truncate 7)
+!>| trim))
+
+(pre.example :: (code.language-html ::
+<h1>this is text with something appended</h1>
+<h1>this is </h1>
+<h1>this is cool text</h1>
+<h1>this is...</h1>
+| trim | escape))
+
+(h2 :: Filters on tags)
+
+All of the examples above show filters on tags. When a filter is applied
+to a tag, everything within that tag, between the (code:: ::) and the (code::<!|!>),
+will be filtered.
+
+(h2 :: Filters on interpolations)
+
+Filters can also be applied to interpolations, which are surrounded by
+curly braces: (code::<!{!>) and (code::<!}!>). Interpolations are how you
+refer to previously-defined variables and macros.
+
+(pre.example :: (code.language-omelet ::<!
+def myName = "reid"
+(p :: My name is {myName | append "mitchell" | capitalize}.)
+!>| trim))
+
+(pre.example :: (code.language-html ::
+<p>My name is Reid Mitchell.</p>
+| trim | escape))
+
+(h2 :: Filters on parentheticals)
+
+Sometimes, you'll want to apply filters to text that isn't contained within
+a tag and isn't an interpolated variable or macro. In this case, you can use
+a (b::parenthetical). This is just surrounding one piece of the text
+in parentheses and applying filters to that section.
+
+(pre.example :: (code.language-omelet ::<!
+(p :: Most of this text is not filtered, but (this part | uppercase) is!)
+!>| trim))
+
+(pre.example :: (code.language-html ::
+<p>Most of this text is not filtered, but THIS PART is!</p>
+| trim | escape))
+
+)

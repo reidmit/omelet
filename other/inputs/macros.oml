@@ -1,0 +1,44 @@
+extend aux/doc-page.oml
+
+def page_title = (Macros)
+
+def page_contents = (
+
+(p :: Omelet allows you to to define macros. A macro is like a function
+    that takes parameters. A macro definition looks a lot like an object
+    assignment – the only difference is the parameters. If it helps, you
+    can think of object assignments as macros without parameters.)
+
+(p :: Parameters are listed between the name of the macro and the
+    (code::=) in the macro declaration. Omelet does not support macros
+    that take a variable number of parameters; when a macro is called, it must
+    be given the correct number of arguments.)
+
+(pre.example :: (code.language-omelet ::<!
+def link_to url text = (a href={url} :: {text})
+
+def stylesheet path = (link rel="stylesheet" type="text/css" href={path} ::)
+!>| trim))
+
+(p :: Just like object assignments, macro definitions do not result in
+    anything getting printed to the rendered HTML. However, you can use
+    defined macros in interpolations, and those will be displayed.)
+
+(pre.example :: (code.language-omelet ::<!
+{stylesheet "assets/main.css"}
+
+(p :: This paragraph contains a few links. {link_to "reidbm.com" "Click here"}
+to visit my website, or {link_to "en.wikipedia.org" "Click this one"} to visit
+Wikipedia.)
+!>| trim))
+
+(pre.example :: (code.language-html ::<!
+<link rel="stylesheet" type="text/css" href="assets/main.css" />
+
+<p>This paragraph contains a few links. <a href="reidbm.com">Click here</a>
+to visit my website, or <a href="en.wikipedia.org">Click this one</a>to visit
+Wikipedia.</p>
+!>| trim | escape))
+
+
+)

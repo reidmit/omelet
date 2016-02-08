@@ -1,0 +1,6 @@
+(div.doc-footer ::
+    (div.float-left ::
+        Omelet is a template language developed by (a href="http://reidbm.com" :: Reid Mitchell))
+    (div.float-right ::
+        Last updated (_ | today | date_format "N d, Y"))
+)

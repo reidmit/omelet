@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Omelet Documentation: Filters</title>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" type="text/css" href="assets/main.css" />
+        <link rel="stylesheet" type="text/css" href="assets/prism.css" />
+        <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Shadows+Into+Light|Waiting+for+the+Sunrise" />
+    </head>
+    <body>
+        <header class="doc-header" id="doc-header"><img src="assets/logo1.png" />
+            <div class="doc-title">Omelet</div>
+            <div class="mobile-nav" id="top-nav-toggle">&#9776;</div>
+            <nav id="top-nav"><a href="#">language reference</a><a href="#">download</a><a href="#">about</a> </nav>
+        </header>
+        <div class="wrapper">
+            <div class="sidebar">
+                <ul>
+                    <li><a href="tags.html">tags</a></li>
+                    <li><a class="active" href="filters.html">filters</a></li>
+                    <li><a href="assignments.html">assignments</a></li>
+                    <li><a href="macros.html">macros</a></li>
+                    <li><a href="conditionals.html">conditionals</a></li>
+                    <li><a href="iteration.html">iteration</a></li>
+                    <li><a href="includes.html">includes</a></li>
+                    <li><a href="imports.html">imports</a></li>
+                    <li><a href="extends.html">extends</a></li>
+                    <li><a href="rawtext.html">raw text</a></li>
+                    <li><a href="comments.html">comments</a></li>
+                </ul>
+            </div>
+            <div class="contents">
+                <h1>Filters</h1> In Omelet, you can use filters to change the way text appears when compiled. Filters can also be used for performing simple operations on numbers and lists. Filters always take the form <code>| filterName</code> and are written at the
+                end of a <b>tag</b>, <b>interpolation</b>, or <b>parenthetical</b>. Multiple filters can be "piped" together on the same text, like <code>(some text | filter1 | filter2)</code>. The filters are applied in order, <b>from left to right</b>.
+
+                <pre class="example"><code class="language-omelet">(div.loud :: omelet is cool | uppercase | append "!!!")</code></pre><pre class="example"><code class="language-html">&lt;div class=&quot;loud&quot;&gt;OMELET IS COOL!!!&lt;/div&gt;</code></pre>
+                <h2>Filters with parameters</h2> Every filter takes one implicit parameter: the text to which it is being applied. Some filters take additional parameters, which are listed following the filter name, like so:
+
+                <pre class="example"><code class="language-omelet">(h1 :: this is text | append " with something appended")
+(h1 :: this is text | remove "text")
+(h1 :: this is text | replace "text" "cool text")
+(h1 :: this is text | truncate 7)</code></pre><pre class="example"><code class="language-html">&lt;h1&gt;this is text with something appended&lt;/h1&gt;
+&lt;h1&gt;this is &lt;/h1&gt;
+&lt;h1&gt;this is cool text&lt;/h1&gt;
+&lt;h1&gt;this is...&lt;/h1&gt;</code></pre>
+                <h2>Filters on tags</h2> All of the examples above show filters on tags. When a filter is applied to a tag, everything within that tag, between the <code>::</code> and the <code>|</code>, will be filtered.
+
+                <h2>Filters on interpolations</h2> Filters can also be applied to interpolations, which are surrounded by curly braces: <code>{</code> and <code>}</code>. Interpolations are how you refer to previously-defined variables and macros.
+
+                <pre class="example"><code class="language-omelet">def myName = "reid"
+(p :: My name is {myName | append "mitchell" | capitalize}.)</code></pre><pre class="example"><code class="language-html">&lt;p&gt;My name is Reid Mitchell.&lt;/p&gt;</code></pre>
+                <h2>Filters on parentheticals</h2> Sometimes, you'll want to apply filters to text that isn't contained within a tag and isn't an interpolated variable or macro. In this case, you can use a <b>parenthetical</b>. This is just surrounding one piece of the text in parentheses
+                and applying filters to that section.
+
+                <pre class="example"><code class="language-omelet">(p :: Most of this text is not filtered, but (this part | uppercase) is!)</code></pre><pre class="example"><code class="language-html">&lt;p&gt;Most of this text is not filtered, but THIS PART is!&lt;/p&gt;</code></pre>
+
+            </div>
+        </div>
+        <div class="doc-footer">
+            <div class="float-left">Omelet is a template language developed by <a href="http://reidbm.com">Reid Mitchell</a></div>
+            <div class="float-right">Last updated February 8, 2016</div>
+        </div>
+        <script src="assets/prism.js"></script>
+        <script>
+            var topNavShown = false;
+            document.getElementById('top-nav-toggle').addEventListener('click', function() {
+                if (!topNavShown) {
+                    document.getElementById('top-nav').style.display = 'block';
+                    document.getElementById('doc-header').style.height = '230px';
+                    topNavShown = true;
+                } else {
+                    document.getElementById('top-nav').style.display = 'none';
+                    document.getElementById('doc-header').style.height = '86px';
+                    topNavShown = false;
+                }
+            })
+        </script>
+    </body>
+</html>
