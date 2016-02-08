@@ -32,6 +32,12 @@ filters.lowercase = function (input) {
     return input.toLowerCase();
 }
 
+filters.capitalize = function(input) {
+    return input.split(" ").map(function(word) {
+        return word.charAt(0).toUpperCase()+word.slice(1);
+    }).join(" ");
+}
+
 filters.trim = function (input) {
     return input.replace(/^\s\s*/,'').replace(/\s\s*$/,'');
 }
@@ -66,6 +72,11 @@ filters.remove_first = function(input, toRemove) {
     return input.replace(re,'');
 }
 
+filters.replace = function(input, pattern, replacement) {
+    var re = new RegExp(pattern);
+    return input.replace(re,replacement);
+}
+
 filters.default = function(input, defaultValue) {
     return (input === "") ? defaultValue : input;
 }
@@ -84,6 +95,10 @@ filters.truncate_words = function(input, n) {
     }
     arr.splice(n);
     return arr.join(" ")+"...";
+}
+
+filters.today = function(_) {
+    return new Date();
 }
 
 filters.date_format = function(input, formatString) {

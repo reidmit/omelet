@@ -1,4 +1,0 @@
-@h4.classname(a="b" ok="nice")
-    This is one line.
-    @div.nice
-        This is nested.

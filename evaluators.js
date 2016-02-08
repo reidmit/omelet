@@ -65,7 +65,7 @@ function applyFilter(filterNode,input,filterArgs,originalCode) {
     var filterName = filterNode.value[0].value;
 
     if (filters[filterName]===undefined) {
-        return errors.SyntaxError({
+        return err.SyntaxError({
             message: "Cannot apply undefined filter '"+filterName+"'.",
             index: filterNode.value[0].start,
             input: originalCode
@@ -77,8 +77,8 @@ function applyFilter(filterNode,input,filterArgs,originalCode) {
 }
 
 
-function Scope(context) {
-    var env = [context];
+function Scope() {
+    var env = [{}];
     this.open = function() {
         env.unshift({});
     }
@@ -87,9 +87,15 @@ function Scope(context) {
     }
     this.add = function(key,value) {
         if (env[0][key]) {
-            throw Error("Variable `"+key+"` is already defined in this scope.");
+            throw Error("Variable '"+key+"' is already defined in this scope.");
         }
         env[0][key] = value;
+    }
+    this.addAll = function(obj) {
+        var keys = Object.keys(obj);
+        for (var i=0; i<keys.length; i++) {
+            this.add(keys[i], obj[keys[i]]);
+        }
     }
     this.find = function(key) {
         for (var i=0; i<env.length; i++) {
@@ -114,7 +120,9 @@ evaluators.html = function(ast, originalCode, context, config) {
         return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
     }
 
-    var scope = new Scope(context);
+    var scope = new Scope();
+    scope.addAll(context);
+
     var extendsChain = [];
 
     function evalInclude(node) {
@@ -122,16 +130,16 @@ evaluators.html = function(ast, originalCode, context, config) {
         try {
             var stats = fs.lstatSync(config.directory+"/"+node.file);
             if (stats.isDirectory()) {
-                throw EvalError("Included file `"+config.directory+"/"+node.file+"` is a directory.");
+                throw EvalError("Included file '"+config.directory+"/"+node.file+"' is a directory.");
             }
         } catch (e) {
             console.log(e);
-            throw EvalError("Included file `"+config.directory+"/"+node.file+"` could not be found.");
+            throw EvalError("Included file '"+config.directory+"/"+node.file+"' could not be found.");
         }
 
         var contents = fs.readFileSync(config.directory+"/"+node.file);
 
-        if (!contents) throw EvalError("Included file `"+config.directory+"/"+node.file+"` could not be read.");
+        if (!contents) throw EvalError("Included file '"+config.directory+"/"+node.file+"' could not be read.");
 
         var text = contents.toString();
         var input = text.split('\n').join(" ").replace(/\"/g,"\'");
@@ -141,7 +149,7 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         if (includedAST.status === false) {
             throw err.ParseError({
-                msg: "Could not parse imported file `"+config.directory+"/"+node.file+"`.",
+                msg: "Could not parse imported file '"+config.directory+"/"+node.file+"'.",
                 index: includedAST.furthest,
                 expected: includedAST.expected
             }, input);
@@ -165,13 +173,13 @@ evaluators.html = function(ast, originalCode, context, config) {
             var stats = fs.lstatSync(config.directory+"/"+node.file);
             if (stats.isDirectory()) {
                 throw err.EvalError({
-                    msg: "Imported file `"+config.directory+"/"+node.file+"` is a directory.",
+                    msg: "Imported file '"+config.directory+"/"+node.file+"' is a directory.",
                     index: node.start
                 }, originalCode);
             }
         } catch (e) {
             throw err.EvalError({
-                msg: "Imported file `"+config.directory+"/"+node.file+"` could not be found.",
+                msg: "Imported file '"+config.directory+"/"+node.file+"' could not be found.",
                 index: node.start
             }, originalCode);
         }
@@ -180,7 +188,7 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         if (!contents) {
             throw err.EvalError({
-                msg: "Imported file `"+config.directory+"/"+node.file+"` could not be read.",
+                msg: "Imported file '"+config.directory+"/"+node.file+"' could not be read.",
                 index: node.start
             }, originalCode);
         }
@@ -192,7 +200,7 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         if (importedAST.status === false) {
             throw err.ParseError({
-                msg: "Could not parse imported file `"+config.directory+"/"+node.file+"`.",
+                msg: "Could not parse imported file '"+config.directory+"/"+node.file+"'.",
                 index: importedAST.furthest,
                 expected: importedAST.expected
             }, input);
@@ -357,7 +365,8 @@ evaluators.html = function(ast, originalCode, context, config) {
                 if (node.inner[i].kind==="String") {
                     tmp = escapeHTML(tmp);
                 }
-                inner += evalExpr(tmp);
+                // inner += evalExpr(tmp);
+                inner += tmp;
             }
 
             for (var i=0; i<node.filters.length; i++) {
@@ -455,15 +464,16 @@ evaluators.html = function(ast, originalCode, context, config) {
             //        we need to traverse through the person object
             var name = node.name.value;
             if (node.name.modifiers) {
+                val = val.values;
                 for (var i=0; i<node.name.modifiers.length; i++) {
                     var m = node.name.modifiers[i];
-                    name += ("[\""+m.value.value+"\"]");
+                    name += ("["+m.value.value+"]");
 
                     var key = m.value.kind==="Number" ?
-                                parseInt(m.value.value) : m.value.value;
+                                parseInt(m.value.value) : "\""+m.value.value+"\"";
 
                     if (!val[key]) {
-                        throw Error("Object `"+name+"` is not defined.");
+                        throw Error("Object '"+name+"' is not defined. val is "+JSON.stringify(val,null,4));
                     }
                     val = val[key]
                 }
