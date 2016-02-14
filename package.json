@@ -4,6 +4,7 @@
   "description": "A parser for the Omelet language",
   "main": "readfile.js",
   "dependencies": {
+    "chalk": "^1.1.1",
     "jasmine-core": "^2.4.1",
     "js-beautify": "^1.5.10",
     "open": "^0.0.5"

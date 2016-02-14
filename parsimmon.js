@@ -1,6 +1,3 @@
-var nodes = require('./ast.js');
-var evaluators = require('./evaluators.js');
-
 var Parsimmon = {};
 
 Parsimmon.Parser = (function() {
@@ -204,6 +201,7 @@ Parsimmon.Parser = (function() {
 
       for (;;) {
         result = mergeReplies(self._(stream, i), result);
+        console.log(result);
 
         if (result.status) {
           i = result.index;

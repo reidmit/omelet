@@ -17,7 +17,10 @@ program
     .option("-t, --target <language>", "Target language")
     .option("-d, --direct <string>", "Compile an input string directly")
     .option("-w, --watch", "Watch the input file/directory for changes")
+    .option("--ast", "Print the AST without evaluating")
     .parse(process.argv);
+
+var noEval = false;
 
 if (process.argv.length <= 2) {
     program.help();
@@ -98,20 +101,29 @@ function parseFiles() {
                         var input = text;
 
                         var ast = parsers[sourceLanguage].parse(input);
+
+                        console.log(JSON.stringify(ast,null,4));
+
                         if (ast.status === false) throw errors.ParseError(ast,text);
                         __.printAST(ast);
 
-                        var output = evaluators[targetLanguage](ast.value, input, context, {
+                        if (noEval) {
+                            return;
+                        }
+
+                        //NOTE: sort out ast vs. ast.value, etc (different parsers...)
+
+                        var output = evaluators[targetLanguage](ast, input, context, {
                             directory: inputPath,
                             file: fileName
                         });
-                        if (prettyPrint) {
+                        if (prettyPrint && targetLanguage==="html") {
                             output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});
                         }
 
                         var outFilePath = outputPath+"/"
                                             +fileName.substring(0,fileName.lastIndexOf("."))
-                                            +".html";
+                                            +".oml";
                         fs.writeFile(outFilePath, output, function(err) {
                             if (err) return console.log(err);
                             //TODO: shouldn't say this if we had a SyntaxError
@@ -131,8 +143,9 @@ function parseFiles() {
 
             var text = contents.toString();
 
-            var input = text.split('\n').join(" ").replace(/\"/g,"\'");
+            // var input = text.split('\n').join(" ").replace(/\"/g,"\'");
             // var input = indentation.preprocess(text);
+            var input = text;
 
             var ast = parsers[sourceLanguage].parse(input);
 
@@ -140,7 +153,11 @@ function parseFiles() {
 
             __.printAST(ast);
 
-            var output = evaluators[targetLanguage](ast.value, input, context);
+
+            var output = evaluators[targetLanguage](ast.value, input, context, {
+                directory: "./",
+                file: inputPath
+            });
 
             if (prettyPrint) {
                 output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});

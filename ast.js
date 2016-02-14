@@ -161,13 +161,6 @@ ast.Parenthetical = function Parenthetical(properties) {
     }
 }
 
-ast.Range = function Range(properties) {
-    this.kind = "Range";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
 ast.Raw = function Raw(properties) {
     this.kind = "Raw";
     for (var prop in properties) {

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title> Omelet Documentation: Macros</title>
+        <title> Omelet Documentation: Raw Text</title>
         <meta charset="utf-8" />
         <link rel="stylesheet" type="text/css" href="assets/main.css" />
         <link rel="stylesheet" type="text/css" href="assets/prism.css" />
@@ -18,34 +18,18 @@
                     <li><a href="tags.html"> tags</a></li>
                     <li><a href="filters.html"> filters</a></li>
                     <li><a href="assignments.html"> assignments</a></li>
-                    <li><a class="active" href="macros.html"> macros</a></li>
+                    <li><a href="macros.html"> macros</a></li>
                     <li><a href="conditionals.html"> conditionals</a></li>
                     <li><a href="iteration.html"> iteration</a></li>
                     <li><a href="includes.html"> includes</a></li>
                     <li><a href="imports.html"> imports</a></li>
                     <li><a href="extends.html"> extends</a></li>
-                    <li><a href="rawtext.html"> raw text</a></li>
+                    <li><a class="active" href="rawtext.html"> raw text</a></li>
                     <li><a href="comments.html"> comments</a></li>
                 </ul>
             </div>
             <div class="contents">
-                <h1> Macros</h1>
-                <p> Omelet allows you to to define macros. A macro is like a function that takes parameters. A macro definition looks a lot like an object assignment – the only difference is the parameters. If it helps, you can think of object assignments
-                    as macros without parameters.</p>
-                <p> Parameters are listed between the name of the macro and the
-                    <code>=</code> in the macro declaration. Omelet does not support macros that take a variable number of parameters; when a macro is called, it must be given the correct number of arguments.</p><pre class="example"><code class="language-omelet">def link_to url text = (a href={url} :: {text})
-
-def stylesheet path = (link rel="stylesheet" type="text/css" href={path} ::)</code></pre>
-                <p> Just like object assignments, macro definitions do not result in anything getting printed to the rendered HTML. However, you can use defined macros in interpolations, and those will be displayed.</p><pre class="example"><code class="language-omelet">{stylesheet "assets/main.css"}
-
-(p :: This paragraph contains a few links. {link_to "reidbm.com" "Click here"}
-to visit my website, or {link_to "en.wikipedia.org" "Click this one"} to visit
-Wikipedia.)</code></pre><pre class="example"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;assets/main.css&quot; /&gt;
-
-&lt;p&gt;This paragraph contains a few links. &lt;a href=&quot;reidbm.com&quot;&gt;Click here&lt;/a&gt;
-to visit my website, or &lt;a href=&quot;en.wikipedia.org&quot;&gt;Click this one&lt;/a&gt;to visit
-Wikipedia.&lt;/p&gt;</code></pre>
-
+                <h1> Raw Text</h1> Raw text!
 
             </div>
         </div>

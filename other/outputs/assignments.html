@@ -1,40 +1,39 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Omelet Documentation: Assignments</title>
+        <title> Omelet Documentation: Assignments</title>
         <meta charset="utf-8" />
         <link rel="stylesheet" type="text/css" href="assets/main.css" />
         <link rel="stylesheet" type="text/css" href="assets/prism.css" />
-        <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Shadows+Into+Light|Waiting+for+the+Sunrise" />
-    </head>
+        <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Shadows+Into+Light|Waiting+for+the+Sunrise" /> </head>
     <body>
-        <header class="doc-header" id="doc-header"><img src="assets/logo1.png" />
-            <div class="doc-title">Omelet</div>
-            <div class="mobile-nav" id="top-nav-toggle">&#9776;</div>
-            <nav id="top-nav"><a href="#">language reference</a><a href="#">download</a><a href="#">about</a> </nav>
+        <header class="doc-header" id="doc-header"> <img src="assets/logo1.png" />
+            <div class="doc-title"> Omelet</div>
+            <div class="mobile-nav" id="top-nav-toggle"> &#9776;</div>
+            <nav id="top-nav"><a href="#"> language reference</a><a href="#"> download</a><a href="#"> about</a> </nav>
         </header>
         <div class="wrapper">
             <div class="sidebar">
                 <ul>
-                    <li><a href="tags.html">tags</a></li>
-                    <li><a href="filters.html">filters</a></li>
-                    <li><a class="active" href="assignments.html">assignments</a></li>
-                    <li><a href="macros.html">macros</a></li>
-                    <li><a href="conditionals.html">conditionals</a></li>
-                    <li><a href="iteration.html">iteration</a></li>
-                    <li><a href="includes.html">includes</a></li>
-                    <li><a href="imports.html">imports</a></li>
-                    <li><a href="extends.html">extends</a></li>
-                    <li><a href="rawtext.html">raw text</a></li>
-                    <li><a href="comments.html">comments</a></li>
+                    <li><a href="tags.html"> tags</a></li>
+                    <li><a href="filters.html"> filters</a></li>
+                    <li><a class="active" href="assignments.html"> assignments</a></li>
+                    <li><a href="macros.html"> macros</a></li>
+                    <li><a href="conditionals.html"> conditionals</a></li>
+                    <li><a href="iteration.html"> iteration</a></li>
+                    <li><a href="includes.html"> includes</a></li>
+                    <li><a href="imports.html"> imports</a></li>
+                    <li><a href="extends.html"> extends</a></li>
+                    <li><a href="rawtext.html"> raw text</a></li>
+                    <li><a href="comments.html"> comments</a></li>
                 </ul>
             </div>
             <div class="contents">
-                <h1>Assignments</h1>
-                <p>Omelet allows you to define named objects and assign data to them. Note that these are not variables; they are <b>immutable</b>. They can be assigned a value only once. Assignments are only allowed at the top level of a file. You cannot
+                <h1> Assignments</h1>
+                <p> Omelet allows you to define named objects and assign data to them. Note that these are not variables; they are <b>immutable</b>. They can be assigned a value only once. Assignments are only allowed at the top level of a file. You cannot
                     define a new object inside a tag or another definition.
                 </p>
-                <p>An object can be a <b>number</b>, a <b>string</b>, or a <b>block</b> of Omelet code, contained in parentheses. </p><pre class="example"><code class="language-omelet">def aNumber = 47
+                <p> An object can be a <b>number</b>, a <b>string</b>, or a <b>block</b> of Omelet code, contained in parentheses. </p><pre class="example"><code class="language-omelet">def aNumber = 47
 def aString = "Omelet"
 def aTag = (button.big type="submit":: click me!)
 def aBlock = (
@@ -44,7 +43,7 @@ def aBlock = (
 )
 def aList = [7,8,9,"ten",(div :: a block!)]</code></pre> Assignments only enter objects into scope. They do not appear anywhere in the compiled HTML. To use the values assigned above, you will need interpolations.
 
-                <h2>Interpolations</h2> To display the value of an object, use the name of the object surrounded by curly braces: <code>{</code> and <code>}</code>. The examples below are a continuation of those above, so those four objects have already been defined.
+                <h2> Interpolations</h2> To display the value of an object, use the name of the object surrounded by curly braces: <code>{</code> and <code>}</code>. The examples below are a continuation of those above, so those four objects have already been defined.
 
                 <pre class="example"><code class="language-omelet">I am writing this in {aString}, and my favorite number is {aNumber}.
 {aTag}
@@ -63,8 +62,8 @@ The fifth element is: &lt;div&gt;a block!&lt;/div&gt;</code></pre>
             </div>
         </div>
         <div class="doc-footer">
-            <div class="float-left">Omelet is a template language developed by <a href="http://reidbm.com">Reid Mitchell</a></div>
-            <div class="float-right">Last updated February 8, 2016</div>
+            <div class="float-left"> Omelet is a template language developed by <a href="http://reidbm.com"> Reid Mitchell</a></div>
+            <div class="float-right"> Last updated February 12, 2016</div>
         </div>
         <script src="assets/prism.js"></script>
         <script>

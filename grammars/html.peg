@@ -1,0 +1,219 @@
+Document
+    = contents:Content
+    {
+        return {
+            kind: "Document",
+            start: location().start.offset,
+            end: location().end.offset,
+            contents: contents
+        }
+    }
+
+Content
+    = (Doctype / Comment / RawTag / Tag / Text)*
+
+RawTag
+    = ScriptTag / StyleTag
+
+ScriptTag
+    = "<script"i _ attrs:(Attribute _)* ">" s:(!"</script>"i s:. {return s})* "</script>"i
+    {
+        return {
+            kind: "Tag",
+            start: location().start.offset,
+            end: location().end.offset,
+            name: "script",
+            attributes: attrs.map(function(a) { return a[0] }),
+            inner: {
+                kind: "Raw",
+                start: location().start.offset + 7,
+                end: location().end.offset - 8,
+                value: s.join("")
+            }
+        }
+    }
+
+StyleTag
+    = "<style"i _ attrs:(Attribute _)* ">" s:(!"</style>"i s:. {return s})* "</script>"i
+    {
+        return {
+            kind: "Tag",
+            start: location().start.offset,
+            end: location().end.offset,
+            name: "style",
+            attributes: attrs.map(function(a) { return a[0] }),
+            inner: {
+                kind: "Raw",
+                start: location().start.offset + 7,
+                end: location().end.offset - 8,
+                value: s.join("")
+            }
+        }
+    }
+
+Doctype
+    = "<!DOCTYPE "i _ doctype:[^\>]+ _ ">"
+    {
+        return {
+            kind: "Doctype",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: doctype.join("").trim()
+        }
+    }
+
+VoidTag
+    = "<" tagName:TagName _ attrs:(Attribute _)* "/>"
+    {
+        return {
+            kind: "Tag",
+            start: location().start.offset,
+            end: location().end.offset,
+            name: tagName,
+            attributes: attrs.map(function(a) { return a[0] }),
+            inner: []
+        }
+    }
+
+Tag
+    = VoidTag
+    / openTag:OpenTag inner:Content closeTag:CloseTag
+    {
+        if (openTag.value !== closeTag.value) {
+            throw SyntaxError("Missing closing tag for element "+openTag.value);
+        }
+        return {
+            kind: "Tag",
+            start: location().start.offset,
+            end: location().end.offset,
+            name: openTag.value,
+            attributes: openTag.attributes,
+            inner: inner
+        }
+    }
+
+OpenTag
+    = "<" tagName:TagName _ attrs:(Attribute _)* ">"
+    {
+        return {
+            kind: "String",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: tagName,
+            attributes: attrs.map(function(a) { return a[0] })
+        }
+    }
+
+CloseTag
+    = "</" tagName:TagName _ ">"
+    {
+        return {
+            kind: "String",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: tagName
+        }
+    }
+
+AttributeName
+    = attrName:[^ \t\n\r\"\'\>\/\=]+
+    {
+        return {
+            kind: "String",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: attrName.join("")
+        }
+    }
+
+UnquotedAttributeValue
+    = attrValue:[^ \t\n\r\"\'\=\<\>\`]+
+    {
+        return {
+            kind: "String",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: attrValue.join("")
+        }
+    }
+
+QuotedAttributeValue
+    = attrValue:( "'" [^\']* "'" / '"' [^\"]* '"')
+    {
+        return {
+            kind: "String",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: attrValue[1].join("")
+        }
+    }
+
+EmptyAttribute
+    = attrName:AttributeName
+    {
+        return {
+            kind: "Attribute",
+            start: location().start.offset,
+            end: location().end.offset,
+            name: attrName,
+            value: attrName
+        }
+    }
+
+UnquotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:UnquotedAttributeValue
+    {
+        return {
+            kind: "Attribute",
+            start: location().start.offset,
+            end: location().end.offset,
+            name: attrName,
+            value: attrValue
+        }
+    }
+
+QuotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:QuotedAttributeValue
+    {
+        return {
+            kind: "Attribute",
+            start: location().start.offset,
+            end: location().end.offset,
+            name: attrName,
+            value: attrValue
+        }
+    }
+
+Attribute
+    = QuotedAttribute / UnquotedAttribute / EmptyAttribute
+
+TagName
+    = tagName:([a-zA-Z0-9\_\-\:]*)
+    {
+        return tagName.join("")
+    }
+
+Text
+    = text:[^\<\>]+
+    {
+        return {
+            kind: "String",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: text.join("")
+        }
+    }
+
+Comment
+    = "<!--" c:(!"-->" c:. {return c})* "-->"
+    {
+        return {
+            kind: "CommentHTML",
+            start: location().start.offset,
+            end: location().end.offset,
+            value: c.join("")
+        }
+    }
+
+_ "whitespace"
+    = [ \t\n\r]*

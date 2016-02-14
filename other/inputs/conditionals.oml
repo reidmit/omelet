@@ -1,0 +1,38 @@
+extend aux/doc-page.oml
+
+def page_title = (Conditionals)
+
+def page_contents = (
+
+(p :: Omelet allows for the conditional display of certain blocks of text
+    through its (code::if-elif-else) expressions. The predicate in the
+    (code::if) and (code::elif) cases must be either (b::an interpolation
+    or a parenthetical).)
+
+(p :: If the predicate is a boolean with value (code::true) or a string
+    with value (code::"true"), the "then case" will be rendered. Otherwise,
+    the predicate is considered false. Any following (code::elif) cases
+    will then be checked. If all are false, the (code::else) case will be
+    rendered, if one is present. If there is no (code::else) case, nothing
+    will be rendered.)
+
+(p :: Note that there are several filters which return booleans. In the
+    example below, we use (code::lt) (less than), which takes a single number
+    as a parameter.)
+
+(pre.example :: (code.language-omelet ::<!
+def number = 47
+(p ::
+    (if {number | lt 10} ::
+        The number is less than ten.)
+    (elif {number | lt 100} ::
+        The number is less than one-hundred but not less than ten.)
+    (else ::
+        The number is not less than one-hundred.))
+!>| trim))
+
+(pre.example :: (code.language-html ::
+    <p>The number is less than one-hundred but not less than ten.</p>
+| trim | escape))
+
+)

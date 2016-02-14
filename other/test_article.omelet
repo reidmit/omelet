@@ -1,0 +1,12 @@
+extend other/test_base.omelet
+
+def page_title = (Omelet – Article – {article_title})
+
+def page_contents = (
+    (div.contents ::
+        (h1.article-title :: {article_title})
+        (div.article-date :: {article_date | date_format "N d, Y"})
+        (hr::)
+        {article_text}
+    )
+)

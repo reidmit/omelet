@@ -8,15 +8,11 @@ TODO:
 
 - clean up parser code
 
-- filter params should be in their own field, not loose in array
-
 - whitespace control
 
 - write TESTS
 
 - non-integer numbers
-
-- stop replacing double quotes with single quotes
 
 NOTES ABOUT IMPORT/INCLUDE/EXTENDS
 

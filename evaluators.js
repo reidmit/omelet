@@ -62,7 +62,7 @@ function escapeHTML(input) {
 * Return error if the filter is undefined.
 */
 function applyFilter(filterNode,input,filterArgs,originalCode) {
-    var filterName = filterNode.value[0].value;
+    var filterName = filterNode.name.value;
 
     if (filters[filterName]===undefined) {
         return err.SyntaxError({
@@ -295,7 +295,7 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
 
     function evalAssignment(node) {
-        scope.add(node.left_side.value, node.right_side);
+        scope.add(node.leftSide.value, node.rightSide);
         return "";
     }
 
@@ -365,16 +365,17 @@ evaluators.html = function(ast, originalCode, context, config) {
                 if (node.inner[i].kind==="String") {
                     tmp = escapeHTML(tmp);
                 }
-                // inner += evalExpr(tmp);
                 inner += tmp;
             }
 
-            for (var i=0; i<node.filters.length; i++) {
-                var filterArgs = [];
-                for (var j=0; j<node.filters[i].value[1].length; j++) {
-                    filterArgs.push([node.filters[i].value[1][j]].map(evalExpr).join(""))
+            if (node.filters) {
+                for (var i=0; i<node.filters.length; i++) {
+                    var filterArgs = [];
+                    for (var j=0; j<node.filters[i].arguments.length; j++) {
+                        filterArgs.push([node.filters[i].arguments[j]].map(evalExpr).join(""))
+                    }
+                    inner = applyFilter(node.filters[i],inner,filterArgs,originalCode);
                 }
-                inner = applyFilter(node.filters[i],inner,filterArgs,originalCode);
             }
 
             s += inner;
@@ -395,8 +396,8 @@ evaluators.html = function(ast, originalCode, context, config) {
         }
         for (var i=0; i<node.filters.length; i++) {
             var filterArgs = [];
-            for (var j=0; j<node.filters[i].value[1].length; j++) {
-                filterArgs.push([node.filters[i].value[1][j]].map(evalExpr).join(""));
+            for (var j=0; j<node.filters[i].arguments.length; j++) {
+                filterArgs.push([node.filters[i].arguments[j]].map(evalExpr).join(""));
             }
             inner = applyFilter(node.filters[i],inner,filterArgs,originalCode);
         }
@@ -454,7 +455,7 @@ evaluators.html = function(ast, originalCode, context, config) {
             if (node.arguments.length > 0) {
                 throw Error("Could not evaluate undefined macro '"+node.name.value+"'.");
             } else {
-                throw Error("Could not evaluate undefined variable '"+node.name.value+"'.");
+                throw Error("Could not evaluate undefined variable '"+node.name.value+"' in file: "+config.file);
             }
 
         } else {
@@ -501,8 +502,8 @@ evaluators.html = function(ast, originalCode, context, config) {
         if (node.filters) {
             for (var i=0; i<node.filters.length; i++) {
                 var filterArgs = [];
-                for (var j=0; j<node.filters[i].value[1].length; j++) {
-                    filterArgs.push( [node.filters[i].value[1][j]].map(evalExpr).join("") )
+                for (var j=0; j<node.filters[i].arguments.length; j++) {
+                    filterArgs.push( [node.filters[i].arguments[j]].map(evalExpr).join("") )
                 }
                 output = applyFilter(node.filters[i],output,filterArgs,originalCode);
             }
@@ -601,6 +602,263 @@ evaluators.html = function(ast, originalCode, context, config) {
     ast.imports.map(evalExpr);
     return ast.contents.map(evalExpr).join("");
 }
+
+
+evaluators.omelet = function(ast, originalCode, context, config) {
+    if (!ast) {
+        return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
+    }
+
+    function evalInclude(node) {
+        return "(include \""+node.file+"\")\n"; //newline at end? TODO?
+    }
+
+    function evalImport(node) {
+        return "import \""+node.file+"\"\n";
+    }
+
+    function evalExtend(node) {
+        return "extend \""+node.file+"\"\n";
+    }
+
+    function evalAssignment(node) {
+        var rightSide;
+        if (node.rightSide.kind==="String") {
+            rightSide = "\""+evalExpr(node.rightSide)+"\"";
+        } else {
+            rightSide = evalExpr(node.rightSide);
+        }//maybe also need a case that wraps in (parens) ??
+        return "def "+node.leftSide.value+" = "+rightSide+"\n";
+    }
+
+    function evalMacroDefinition(node) {
+        //TODO: how do we handle this case?
+        //not a problem coming from HTML, since no macros,
+        //but we'll need to figure this out...
+        var out = "def "+node.name.value;
+        if (node.params) {
+            for (var i=0; i<node.params; i++) {
+                out += " "+node.params[i].value;
+            }
+        }
+        out += " = "+evalExpr(node.body);
+        return out+"\n";
+    }
+    function evalBoolean(node) {
+        return node.value;
+    }
+    function evalNumber(node) {
+        return parseInt(node.value);
+    }
+    function evalString(node) {
+        return node.value;
+    }
+    function evalArray(node) {
+        var out = "["
+        var evaluated = node.values.map(evalExpr);
+        out += evaluated.join(",")
+        out + "]";
+        return out;
+    }
+    function evalIdentifier(node) {
+        var out = node.value;
+        if (node.modifiers) {
+            for (var i=0; i<node.modifiers.length; i++) {
+                var m = node.modifiers[i];
+                if (m.value.kind==="Number") {
+                    out += "["+parseInt(m.value.value)+"]";
+                } else {
+                    out += "."+m.value.value;
+                }
+            }
+        }
+        return out;
+    }
+    function evalAttribute(node) {
+        return evalExpr(node.name)+"=\""+evalExpr(node.value)+"\"";
+    }
+    function evalTag(node) {
+
+        var s;
+        var tagName = evalExpr(node.name);
+        s = "("+tagName;
+
+        var attributes = mergeAttributes(node.attributes,"class");
+        for (var i=0; i<attributes.length; i++) {
+            s += " "+evalExpr(attributes[i]);
+        }
+
+        if (html_elements.void[tagName]) {
+            var inner = "";
+            for (var i=0; i<node.inner.length; i++) {
+                inner += evalExpr(node.inner[i]);
+            }
+            if (inner !== "") {
+                return err.SyntaxError({
+                    message: "'"+tagName+"' is a void (self-closing) tag and cannot have any contents.",
+                    index: node.inner[0].start,
+                    input: originalCode
+                });
+            }
+            s += "::)";
+        } else {
+            s += "::";
+
+            var inner = "";
+            for (var i=0; i<node.inner.length; i++) {
+                inner += evalExpr(node.inner[i]);
+            }
+
+            if (node.filters) {
+                for (var i=0; i<node.filters.length; i++) {
+                    inner += "| "+evalExpr(node.filters[i].name);
+                    if (node.filters[i].arguments.length > 0) {
+                        inner += " ";
+                        inner += node.filters[i].arguments.map(evalExpr).join(" ");
+                    }
+                }
+            }
+
+            s += inner;
+            s += ")";
+        }
+
+        return s+"\n";
+    }
+    function evalParenthetical(node) {
+        var inner = "(";
+        for (var i=0; i<node.inner.length; i++) {
+            inner += evalExpr(node.inner[i]);
+        }
+        if (node.filters) {
+            for (var i=0; i<node.filters.length; i++) {
+                inner += "| "+evalExpr(node.filters[i].name);
+                if (node.filters[i].arguments.length > 0) {
+                    inner += " ";
+                    inner += node.filters[i].arguments.map(evalExpr).join(" ");
+                }
+            }
+        }
+        inner += ")";
+        return inner;
+    }
+    function evalIfStatement(node) {
+        var out = "(if ";
+        out += evalExpr(node.predicate);
+        out += " ::";
+        out += node.thenCase.map(evalExpr).join("");
+        out += ")";
+        if (node.elifCases) {
+            for (var i=0; i<node.elifCases.length; i++) {
+                out += "(elif ";
+                out += evalExpr(node.elifCases[i].predicate);
+                out += " ::";
+                out += node.elifCases[i].thenCase.map(evalExpr).join("");
+                out += ")";
+            }
+        }
+        if (node.elseCase) {
+            out += "(else ::";
+            out += node.elseCase.map(evalExpr).join("");
+            out += ")\n";
+        }
+        return out;
+    }
+    function evalForEach(node) {
+        var out = "(for ";
+        out += node.iterator.value + " in ";
+        out += node.data.value+"::";
+        out += node.body.map(evalExpr).join("");
+        out += ")\n";
+        return out;
+    }
+    function evalInterpolation(node) {
+        var out = "{";
+        out += node.name.value;
+        if (node.arguments) {
+            for (var i=0; i<node.arguments.length; i++) {
+                out += " " + evalExpr(node.arguments[i]);
+            }
+        }
+        if (node.filters) {
+            for (var i=0; i<node.filters.length; i++) {
+                inner += "| "+evalExpr(node.filters[i].name);
+                if (node.filters[i].arguments.length > 0) {
+                    inner += " ";
+                    inner += node.filters[i].arguments.map(evalExpr).join(" ");
+                }
+            }
+        }
+        out += "}";
+        return out;
+    }
+    function evalDoctype(node) {
+        return "(doctype "+node.value+")\n";
+    }
+    function evalComment(node) {
+        return "(* "+node.value+" *)";
+    }
+    function evalRaw(node) {
+        return "<!"+node.value+"!>";
+    }
+    function evalExpr(node) {
+        switch (node.kind) {
+            case "Number":
+                return evalNumber(node);
+            case "Boolean":
+                return evalBoolean(node);
+            case "String":
+                return evalString(node);
+            case "Identifier":
+                return evalIdentifier(node);
+            case "Attribute":
+                return evalAttribute(node);
+            case "Tag":
+                return evalTag(node);
+            case "Comment":
+                return evalComment(node);
+            case "Parenthetical":
+                return evalParenthetical(node);
+            case "Assignment":
+                return evalAssignment(node);
+            case "IfStatement":
+                return evalIfStatement(node);
+            case "ForEach":
+                return evalForEach(node);
+            case "Interpolation":
+                return evalInterpolation(node);
+            case "MacroDefinition":
+                return evalMacroDefinition(node);
+            case "Raw":
+                return evalRaw(node);
+            case "Include":
+                return evalInclude(node);
+            case "Import":
+                return evalImport(node);
+            case "Extend":
+                return evalExtend(node);
+            case "Doctype":
+                return evalDoctype(node);
+            case "Array":
+                return evalArray(node);
+            default:
+                return node;
+                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
+        }
+    }
+
+    var out = "";
+    if (ast.extend) {
+        out += evalExtend(ast.extend);
+    }
+    if (ast.imports) {
+        out += ast.imports.map(evalExpr).join("");
+    }
+    out += ast.contents.map(evalExpr).join("");
+
+    return out;
+}
+
 
 module.exports = evaluators;
 module.exports.mergeAttributes = mergeAttributes;

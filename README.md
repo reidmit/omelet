@@ -11,4 +11,4 @@ Omelet is currently in its early stages. I make no guarantees that this will wor
         (body ::
             (h1 :: This is Omelet!)))
 
-If you do want to test it out, you'll need Node installed. Clone this repo onto your local machine, navigate to the directory, and run `node readfile.js`. It currently reads Omelet code from `other/test_input.omelet` and outputs HTML to `other/test_output.html`.
+If you do want to test it out, you'll need Node installed. Clone this repo onto your local machine, navigate to the directory, and run `node arbo.js --help`. It will print the usage information to the console.

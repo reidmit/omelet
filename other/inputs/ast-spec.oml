@@ -1,0 +1,145 @@
+extend aux/doc-base.oml
+
+def o key value = (dd :: (b :: {key}:) {value})
+def c key value comment = (dd :: (b :: {key}:) {value} (i :: {comment}))
+
+def node name = (
+    (hr ::)
+    (dt :: (h2 :: {name}))
+    (dd :: (b :: kind:) a string literal, "{name}")
+    {o "start" "a number literal"}
+    {o "end" "a number literal"}
+    (br::)
+)
+
+def title = (AST Specification)
+
+def head = ""
+
+def body = (
+
+    (h1 :: AST Specification)
+
+    (i :: (b::Note:) By convention, any property value
+        that starts with a capital letter is an AST node.
+        Capital letters should only be used for the names
+        of nodes.)
+
+    (dl ::
+
+    {node "Array"}
+    {o "values" "[Number | String | Boolean | Tag]"}
+
+
+    {node "Assignment"}
+    {o "leftSide"  "Identifier"}
+    {o "rightSide" "an expression"}
+
+
+    {node "Attribute"}
+    {o "name"  "String"}
+    {o "value" "String | Interpolation"}
+
+
+    {node "Boolean"}
+    {o "value" "a boolean literal"}
+
+
+    {node "Comment"}
+    {o "value" "a string literal"}
+
+
+    {node "CommentHTML"}
+    {o "value" "a string literal"}
+
+
+    {node "Doctype"}
+    {o "value" "a string literal"}
+
+
+    {node "Document"}
+    {o "extend"   "Extend"}
+    {o "imports"  "[Import]"}
+    {o "contents" "[MacroDefinition | Assignment | an expression]"}
+
+
+    {node "Extend"}
+    {o "file" "a string literal"}
+
+
+    {node "Filter"}
+    {o "name"      "Identifier"}
+    {o "arguments" "[Number | String | Identifier]"}
+
+
+    {node "ForEach"}
+    {c "iterator" "Identifier" "i.e. item in (for item in items :: ... )"}
+    {c "data"     "Identifier" "i.e. items in (for item in items :: ... )"}
+    {o "body"     "[an expression]"}
+
+
+    {node "Identifier"}
+    {o "value"     "a string literal"}
+    {o "modifiers" "undefined | [Modifier]"}
+
+
+    {node "IfStatement"}
+    {o "predicate" "Boolean | Parenthetical | Interpolation"}
+    {o "thenCase"  "[an expression]"}
+    {c "elifCases" "undefined | [IfStatement]" "turned into IfStatements without elifCases or elseCases"}
+    {o "elseCase"  "undefined | [an expression]"}
+
+
+    {node "Import"}
+    {o "file" "a string literal"}
+
+
+    {node "Include"}
+    {o "file" "a string literal"}
+
+
+    {node "Interpolation"}
+    {o "name"      "Identifier"}
+    {o "arguments" "[Number | Boolean | String | Identifier]"}
+    {o "filters"   "[Filter]"}
+
+
+    {node "MacroDefinition"}
+    {o "name"   "Identifier"}
+    {o "params" "[Identifier]"}
+    {o "body"   "a single expression"}
+
+
+    {node "Modifier"}
+    {c "value" "Number | Identifier" "i.e. 3 in items[3] or color in car.color"}
+
+
+    {node "Number"}
+    {o "value" "a string literal"}
+
+
+    {node "Parenthetical"}
+    {o "inner"   "[expressions]"}
+    {o "filters" "[Filter]"}
+
+
+    {node "Raw"}
+    {o "value" "a string literal"}
+
+
+    {node "String"}
+    {o "value" "a string literal"}
+
+
+    {node "Symbol"}
+    {o "value" "a string literal"}
+
+
+    {node "Tag"}
+    {o "name" "String"}
+    {c "attributes" "[Attribute]" "class attributes are merged into one before added to AST"}
+    {o "inner" "[an expression]"}
+    {o "filters" "undefined | [Filter]"}
+
+    )
+)

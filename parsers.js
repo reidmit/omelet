@@ -33,74 +33,22 @@ function notChar(char) {
   });
 }
 
-function p(str) {
-
-  var a = [], out = [], idxs = [];
-  var curr = [];
-
-  for(var i=0; i < str.length; i++){
-      if(str.charAt(i) == '(') {
-          out = out.concat(curr.join("").trim().split(" "));
-          curr = [];
-          a.push(i);
-      } else if(str.charAt(i) == ')') {
-          curr = [];
-          if (a.length == 1) {
-            out.push(str.substring(a.pop()+1,i));
-            idxs.push(out.length-1);
-          } else {
-            a.pop();
-          }
-      } else {
-        curr.push(str.charAt(i));
-      }
-  }
-  if (curr.length > 0) {
-    out = out.concat(curr.join("").trim().split(" "))
-  }
-
-  if (idxs.length === 0) {
-
-    var s = str.split(" ");
-
-    if (s.indexOf("|") === -1) {
-
-      return "seq("+s.join(", ")+")";
-
-    } else {
-
-      s = s.filter(function(elt) {
-        return elt !== "|";
-      });
-
-      return "alt("+s.join(", ")+")";
-
-    }
-
-  } else {
-    for (var i=0; i<idxs.length; i++) {
-      out[idxs[i]] = p(out[idxs[i]]);
-    }
-  }
-
-  var out_s = out.join(", ");
-  out_s = out_s.replace(/\*/g, ".many()")
-               .replace(/\+/g, ".atLeast(1)")
-               .replace(/\?/g, ".atMost(1)");
-
-  return "seq("+out_s+")";
-}
-
-function notEscaped(char) {
+function notEscaped() {
   return Parsimmon.custom(function(success, failure) {
     return function(stream, i) {
-      if (stream.charAt(i) === char && stream.charAt(i-1) !== "\\" && stream.length <= i) {
+        console.log(stream.charAt(i));
+      if (["(","{","|",")","\\"].indexOf(stream.charAt(i)) === -1) {
+        //good news, it's nothing to worry about
         return success(i+1, stream.charAt(i));
       }
-      return failure(i, 'anything different than "' + char + '"');
+      if (stream.charAt(i-1) === "\\" && stream.length <= i) {
+        return success(i+1, stream.charAt(i));
+      }
+      return failure(i, 'anything but an unescaped (,),{,|,\\');
     }
   });
 }
+module.exports.nes = notEscaped;
 
 /*
 RULES FOR PARSERS:
@@ -114,92 +62,19 @@ RULES FOR PARSERS:
 
 var parsers = {};
 
-parsers.omelet2 = function() {
-    var indentLevel = 0;
-
-    var AT = string("@");
-    var LBRACE = string("{");
-    var RBRACE = string("}");
-    var LPAREN = string("(");
-    var RPAREN = string(")");
-    var QUOTE1 = regex(/\'/);
-    var QUOTE2 = regex(/\"/);
-    var _ = optWhitespace;
-    var _N_ = string("\n");
-
-    var INDENT = string(indentation.indent_token);
-    var DEDENT = string(indentation.dedent_token);
-
-    var NUMBER = regex(/[0-9]+/).toNode(nodes.Number);
-
-    var TAG_NAME = regex(/[a-zA-Z][a-zA-Z0-9_-]*/).toNode(nodes.String);
-
-    var LINE_OF_TEXT = regex(/[^\n⇒⇐]+/).toNode(nodes.String);
-
-    var expr = lazy('an Omelet2 expression', function() {
-                    return alt(TAG, ATOM);
-            });
-
-    var ATOM = alt(LINE_OF_TEXT, NUMBER);
-
-    var QUOTED_STRING = alt(seq(QUOTE1, regex(/[^\']*/), QUOTE1),
-                            seq(QUOTE1, regex(/[^\"]*/), QUOTE2)).toNode(nodes.String, function(start,value,end) {
-            return { value: value[1] };
-        });
-
-
-
-    var CSS_VALID_ID = lexeme(regex(/[a-zA-Z][a-zA-Z0-9_-]*/).toNode(nodes.String));
-    var ATTRIBUTE_NAME = regex(/[a-zA-Z][a-zA-Z0-9-]*/).toNode(nodes.String);
-
-    var BASIC_ATTRIBUTE = seq(ATTRIBUTE_NAME,_,string("="),_,QUOTED_STRING,_)
-                            .toNode(nodes.Attribute, function(start,value,end) {
-                                return {
-                                    name: value[0],
-                                    value: value[4]
-                                }
-                            });
-    var CLASS_ATTRIBUTE = seq(string("."),CSS_VALID_ID,_)
-                            .toNode(nodes.Attribute, function(start,value,end) {
-                                return { name: new nodes.String({start: start, value: "class", end: end}),
-                                         value: value[1] }
-                            });
-    var ID_ATTRIBUTE    = seq(string("#"),CSS_VALID_ID,_)
-                            .toNode(nodes.Attribute, function(start,value,end) {
-                                return { name: new nodes.String({start: start, value: "id", end: end}),
-                                         value: value[1] }
-                            });
-
-    var ATTRIBUTE = alt(BASIC_ATTRIBUTE,CLASS_ATTRIBUTE,ID_ATTRIBUTE);
-
-    var ATTRIBUTES = seq(alt(CLASS_ATTRIBUTE,ID_ATTRIBUTE).many(),LPAREN,BASIC_ATTRIBUTE.many(),RPAREN).map(function(value) {
-        return value[0].concat(value[2]);
-    });
-
-    var TAG = seq(AT, TAG_NAME, ATTRIBUTES.atMost(1), _, INDENT, _N_, sepBy(ATOM,string("\n")), _, DEDENT)
-                .toNode(nodes.Tag, function(start,value,end) {
-                    return {
-                        name: value[1],
-                        attributes: value[2][0],
-                        inner: value[6]
-                    }
-                });
-
-    // return ATTRIBUTES;
-    return expr.many();
+parsers.html = function() {
+    return require('./parsers/html.js');
 }
 
 parsers.omelet = function() {
 
-    function _p(str) { return eval(p(str)); }
-
     var LPAREN      = lexeme(string('(')).toNode(nodes.Symbol);
     var RPAREN      = string(')').toNode(nodes.Symbol);
     var LBRACE      = lexeme(string("{"));
-    var RBRACE      = lexeme(string("}"));
+    var RBRACE      = string("}");
     var LBRACKET    = lexeme(string("["));
     var RBRACKET    = lexeme(string("]"));
-    var doublecolon = lexeme(string('::'));
+    var doublecolon = string('::');
     var pipe        = lexeme(string('|'));
     var QUOTE1      = regex(/\'/);
     var QUOTE2      = regex(/\"/);
@@ -213,7 +88,6 @@ parsers.omelet = function() {
     var BOOLEAN     = lexeme(string("true").or(string("false"))).toNode(nodes.Boolean);
     var _           = optWhitespace;
 
-    //Translated into AST nodes
     var NUMBER = lexeme(regex(/[0-9]+/).map(parseInt).toNode(nodes.Number));
 
     var idx = 0;
@@ -263,24 +137,28 @@ parsers.omelet = function() {
     var ESCAPED_CHAR = alt(lexeme(string("\\(")), lexeme(string("\\|")), lexeme(string("\\\"")))
                         .map(function(s) { return s.slice(1) });
 
-    var unquotedstring = regex(/[^\)\|\(\{\\]+[\n]?/).toNode(nodes.String);
+    var unquotedstring = regex(/[^\)\|\(\{\\]+/).toNode(nodes.String);
 
     var quotedstring = alt(seq(QUOTE1, regex(/[^\']*/), QUOTE1),
                            seq(QUOTE2, regex(/[^\"]*/), QUOTE2)).toNode(nodes.String, function(start,value,end) {
             return { value: value[1] };
         });
 
-    var comment = lexeme(regex(/\(\*\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\)/)).toNode(nodes.Comment);
+    var COMMENT = lexeme(regex(/\(\*\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\)/)).toNode(nodes.Comment);
 
     var expr = lazy('an Omelet expression', function() {
-                    return alt(RAW,DOCTYPE,comment,INCLUDE,IF_STATEMENT,FOR_LOOP,tag,parenthetical,atom);
+                    return alt(RAW,DOCTYPE,COMMENT,INCLUDE,IF_STATEMENT,FOR_LOOP,tag,parenthetical,atom);
                 });
 
     var FILTER_PARAM  = alt(NUMBER, quotedstring, IDENT);
 
-    //TODO: pass in custom function for Filter node, pick up params separately
-    //TODO: FIX HERE
-    var FILTER        = seq(pipe.then(IDENT), FILTER_PARAM.many()).toNode(nodes.Filter);
+    var FILTER = seq(pipe.then(IDENT), FILTER_PARAM.many())
+                    .toNode(nodes.Filter, function(start,value,end) {
+                        return {
+                            name: value[0],
+                            arguments: value[1]
+                        }
+                    });
 
     var MACRO_ARGUMENT = (_).then(alt(NUMBER, BOOLEAN, quotedstring, IDENT));
 
@@ -328,8 +206,6 @@ parsers.omelet = function() {
                     }
                 });
 
-    module.exports.tag = tag;
-
     var parenthetical = seq(LPAREN.then(expr.atLeast(1)),FILTER.many().skip(RPAREN))
                             .toNode(nodes.Parenthetical, function(start,value,end) {
                                 return {
@@ -349,11 +225,10 @@ parsers.omelet = function() {
     var ASSIGNMENT = (_).then(seq(DEF, IDENT, EQUALSIGN, alt(ARRAY, NUMBER, BOOLEAN, quotedstring, tag, parenthetical), _))
                         .toNode(nodes.Assignment, function(start,value,end) {
                             return {
-                                left_side: value[1],
-                                right_side: value[3]
+                                leftSide: value[1],
+                                rightSide: value[3]
                             }
                         });
-    module.exports.asgt = ASSIGNMENT;
 
     var MACRO_DEFINITION = (_).then(seq(DEF.then(IDENT),IDENT.many().skip(EQUALSIGN),expr))
                         .toNode(nodes.MacroDefinition, function(start,value,end) {
@@ -395,7 +270,7 @@ parsers.omelet = function() {
                     });
 
                     //TODO: comments here are not put into AST
-    var DOCUMENT = seq( _, comment.many(), EXTEND.atMost(1), _, IMPORT.many(), _, DEFINITION.many(), _, expr.many() )
+    var DOCUMENT = seq( _, COMMENT.many(), EXTEND.atMost(1), _, IMPORT.many(), _, DEFINITION.many(), _, expr.many() )
                         .toNode(nodes.Document, function(start,value,end) {
                             return {
                                 extend: value[2][0],
@@ -409,7 +284,7 @@ parsers.omelet = function() {
     var AND = lexeme(string("&&"));
     var OR = lexeme(string("||"));
     var NOT = lexeme(string("!"));
-    var BOOLEAN_ID = BOOLEAN.or(parenthetical).or(INTERPOLATION);
+    var BOOLEAN_ID = BOOLEAN.or(parenthetical).or(INTERPOLATION).skip(_);
     var BOOLEAN_FACTOR =
         BOOLEAN_ID
             .or(
@@ -465,8 +340,6 @@ parsers.omelet = function() {
                         }
                     });
 
-
-    // return expr.many();
     return DOCUMENT;
 }
 
@@ -563,5 +436,5 @@ parsers.omelet = function() {
 //                 });
 
 
-module.exports.omelet2 = parsers.omelet2();
+module.exports.html   = parsers.html();
 module.exports.omelet = parsers.omelet();
