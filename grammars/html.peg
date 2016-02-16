@@ -1,5 +1,4 @@
-Document
-    = contents:Content
+Document = contents:Content
     {
         return {
             kind: "Document",

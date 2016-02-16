@@ -22,44 +22,6 @@ var _ = Parsimmon.optWhitespace;
 function opt(p) { return p.atMost(1); }
 function lexeme(p) { return p.skip(optWhitespace); }
 
-function notChar(char) {
-  return Parsimmon.custom(function(success, failure) {
-    return function(stream, i) {
-      if (stream.charAt(i) !== char && stream.length <= i) {
-        return success(i+1, stream.charAt(i));
-      }
-      return failure(i, 'anything different than "' + char + '"');
-    }
-  });
-}
-
-function notEscaped() {
-  return Parsimmon.custom(function(success, failure) {
-    return function(stream, i) {
-        console.log(stream.charAt(i));
-      if (["(","{","|",")","\\"].indexOf(stream.charAt(i)) === -1) {
-        //good news, it's nothing to worry about
-        return success(i+1, stream.charAt(i));
-      }
-      if (stream.charAt(i-1) === "\\" && stream.length <= i) {
-        return success(i+1, stream.charAt(i));
-      }
-      return failure(i, 'anything but an unescaped (,),{,|,\\');
-    }
-  });
-}
-module.exports.nes = notEscaped;
-
-/*
-RULES FOR PARSERS:
-
-1) No using "then" or "skip". Use "seq" instead.
-
-2) No using "lexeme" so liberally. Use "WS" (optional whitespace) instead.
-
-3) No using "or". Use "alt" instead.
-*/
-
 var parsers = {};
 
 parsers.html = function() {
