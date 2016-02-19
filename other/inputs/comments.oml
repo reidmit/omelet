@@ -1,9 +1,0 @@
-extend aux/doc-page.oml
-
-def page_title = (Comments)
-
-def page_contents = (
-
-Comments!
-
-)
