@@ -39,8 +39,6 @@ module.exports = (function() {
         peg$c0 = function(contents) {
                 return {
                     kind: "Document",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     contents: contents
                 }
             },
@@ -55,14 +53,10 @@ module.exports = (function() {
         peg$c9 = function(attrs, s) {
                 return {
                     kind: "Tag",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     name: "script",
                     attributes: attrs.map(function(a) { return a[0] }),
                     inner: {
                         kind: "Raw",
-                        start: location().start.offset + 7,
-                        end: location().end.offset - 8,
                         value: s.join("")
                     }
                 }
@@ -74,14 +68,10 @@ module.exports = (function() {
         peg$c14 = function(attrs, s) {
                 return {
                     kind: "Tag",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     name: "style",
                     attributes: attrs.map(function(a) { return a[0] }),
                     inner: {
                         kind: "Raw",
-                        start: location().start.offset + 7,
-                        end: location().end.offset - 8,
                         value: s.join("")
                     }
                 }
@@ -93,8 +83,6 @@ module.exports = (function() {
         peg$c19 = function(doctype) {
                 return {
                     kind: "Doctype",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: doctype.join("").trim()
                 }
             },
@@ -105,8 +93,6 @@ module.exports = (function() {
         peg$c24 = function(tagName, attrs) {
                 return {
                     kind: "Tag",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     name: tagName,
                     attributes: attrs.map(function(a) { return a[0] }),
                     inner: []
@@ -118,8 +104,6 @@ module.exports = (function() {
                 }
                 return {
                     kind: "Tag",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     name: openTag.value,
                     attributes: openTag.attributes,
                     inner: inner
@@ -128,8 +112,6 @@ module.exports = (function() {
         peg$c26 = function(tagName, attrs) {
                 return {
                     kind: "String",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: tagName,
                     attributes: attrs.map(function(a) { return a[0] })
                 }
@@ -139,8 +121,6 @@ module.exports = (function() {
         peg$c29 = function(tagName) {
                 return {
                     kind: "String",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: tagName
                 }
             },
@@ -149,8 +129,6 @@ module.exports = (function() {
         peg$c32 = function(attrName) {
                 return {
                     kind: "String",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: attrName.join("")
                 }
             },
@@ -159,8 +137,6 @@ module.exports = (function() {
         peg$c35 = function(attrValue) {
                 return {
                     kind: "String",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: attrValue.join("")
                 }
             },
@@ -175,16 +151,12 @@ module.exports = (function() {
         peg$c44 = function(attrValue) {
                 return {
                     kind: "String",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: attrValue[1].join("")
                 }
             },
         peg$c45 = function(attrName) {
                 return {
                     kind: "Attribute",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     name: attrName,
                     value: attrName
                 }
@@ -194,8 +166,6 @@ module.exports = (function() {
         peg$c48 = function(attrName, attrValue) {
                 return {
                     kind: "Attribute",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     name: attrName,
                     value: attrValue
                 }
@@ -210,8 +180,6 @@ module.exports = (function() {
         peg$c54 = function(text) {
                 return {
                     kind: "String",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: text.join("")
                 }
             },
@@ -223,8 +191,6 @@ module.exports = (function() {
         peg$c60 = function(c) {
                 return {
                     kind: "CommentHTML",
-                    start: location().start.offset,
-                    end: location().end.offset,
                     value: c.join("")
                 }
             },

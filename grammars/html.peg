@@ -2,8 +2,6 @@ Document = contents:Content
     {
         return {
             kind: "Document",
-            start: location().start.offset,
-            end: location().end.offset,
             contents: contents
         }
     }
@@ -19,14 +17,10 @@ ScriptTag
     {
         return {
             kind: "Tag",
-            start: location().start.offset,
-            end: location().end.offset,
             name: "script",
             attributes: attrs.map(function(a) { return a[0] }),
             inner: {
                 kind: "Raw",
-                start: location().start.offset + 7,
-                end: location().end.offset - 8,
                 value: s.join("")
             }
         }
@@ -37,14 +31,10 @@ StyleTag
     {
         return {
             kind: "Tag",
-            start: location().start.offset,
-            end: location().end.offset,
             name: "style",
             attributes: attrs.map(function(a) { return a[0] }),
             inner: {
                 kind: "Raw",
-                start: location().start.offset + 7,
-                end: location().end.offset - 8,
                 value: s.join("")
             }
         }
@@ -55,8 +45,6 @@ Doctype
     {
         return {
             kind: "Doctype",
-            start: location().start.offset,
-            end: location().end.offset,
             value: doctype.join("").trim()
         }
     }
@@ -66,8 +54,6 @@ VoidTag
     {
         return {
             kind: "Tag",
-            start: location().start.offset,
-            end: location().end.offset,
             name: tagName,
             attributes: attrs.map(function(a) { return a[0] }),
             inner: []
@@ -83,8 +69,6 @@ Tag
         }
         return {
             kind: "Tag",
-            start: location().start.offset,
-            end: location().end.offset,
             name: openTag.value,
             attributes: openTag.attributes,
             inner: inner
@@ -96,8 +80,6 @@ OpenTag
     {
         return {
             kind: "String",
-            start: location().start.offset,
-            end: location().end.offset,
             value: tagName,
             attributes: attrs.map(function(a) { return a[0] })
         }
@@ -108,8 +90,6 @@ CloseTag
     {
         return {
             kind: "String",
-            start: location().start.offset,
-            end: location().end.offset,
             value: tagName
         }
     }
@@ -119,8 +99,6 @@ AttributeName
     {
         return {
             kind: "String",
-            start: location().start.offset,
-            end: location().end.offset,
             value: attrName.join("")
         }
     }
@@ -130,8 +108,6 @@ UnquotedAttributeValue
     {
         return {
             kind: "String",
-            start: location().start.offset,
-            end: location().end.offset,
             value: attrValue.join("")
         }
     }
@@ -141,8 +117,6 @@ QuotedAttributeValue
     {
         return {
             kind: "String",
-            start: location().start.offset,
-            end: location().end.offset,
             value: attrValue[1].join("")
         }
     }
@@ -152,8 +126,6 @@ EmptyAttribute
     {
         return {
             kind: "Attribute",
-            start: location().start.offset,
-            end: location().end.offset,
             name: attrName,
             value: attrName
         }
@@ -164,8 +136,6 @@ UnquotedAttribute
     {
         return {
             kind: "Attribute",
-            start: location().start.offset,
-            end: location().end.offset,
             name: attrName,
             value: attrValue
         }
@@ -176,8 +146,6 @@ QuotedAttribute
     {
         return {
             kind: "Attribute",
-            start: location().start.offset,
-            end: location().end.offset,
             name: attrName,
             value: attrValue
         }
@@ -197,8 +165,6 @@ Text
     {
         return {
             kind: "String",
-            start: location().start.offset,
-            end: location().end.offset,
             value: text.join("")
         }
     }
@@ -208,8 +174,6 @@ Comment
     {
         return {
             kind: "CommentHTML",
-            start: location().start.offset,
-            end: location().end.offset,
             value: c.join("")
         }
     }

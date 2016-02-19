@@ -1,5 +1,19 @@
 TODO:
 
+- ranges as well as arrays
+
+- "parent" call for blocks (render parent content)
+
+- key/value dictionaries (aka hashes)
+
+- iteration over dictionaries
+
+- loop.index, etc
+
+- cyclers? joiners?
+
+/////
+
 - escaped characters (esp. parentheses)
 
 - HTML escape filters
@@ -13,6 +27,39 @@ TODO:
 - write TESTS
 
 - non-integer numbers
+
+
+NOTES ABOUT LANGUAGES
+
+syntax families:
+
+    - alternate syntax
+        - HAML
+        - Jade
+
+    - CTemplate-inspired -> {{#items}}...{{/items}}
+        - Mustache
+        - Handlebars
+        - Dust.js
+
+    - Jinja2-esque -> {% block content %}...{% endblock %}
+        - Jinja2
+        - Nunjucks
+        - Django
+        - Liquid
+        - Twig
+
+    - XML-like / XML
+        - Genshi
+        -
+
+    - embedded full-languages
+        - EJS (Embedded JavaScript) -> <% ... %>
+        - ERB (Embedded Ruby) -> <% ... %>
+        - PHP -> <?php ... ?>
+        - JSP
+        - Mako (Python)
+
 
 NOTES ABOUT IMPORT/INCLUDE/EXTENDS
 
