@@ -69,9 +69,9 @@ that only one (code::id) attribute is allowed.
 (h2 :: Self-closing Tags)
 
 All tags listed as void tags in the {link_new
-"https://www.w3.org/TR/html5/syntax.html#elements-0" "HTML5 spec"} are self-
-closing. These tags are written and compiled as follows. Note that they must
-stil have the (code::::) at the end.
+"https://www.w3.org/TR/html5/syntax.html#elements-0" "HTML5 spec"} are
+self-closing. These tags are written and compiled as follows. Note that
+they must stil have the (code::::) at the end.
 
 (pre.example :: (code.language-omelet ::<!
 (hr ::)

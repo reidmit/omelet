@@ -28,7 +28,7 @@ def body = (
     (dl ::
 
     {node "Array"}
-    {o "values" "[Number | String | Boolean | Tag]"}
+    {o "elements" "[Number | String | Boolean | Tag]"}
 
 
     {node "Assignment"}

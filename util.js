@@ -1,6 +1,40 @@
 // var errors = require('./errors.js');
 var util = {};
 
+/*
+* A function to merge attributes that have the same name.
+*   param: attrList (list of AST Attribute nodes)
+*   param: attrName (string name of attribute to merge)
+*/
+util.mergeAttributes = function(attrList,attrName) {
+    if (attrList.length < 2) return attrList;
+
+    var toMerge = [];
+    var indices = [];
+
+    for (var i=0; i<attrList.length; i++) {
+        if (attrList[i].name.value === attrName) {
+            toMerge.push(attrList[i]);
+            indices.push(i);
+        }
+    }
+
+    if (toMerge.length == 0) return attrList;
+
+    var newAttrVal = "";
+    for (var i=0; i<toMerge.length; i++) {
+        newAttrVal += toMerge[i].value.value + " ";
+    }
+    newAttrVal = newAttrVal.trim();
+    toMerge[0].value.value = newAttrVal;
+
+    for (var i=1; i<toMerge.length; i++) {
+        attrList.splice(indices[i],1);
+    }
+
+    return attrList;
+}
+
 util.inheritsFrom = function(child,parent) {
     child.prototype = new parent;
     child.prototype.constructor = parent;
@@ -85,7 +119,7 @@ util.toMap = function(commaSeparatedItems) {
 }
 
 util.printAST = function(ast) {
-    console.log(JSON.stringify(ast.value,null,4));
+    console.log(JSON.stringify(ast,null,4));
 }
 
 module.exports = util;

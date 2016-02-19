@@ -6,6 +6,7 @@ var parsers = require('./parsers.js');
 var evaluators = require('./evaluators.js');
 var errors = require('./errors.js');
 var indentation = require('./indentation');
+var extensions = require('./extensions.js');
 var beautify = require('js-beautify').html;
 var __ = require('./util.js');
 
@@ -141,21 +142,14 @@ function parseFiles() {
         fs.readFile(inputPath, function(err, contents) {
             if (err) throw err;
 
-            var text = contents.toString();
-
-            // var input = text.split('\n').join(" ").replace(/\"/g,"\'");
-            // var input = indentation.preprocess(text);
-            var input = text;
+            var input = contents.toString();
 
             var ast = parsers[sourceLanguage].parse(input);
 
-            if (ast.status === false) throw errors.ParseError(ast,text);
-
             __.printAST(ast);
 
-
-            var output = evaluators[targetLanguage](ast.value, input, context, {
-                directory: "./",
+            var output = evaluators[targetLanguage](ast, input, context, {
+                directory: inputPath.substring(0,inputPath.lastIndexOf("/")),
                 file: inputPath
             });
 

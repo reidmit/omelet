@@ -1,7 +1,7 @@
 var __ = require('./util.js');
 var ast = require('./ast.js');
 var fs = require('fs');
-var parser = require('./parsers.js');
+var parsers = require('./parsers.js');
 var err = require('./errors.js');
 var filters = require('./filters.js');
 
@@ -107,7 +107,7 @@ function Scope() {
         }
         return;
     }
-    this.state = function() { return env; }
+    this.state = function() { return "\n"+JSON.stringify(env,null,4); }
 }
 
 var evaluators = {};
@@ -133,7 +133,6 @@ evaluators.html = function(ast, originalCode, context, config) {
                 throw EvalError("Included file '"+config.directory+"/"+node.file+"' is a directory.");
             }
         } catch (e) {
-            console.log(e);
             throw EvalError("Included file '"+config.directory+"/"+node.file+"' could not be found.");
         }
 
@@ -141,27 +140,19 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         if (!contents) throw EvalError("Included file '"+config.directory+"/"+node.file+"' could not be read.");
 
-        var text = contents.toString();
-        var input = text.split('\n').join(" ").replace(/\"/g,"\'");
+        var input = contents.toString();
 
-        var includedAST = parser.omelet.parse(input);
-
-
-        if (includedAST.status === false) {
-            throw err.ParseError({
-                msg: "Could not parse imported file '"+config.directory+"/"+node.file+"'.",
-                index: includedAST.furthest,
-                expected: includedAST.expected
-            }, input);
+        try {
+            var includedAST = parsers["omelet"].parse(input);
+        } catch (e) {
+            throw err.ParseError(config.directory+"/"+node.file,e);
         }
-
-        var includedDocumentContents = includedAST.value.contents;
 
         var output = "";
 
         scope.open();
-        for (var i=0; i<includedDocumentContents.length; i++) {
-            output += evalExpr(includedDocumentContents[i]);
+        for (var i=0; i<includedAST.contents.length; i++) {
+            output += evalExpr(includedAST.contents[i]);
         }
         scope.close();
 
@@ -193,10 +184,9 @@ evaluators.html = function(ast, originalCode, context, config) {
             }, originalCode);
         }
 
-        var text = contents.toString();
-        var input = text.split('\n').join(" ").replace(/\"/g,"\'");
+        var input = contents.toString();
 
-        var importedAST = parser.omelet.parse(input);
+        var importedAST = parsers["omelet"].parse(input);
 
         if (importedAST.status === false) {
             throw err.ParseError({
@@ -206,12 +196,10 @@ evaluators.html = function(ast, originalCode, context, config) {
             }, input);
         }
 
-        var importedDocumentContents = importedAST.value.contents;
-
-        for (var i=0; i<importedDocumentContents.length; i++) {
-            if (importedDocumentContents[i].kind === "MacroDefinition"
-                || importedDocumentContents[i].kind === "Assignment") {
-                evalExpr(importedDocumentContents[i]);
+        for (var i=0; i<importedAST.contents.length; i++) {
+            if (importedAST.contents[i].kind === "MacroDefinition"
+                || importedAST.contents[i].kind === "Assignment") {
+                evalExpr(importedAST.contents[i]);
             }
         }
 
@@ -272,10 +260,9 @@ evaluators.html = function(ast, originalCode, context, config) {
             }, originalCode);
         }
 
-        var text = contents.toString();
-        var input = text.split('\n').join(" ").replace(/\"/g,"\'");
+        var input = contents.toString();
 
-        var extendedAST = parser.omelet.parse(input);
+        var extendedAST = parsers["omelet"].parse(input);
 
         if (extendedAST.status === false) {
             throw err.ParseError({
@@ -285,13 +272,11 @@ evaluators.html = function(ast, originalCode, context, config) {
             }, input);
         }
 
-        var extendedDocument = extendedAST.value;
-
-        extendedDocument.imports.map(evalExpr);
-        if (extendedDocument.extend) {
-            return evalExtend(extendedDocument);
+        extendedAST.imports.map(evalExpr);
+        if (extendedAST.extend) {
+            return evalExtend(extendedAST);
         }
-        return extendedDocument.contents.map(evalExpr).join("");
+        return extendedAST.contents.map(evalExpr).join("");
     }
 
     function evalAssignment(node) {
@@ -314,8 +299,8 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
     function evalArray(node) {
         var arr = [];
-        for (var i=0; i<node.values.length; i++) {
-            arr.push(evalExpr(node.values[i]));
+        for (var i=0; i<node.elements.length; i++) {
+            arr.push(evalExpr(node.elements[i]));
         }
         return arr;
     }
@@ -453,9 +438,9 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         if (!val) {
             if (node.arguments.length > 0) {
-                throw Error("Could not evaluate undefined macro '"+node.name.value+"'.");
+                throw Error("Could not evaluate undefined macro '"+node.name.value+"'. Current scope is: "+scope.state());
             } else {
-                throw Error("Could not evaluate undefined variable '"+node.name.value+"' in file: "+config.file);
+                throw Error("Could not evaluate undefined variable '"+node.name.value+"' in file: "+config.file+" at position "+node.start+"->"+node.end);
             }
 
         } else {
@@ -655,7 +640,7 @@ evaluators.omelet = function(ast, originalCode, context, config) {
     }
     function evalArray(node) {
         var out = "["
-        var evaluated = node.values.map(evalExpr);
+        var evaluated = node.elements.map(evalExpr);
         out += evaluated.join(",")
         out + "]";
         return out;

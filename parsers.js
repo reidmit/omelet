@@ -29,6 +29,10 @@ parsers.html = function() {
 }
 
 parsers.omelet = function() {
+    return require('./parsers/omelet.js');
+}
+
+parsers.omelet2 = function() {
 
     var LPAREN      = lexeme(string('(')).toNode(nodes.Symbol);
     var RPAREN      = string(')').toNode(nodes.Symbol);
