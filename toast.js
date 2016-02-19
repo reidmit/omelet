@@ -124,7 +124,7 @@ function parseFiles() {
 
                         var outFilePath = outputPath+"/"
                                             +fileName.substring(0,fileName.lastIndexOf("."))
-                                            +".oml";
+                                            +"."+extensions.for(targetLanguage);
                         fs.writeFile(outFilePath, output, function(err) {
                             if (err) return console.log(err);
                             //TODO: shouldn't say this if we had a SyntaxError
@@ -160,7 +160,7 @@ function parseFiles() {
             var outFilePath = outputPath+"/"
                                         +inputPath.substring(
                                             inputPath.lastIndexOf("/")+1,inputPath.lastIndexOf("."))
-                                        +".html";
+                                        +"."+extensions.for(targetLanguage);
 
             fs.writeFile(outFilePath, output, function(err) {
                 if (err) return console.log(err);

@@ -1,12 +1,19 @@
 /*
 Filename extensions for all of the languages supported by Toast.
-When code is output in a language
+Each language has a list of possible extensions. For outputting
+files, the first one in the list will be used.
 */
 
-module.exports = {
+var extensions = {
     "html":     ["html","htm"],
     "jade":     ["jade"],
     "markdown": ["md","markdown"],
     "omelet":   ["oml","omelet"],
     "smarty":   ["tpl"]
 }
+
+function extensionFor(language) {
+    return extensions[language][0];
+}
+
+module.exports.for = extensionFor;

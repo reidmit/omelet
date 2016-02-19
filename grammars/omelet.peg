@@ -266,14 +266,25 @@ Parenthetical
 ArrayElement
     = Number / Boolean / QuotedString / Tag
 
-Array
-    = "[" elt:ArrayElement elts:("," _ ArrayElement) "]"
+EmptyArray
+    = "[" _ "]"
+    {
+        return {
+            kind: "Array",
+            elements: []
+        }
+    }
+
+NonEmptyArray
+    = "[" elt:ArrayElement elts:("," _ ArrayElement)* "]"
     {
         return {
             kind: "Array",
             elements: [elt].concat(elts.map(function(e) { return e[2] }))
         }
     }
+
+Array = EmptyArray / NonEmptyArray
 
 Assignment
     = _ "def" _ id:Identifier _ "=" _ val:(Array / Number / Boolean / QuotedString / Tag / Parenthetical) _
