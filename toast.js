@@ -116,7 +116,9 @@ function parseFiles() {
 
                         var output = evaluators[targetLanguage](ast, input, context, {
                             directory: inputPath,
-                            file: fileName
+                            file: fileName,
+                            sourceLanguage: sourceLanguage,
+                            targetLanguage: targetLanguage
                         });
                         if (prettyPrint && targetLanguage==="html") {
                             output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});
@@ -150,7 +152,9 @@ function parseFiles() {
 
             var output = evaluators[targetLanguage](ast, input, context, {
                 directory: inputPath.substring(0,inputPath.lastIndexOf("/")),
-                file: inputPath
+                file: inputPath,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage
             });
 
             if (prettyPrint) {

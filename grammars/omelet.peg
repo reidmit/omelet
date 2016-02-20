@@ -62,7 +62,7 @@ IdentifierComplex
     {
         return {
             kind: "Modifier",
-            value: ident.join(""),
+            value: ident[0].concat(ident[1].join("")),
             modifiers: mods
         }
     }
@@ -109,6 +109,15 @@ AttributeName
         return {
             kind: "String",
             value: name[0].concat(name[1].join(""))
+        }
+    }
+
+EscapedCharacter
+    = "\\" char:([\(\)\{\}\|])?
+    {
+        return {
+            kind: "String",
+            value: char ? char : "\\"
         }
     }
 
@@ -230,7 +239,7 @@ Attribute
     { return attr }
 
 Atom
-    = Number / Interpolation / UnquotedString
+    = Number / Interpolation / UnquotedString / EscapedCharacter
 
 TagName
     = name:([a-zA-Z] [a-zA-Z0-9_-]*)
