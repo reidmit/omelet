@@ -45,10 +45,11 @@ util.inheritsFrom = function(child,parent) {
     }
 }
 
-util.typeOf = function(obj) {
+util.typeOf = function(obj, noGenerics) {
     var t = ({}).toString.call(obj).match(/\s([a-z|A-Z]+)/)[1];
     if (t !== "Object") {
         if (t === "Array") {
+            if (noGenerics) return "Array";
             var t0 = util.typeOf(obj[0]);
             for (var i=0; i<obj.length; i++) {
                 if (t0 !== util.typeOf(obj[i])) {

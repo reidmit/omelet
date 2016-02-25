@@ -175,7 +175,7 @@ Filter
     }
 
 MacroArgument
-    = _ arg:(Number / Boolean / QuotedString / Identifier)
+    = _ arg:(Number / Boolean / QuotedString / Identifier / Parenthetical / Interpolation)
     { return arg }
 
 Interpolation
@@ -284,6 +284,16 @@ EmptyArray
         }
     }
 
+Range
+    = "[" start:(Number / Identifier) ".." end:(Number / Identifier) "]"
+    {
+        return {
+            kind: "Range",
+            start: start,
+            end: end
+        }
+    }
+
 NonEmptyArray
     = "[" elt:ArrayElement elts:("," _ ArrayElement)* "]"
     {
@@ -293,7 +303,7 @@ NonEmptyArray
         }
     }
 
-Array = EmptyArray / NonEmptyArray
+Array = EmptyArray / Range / NonEmptyArray
 
 Assignment
     = _ "def" _ id:Identifier _ "=" _ val:(Array / Number / Boolean / QuotedString / Tag / Parenthetical) _
@@ -394,7 +404,7 @@ Else
     { return body }
 
 For
-    = _ "(for " _ iter:Identifier _ "in" _ data:Identifier _ "::" body:Expression* ")"
+    = _ "(for " _ iter:Identifier _ "in" _ data:(Range / Array / Identifier) _ "::" body:Expression* ")"
     {
         return {
             kind: "ForEach",

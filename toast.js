@@ -98,7 +98,6 @@ function parseFiles() {
                         if (err) throw err;
 
                         var text = contents.toString();
-                        // var input = text.split('\n').join(" ").replace(/\"/g,"\'");
                         var input = text;
 
                         var ast = parsers[sourceLanguage].parse(input);
@@ -146,7 +145,11 @@ function parseFiles() {
 
             var input = contents.toString();
 
-            var ast = parsers[sourceLanguage].parse(input);
+            try {
+                var ast = parsers[sourceLanguage].parse(input);
+            } catch (e) {
+                throw errors.ParseError(inputPath, e);
+            }
 
             __.printAST(ast);
 

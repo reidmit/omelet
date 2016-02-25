@@ -297,6 +297,29 @@ evaluators.html = function(ast, originalCode, context, config) {
     function evalString(node) {
         return node.value;
     }
+    function evalRange(node) {
+        var arr = [];
+        var start = evalExpr(node.start);
+        var end = evalExpr(node.end);
+        if (typeof start !== "number") {
+            throw new TypeError("Start index of range must resolve to a number.");
+        }
+        if (typeof end !== "number") {
+            throw new TypeError("End index of range must resolve to a number.");
+        }
+        if (start < end) {
+            for (var i=start; i<=end; i++) {
+                arr.push(i);
+            }
+        } else if (start > end) {
+            for (var i=start; i>=end; i--) {
+                arr.push(i);
+            }
+        } else {
+            arr.push(start);
+        }
+        return arr;
+    }
     function evalArray(node) {
         var arr = [];
         for (var i=0; i<node.elements.length; i++) {
@@ -412,9 +435,7 @@ evaluators.html = function(ast, originalCode, context, config) {
     function evalForEach(node) {
         var idx;
         var iterator = node.iterator.value;
-        var data = scope.find(node.data.value) || [];
-
-        data = evalExpr(data);
+        var data = evalExpr(node.data);
 
         var output = [];
 
@@ -575,9 +596,10 @@ evaluators.html = function(ast, originalCode, context, config) {
                 return evalDoctype(node);
             case "Array":
                 return evalArray(node);
+            case "Range":
+                return evalRange(node);
             default:
-                return node;
-                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
+                throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }
     }
 
@@ -638,8 +660,16 @@ evaluators.omelet = function(ast, originalCode, context, config) {
     function evalString(node) {
         return node.value;
     }
+    function evalRange(node) {
+        var out = "[";
+        out += evalExpr(node.start);
+        out += "..";
+        out += evalExpr(node.end);
+        out += "]";
+        return out;
+    }
     function evalArray(node) {
-        var out = "["
+        var out = "[";
         var evaluated = node.elements.map(evalExpr);
         out += evaluated.join(",")
         out + "]";
@@ -752,7 +782,7 @@ evaluators.omelet = function(ast, originalCode, context, config) {
     function evalForEach(node) {
         var out = "(for ";
         out += node.iterator.value + " in ";
-        out += node.data.value+"::";
+        out += evalExpr(node.data)+"::";
         out += node.body.map(evalExpr).join("");
         out += ")\n";
         return out;
@@ -826,9 +856,10 @@ evaluators.omelet = function(ast, originalCode, context, config) {
                 return evalDoctype(node);
             case "Array":
                 return evalArray(node);
+            case "Range":
+                return evalRange(node);
             default:
-                return node;
-                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
+                throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }
     }
 
