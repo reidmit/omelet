@@ -171,7 +171,7 @@ BOOLEAN FILTERS
 */
 
 filters.defined = filters.def = function(input) {
-    return input !== undefined;
+    return typeof input !== "undefined";
 }
 
 filters.empty = function(input) {

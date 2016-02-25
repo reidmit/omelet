@@ -33,7 +33,24 @@ Content
     = (DustExpression / Doctype / Comment / RawTag / Tag / Text)*
 
 DustExpression
-    = Key
+    = Key / Section / SpecialCharacter
+
+SpecialCharacter
+    = "{~" char:("n"/"r"/"s"/"lb"/"rb") "}"
+    {
+        var output;
+        switch (char) {
+            case "n": output = "\n"; break;
+            case "r": output = "\r"; break;
+            case "s": output = " "; break;
+            case "lb": output = "{"; break;
+            case "rb": output = "}"; break;
+        }
+        return {
+            kind: "String",
+            value: output
+        }
+    }
 
 Identifier
     = id:([a-zA-Z] [a-zA-Z0-9_-]*)
@@ -74,15 +91,30 @@ Section
         //really unsure if this will work - do we need closures?
         return {
             kind: "InternalConditional",
-            predicate: util.typeOf(evalExpr(openName),false) === "Array",
+            predicate: function() { return util.typeOf(evalExpr(openName),false) === "Array" },
             thenCase: {
                 kind: "ForEach",
-                iterator: ".",
+                iterator: {
+                    kind: "Identifier",
+                    value: "$_self"
+                },
                 data: openName,
                 body: contents
             },
             elseCase: {
-
+                kind: "IfStatement",
+                predicate: {
+                    kind: "Interpolation",
+                    name: openName,
+                    arguments: [],
+                    filters: [
+                        {
+                            name: "defined",
+                            arguments: []
+                        }
+                    ]
+                },
+                thenCase: contents
             }
         }
     }
