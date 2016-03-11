@@ -9,6 +9,7 @@ var indentation = require('./indentation');
 var extensions = require('./extensions.js');
 var beautify = require('js-beautify').html;
 var __ = require('./util.js');
+var visitor = require('./visitor.js');
 
 program
     .version("0.0.1")
@@ -48,7 +49,17 @@ var outputPath = program.output;
 var sourceLanguage = program.source;
 var targetLanguage = program.target;
 
-var context = {};
+var context = {
+    name: "Reid",
+    count: 47,
+    friends: [
+        { name: "Moe", age: 37 },
+        { name: "Larry", age: 39 },
+        { name: "Curly", age: 35 }
+    ],
+    "tags": [],
+    "likes": ["moe", "larry", "curly", "shemp"]
+};
 
 if (inputString) {
     var ast = parsers[sourceLanguage].parse(inputString);
@@ -153,6 +164,8 @@ function parseFiles() {
 
             __.printAST(ast);
 
+            // visitor.visit(ast);
+
             var output = evaluators[targetLanguage](ast, input, context, {
                 directory: inputPath.substring(0,inputPath.lastIndexOf("/")),
                 file: inputPath,
@@ -160,9 +173,9 @@ function parseFiles() {
                 targetLanguage: targetLanguage
             });
 
-            if (prettyPrint) {
-                output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});
-            }
+            // if (prettyPrint) {
+            //     output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});
+            // }
 
             var outFilePath = outputPath+"/"
                                         +inputPath.substring(

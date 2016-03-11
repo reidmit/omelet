@@ -249,8 +249,8 @@ module.exports = (function() {
         peg$c86 = function(start, end) {
                 return {
                     kind: "Range",
-                    start: start,
-                    end: end
+                    startIndex: start,
+                    endIndex: end
                 }
             },
         peg$c87 = ",",
@@ -287,7 +287,10 @@ module.exports = (function() {
         peg$c100 = function(path) {
                 return {
                     kind: "Include",
-                    file: path
+                    file: {
+                        kind: "String",
+                        value: path
+                    }
                 }
             },
         peg$c101 = "extend ",

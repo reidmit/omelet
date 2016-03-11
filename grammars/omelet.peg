@@ -289,8 +289,8 @@ Range
     {
         return {
             kind: "Range",
-            start: start,
-            end: end
+            startIndex: start,
+            endIndex: end
         }
     }
 
@@ -342,7 +342,10 @@ Include
     {
         return {
             kind: "Include",
-            file: path
+            file: {
+                kind: "String",
+                value: path
+            }
         }
     }
 

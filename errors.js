@@ -50,6 +50,8 @@ module.exports.ParseError = function(filePath,err) {
     filePath = filePath.replace(/\/\//g,"/");
 
     //get list of expected values in quotes, separated by "or"
+    err.expected = err.expected || [];
+    console.log(err);
     expected = err.expected.map(function(v) { return v.description }).join(" or ");
 
     return colors.bold.red("Parser Error: ")+"Could not parse file '"+filePath+"'\n"+

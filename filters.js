@@ -170,8 +170,19 @@ BOOLEAN FILTERS
 (these filters return booleans)
 */
 
-filters.defined = filters.def = function(input) {
+filters.defined = function(input) {
     return typeof input !== "undefined";
+}
+filters.undefined = function(input) {
+    return typeof input === "undefined";
+}
+
+filters.notexists = function(input) {
+    return input == false;
+}
+filters.exists = function(input) {
+    console.log("checking if "+input+" is not falsy and getting "+(input == true));
+    return !(input == false);
 }
 
 filters.empty = function(input) {

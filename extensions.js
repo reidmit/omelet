@@ -6,6 +6,7 @@ files, the first one in the list will be used.
 
 var extensions = {
     "html":     ["html","htm"],
+    "dust":     ["dust.html"],
     "jade":     ["jade"],
     "markdown": ["md","markdown"],
     "omelet":   ["oml","omelet"],

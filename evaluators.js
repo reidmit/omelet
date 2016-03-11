@@ -4,6 +4,7 @@ var fs = require('fs');
 var parsers = require('./parsers.js');
 var err = require('./errors.js');
 var filters = require('./filters.js');
+var visitor = require('./visitor.js');
 
 var html_elements = {
     void: __.toMap("area,base,br,col,embed,hr,img,input,keygen,link,meta,param,source,track,wbr"),
@@ -67,15 +68,34 @@ function applyFilter(filterNode,input,filterArgs,originalCode) {
     if (filters[filterName]===undefined) {
         return err.SyntaxError({
             message: "Cannot apply undefined filter '"+filterName+"'.",
-            index: filterNode.value[0].start,
+            // index: filterNode.value[0].start,
             input: originalCode
         });
     }
-
     filterArgs.unshift(input);
-    return filters[filterName].apply(filterNode, filterArgs);
+    filterArgs = input===undefined ? [undefined] : filterArgs;
+    var result = filters[filterName].apply(filterNode, filterArgs);
+    return result;
 }
 
+/*
+* Collect all MacroDefinition and Assignment nodes that
+* appear in an AST in one flat list.
+*
+* Makes use of our visitor pattern, which can be used as
+* a map/fold function over the AST.
+*/
+
+function collectDefinitions(ast) {
+    var f = function(node,acc) {
+        if (node.kind === "Assignment" ||
+            node.kind === "MacroDefinition") {
+            acc.push(node);
+        }
+    }
+    var res = visitor.visit(ast,f,[]);
+    return res;
+}
 
 function Scope() {
     var env = [{}];
@@ -112,6 +132,8 @@ function Scope() {
 
 var evaluators = {};
 
+evaluators.dust = require('./evaluators/dust-eval.js');
+
 /*
 * Translate AST into HTML.
 */
@@ -125,27 +147,37 @@ evaluators.html = function(ast, originalCode, context, config) {
 
     var extendsChain = [];
 
+    function evalInternalConditional(node) {
+        var pred = eval("("+node.predicate.toString()+")()");
+        if (pred) {
+            return evalExpr(node.thenCase);
+        } else {
+            return evalExpr(node.elseCase);
+        }
+    }
+
     function evalInclude(node) {
+        var file = evalExpr(node.file);
 
         try {
-            var stats = fs.lstatSync(config.directory+"/"+node.file);
+            var stats = fs.lstatSync(config.directory+"/"+file);
             if (stats.isDirectory()) {
-                throw EvalError("Included file '"+config.directory+"/"+node.file+"' is a directory.");
+                throw EvalError("Included file '"+config.directory+"/"+file+"' is a directory.");
             }
         } catch (e) {
-            throw EvalError("Included file '"+config.directory+"/"+node.file+"' could not be found.");
+            throw EvalError("Included file '"+config.directory+"/"+file+"' could not be found.");
         }
 
-        var contents = fs.readFileSync(config.directory+"/"+node.file);
+        var contents = fs.readFileSync(config.directory+"/"+file);
 
-        if (!contents) throw EvalError("Included file '"+config.directory+"/"+node.file+"' could not be read.");
+        if (!contents) throw EvalError("Included file '"+config.directory+"/"+file+"' could not be read.");
 
         var input = contents.toString();
 
         try {
-            var includedAST = parsers["omelet"].parse(input);
+            var includedAST = parsers[config.sourceLanguage].parse(input);
         } catch (e) {
-            throw err.ParseError(config.directory+"/"+node.file,e);
+            throw err.ParseError(config.directory+"/"+file,e);
         }
 
         var output = "";
@@ -186,7 +218,7 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         var input = contents.toString();
 
-        var importedAST = parsers["omelet"].parse(input);
+        var importedAST = parsers[config.sourceLanguage].parse(input);
 
         if (importedAST.status === false) {
             throw err.ParseError({
@@ -216,13 +248,18 @@ evaluators.html = function(ast, originalCode, context, config) {
     * should not parse all of the current file.
     */
     function evalExtend(root) {
+        console.log("ON EVALEXTEND, root is ");
+        console.log(root);
+        if (root.extend) {
+            var rootFile = evalExpr(root.extend.file);
 
-        if (extendsChain.indexOf(config.directory+"/"+root.extend.file) > -1) {
-            throw err.EvalError({
-                msg: "Template inheritance loop detected. File '"+config.directory+"/"+root.extend.file
-                     +"' has already been extended earlier in the inheritance chain.",
-                index: root.extend.start+7
-            }, originalCode)
+            if (extendsChain.indexOf(config.directory+"/"+rootFile) > -1) {
+                throw err.EvalError({
+                    msg: "Template inheritance loop detected. File '"+config.directory+"/"+rootFile
+                         +"' has already been extended earlier in the inheritance chain.",
+                    index: root.extend.start+7
+                }, originalCode)
+            }
         }
 
         for (var i=0; i<root.contents.length; i++) {
@@ -233,40 +270,41 @@ evaluators.html = function(ast, originalCode, context, config) {
         }
 
         var node = root.extend;
+        var file = evalExpr(node.file);
 
         try {
-            var stats = fs.lstatSync(config.directory+"/"+node.file);
+            var stats = fs.lstatSync(config.directory+"/"+file);
             if (stats.isDirectory()) {
                 throw err.EvalError({
-                    msg: "Extended file '"+config.directory+"/"+node.file+"'' is a directory.",
+                    msg: "Extended file '"+config.directory+"/"+file+"'' is a directory.",
                     index: node.start+7
                 }, originalCode);
             }
         } catch (e) {
             throw err.EvalError({
-                msg: "Extended file '"+config.directory+"/"+node.file+"' could not be found.",
+                msg: "Extended file '"+config.directory+"/"+file+"' could not be found.",
                 index: node.start+7
             }, originalCode);
         }
 
-        extendsChain.push(config.directory+"/"+node.file);
+        extendsChain.push(config.directory+"/"+file);
 
-        var contents = fs.readFileSync(config.directory+"/"+node.file);
+        var contents = fs.readFileSync(config.directory+"/"+file);
 
         if (!contents) {
             throw err.EvalError({
-                msg: "Extended file '"+config.directory+"/"+node.file+"' could not be read.",
+                msg: "Extended file '"+config.directory+"/"+file+"' could not be read.",
                 index: node.start+7
             }, originalCode);
         }
 
         var input = contents.toString();
 
-        var extendedAST = parsers["omelet"].parse(input);
+        var extendedAST = parsers[config.sourceLanguage].parse(input);
 
         if (extendedAST.status === false) {
             throw err.ParseError({
-                msg: "Could not parse imported file '"+config.directory+"/"+node.file+"'.",
+                msg: "Could not parse imported file '"+config.directory+"/"+file+"'.",
                 index: extendedAST.furthest,
                 expected: extendedAST.expected
             }, input);
@@ -299,8 +337,8 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
     function evalRange(node) {
         var arr = [];
-        var start = evalExpr(node.start);
-        var end = evalExpr(node.end);
+        var start = evalExpr(node.startIndex);
+        var end = evalExpr(node.endIndex);
         if (typeof start !== "number") {
             throw new TypeError("Start index of range must resolve to a number.");
         }
@@ -414,40 +452,79 @@ evaluators.html = function(ast, originalCode, context, config) {
     function evalIfStatement(node) {
         var pred = evalExpr(node.predicate);
         pred = pred === "false" ? false : (pred === "true" ? true : pred);
+
+        scope.open();
         if (pred === true) {
-            return node.thenCase.map(evalExpr).join("");
+            var out = node.thenCase.map(evalExpr).join("");
+            scope.close();
+            return out;
         } else if (pred === false) {
-            for (var i=0; i<node.elifCases.length; i++) {
-                pred = evalExpr(node.elifCases[i].predicate);
-                if (pred) {
-                    return node.elifCases[i].thenCase.map(evalExpr).join("");
+            if (node.elifCases) {
+                for (var i=0; i<node.elifCases.length; i++) {
+                    pred = evalExpr(node.elifCases[i].predicate);
+                    if (pred) {
+                        var out = node.elifCases[i].thenCase.map(evalExpr).join("");
+                        scope.close();
+                        return out;
+                    }
                 }
             }
             if (node.elseCase) {
-                return node.elseCase.map(evalExpr).join("");
+                var out = node.elseCase.map(evalExpr).join("");
+                scope.close();
+                return out;
             } else {
+                scope.close();
                 return "";
             }
         } else {
-            throw Error("Condition in If statement must evaluate to a boolean.");
+            throw Error("Condition in if statement must evaluate to a boolean.");
         }
     }
     function evalForEach(node) {
         var idx;
-        var iterator = node.iterator.value;
+        var iterator;
+        if (node.iterator.value === "$_self") {
+            //This applies to languages like Dust, where we iterate over an array without declaring a new
+            //variable to refer to the current item. Instead, all properties of the current item are just added
+            //to the top of the scope at the beginning of each loop.
+            iterator = false;
+        } else {
+            iterator = node.iterator.value;
+        }
         var data = evalExpr(node.data);
 
         var output = [];
 
         for (idx = 0; idx < data.length; idx++) {
             scope.open();
-            scope.add(iterator, data[idx]);
+
+            if (iterator) {
+                scope.add(iterator, data[idx]);
+            } else {
+                //Without an iterator object, we just add each property of
+                //the current element to the scope as its own value.
+                if (__.typeOf(data[idx]) === "Object") {
+                    var keys = Object.keys(data[idx]);
+                    for (var i=0; i<keys.length; i++) {
+                        scope.add(keys[i], {
+                            kind: "Raw",
+                            value: data[idx][keys[i]]
+                        });
+                    }
+                }
+            }
 
             for (var j=0; j<node.body.length; j++) {
-
                 output.push(evalExpr(node.body[j]));
             }
 
+            scope.close();
+        }
+
+        if (node.elseCase && data.length === 0) {
+            scope.open();
+            output.push(node.elseCase.map(evalExpr).join(""));
             scope.close();
         }
 
@@ -461,6 +538,19 @@ evaluators.html = function(ast, originalCode, context, config) {
             if (node.arguments.length > 0) {
                 throw Error("Could not evaluate undefined macro '"+node.name.value+"'. Current scope is: "+scope.state());
             } else {
+                // TODO: figure out if this is what I want here
+                // currently, val is undefined, but we want to
+                // know if the filter "defined" or "undefined" is
+                // applied, since then we can return a boolean
+                // rather than throwing an error
+                if (node.filters && node.filters.length > 0) {
+                    if (node.filters[0].name.value==="undefined" ||
+                        node.filters[0].name.value==="defined") {
+                        output = applyFilter(node.filters[0],val,[],originalCode);
+                        return output;
+                    }
+                }
+
                 throw Error("Could not evaluate undefined variable '"+node.name.value+"' in file: "+config.file+" at position "+node.start+"->"+node.end);
             }
 
@@ -598,15 +688,21 @@ evaluators.html = function(ast, originalCode, context, config) {
                 return evalArray(node);
             case "Range":
                 return evalRange(node);
+            case "InternalConditional":
+                var x = evalInternalConditional(node);
+                return x;
             default:
-                throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
+                return node;
+                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }
     }
 
     if (ast.extend) {
         return evalExtend(ast);
     }
-    ast.imports.map(evalExpr);
+    if (ast.imports) {
+        ast.imports.map(evalExpr);
+    }
     return ast.contents.map(evalExpr).join("");
 }
 
@@ -662,9 +758,9 @@ evaluators.omelet = function(ast, originalCode, context, config) {
     }
     function evalRange(node) {
         var out = "[";
-        out += evalExpr(node.start);
+        out += evalExpr(node.startIndex);
         out += "..";
-        out += evalExpr(node.end);
+        out += evalExpr(node.endIndex);
         out += "]";
         return out;
     }
@@ -877,4 +973,5 @@ evaluators.omelet = function(ast, originalCode, context, config) {
 
 
 module.exports = evaluators;
+module.exports.af = applyFilter;
 module.exports.mergeAttributes = mergeAttributes;
