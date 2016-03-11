@@ -85,7 +85,6 @@ function applyFilter(filterNode,input,filterArgs,originalCode) {
 * Makes use of our visitor pattern, which can be used as
 * a map/fold function over the AST.
 */
-
 function collectDefinitions(ast) {
     var f = function(node,acc) {
         if (node.kind === "Assignment" ||
@@ -95,6 +94,28 @@ function collectDefinitions(ast) {
     }
     var res = visitor.visit(ast,f,[]);
     return res;
+}
+
+/*
+* Check to see if a document extends another document.
+* If so, we'll bypass the normal evaluation.
+* Again, this makes use of the visitor pattern.
+*
+* Returns false, if no Extend node found in document
+*  & otherwise, returns the first Extend node found
+*/
+function checkExtends(ast) {
+    var f = function(node,acc) {
+        if (node.kind === "Extend") {
+            acc.push(node);
+        }
+    }
+    var res = visitor.visit(ast,f,[]);
+    if (res.length > 0) {
+        return res[0];
+    } else {
+        return false;
+    }
 }
 
 function Scope() {
@@ -247,29 +268,29 @@ evaluators.html = function(ast, originalCode, context, config) {
     * evalExtend bypasses the normal behavior of the evaluator, since it
     * should not parse all of the current file.
     */
-    function evalExtend(root) {
-        console.log("ON EVALEXTEND, root is ");
-        console.log(root);
-        if (root.extend) {
-            var rootFile = evalExpr(root.extend.file);
+    function evalExtend(rootDocument, extendNode) {
+        console.log("on evalExtend, extend node is ...");
+        console.log(extendNode);
+        if (rootDocument.extend) {
+            var rootFile = evalExpr(rootDocument.extend.file);
 
             if (extendsChain.indexOf(config.directory+"/"+rootFile) > -1) {
                 throw err.EvalError({
                     msg: "Template inheritance loop detected. File '"+config.directory+"/"+rootFile
                          +"' has already been extended earlier in the inheritance chain.",
-                    index: root.extend.start+7
+                    index: rootDocument.extend.start+7
                 }, originalCode)
             }
         }
 
-        for (var i=0; i<root.contents.length; i++) {
-            if (root.contents[i].kind === "MacroDefinition"
-                || root.contents[i].kind === "Assignment") {
-                evalExpr(root.contents[i]);
+        for (var i=0; i<rootDocument.contents.length; i++) {
+            if (rootDocument.contents[i].kind === "MacroDefinition"
+                || rootDocument.contents[i].kind === "Assignment") {
+                evalExpr(rootDocument.contents[i]);
             }
         }
 
-        var node = root.extend;
+        var node = extendNode;
         var file = evalExpr(node.file);
 
         try {
@@ -302,17 +323,22 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         var extendedAST = parsers[config.sourceLanguage].parse(input);
 
-        if (extendedAST.status === false) {
-            throw err.ParseError({
-                msg: "Could not parse imported file '"+config.directory+"/"+file+"'.",
-                index: extendedAST.furthest,
-                expected: extendedAST.expected
-            }, input);
+        // if (extendedAST.status === false) {
+        //     throw err.ParseError({
+        //         msg: "Could not parse imported file '"+config.directory+"/"+file+"'.",
+        //         index: extendedAST.furthest,
+        //         expected: extendedAST.expected
+        //     }, input);
+        // }
+        console.log("extendedAST is...");
+        console.log(extendedAST);
+        if (extendedAST.imports) {
+            extendedAST.imports.map(evalExpr);
         }
 
-        extendedAST.imports.map(evalExpr);
-        if (extendedAST.extend) {
-            return evalExtend(extendedAST);
+        var childExtendNode = checkExtends(extendedAST);
+        if (childExtendNode !== false) {
+            return evalExtend(extendedAST, childExtendNode);
         }
         return extendedAST.contents.map(evalExpr).join("");
     }
@@ -689,16 +715,16 @@ evaluators.html = function(ast, originalCode, context, config) {
             case "Range":
                 return evalRange(node);
             case "InternalConditional":
-                var x = evalInternalConditional(node);
-                return x;
+                return evalInternalConditional(node);
             default:
                 return node;
                 // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }
     }
 
-    if (ast.extend) {
-        return evalExtend(ast);
+    var extendNode = checkExtends(ast);
+    if (extendNode !== false) {
+        return evalExtend(ast, extendNode);
     }
     if (ast.imports) {
         ast.imports.map(evalExpr);
@@ -961,7 +987,7 @@ evaluators.omelet = function(ast, originalCode, context, config) {
 
     var out = "";
     if (ast.extend) {
-        out += evalExtend(ast.extend);
+        out += evalExtend(ast);
     }
     if (ast.imports) {
         out += ast.imports.map(evalExpr).join("");
