@@ -126,11 +126,15 @@ function Scope() {
     this.close = function() {
         env.shift();
     }
-    this.add = function(key,value) {
+    this.add = function(key,value,override) {
         if (env[0][key]) {
-            throw Error("Variable '"+key+"' is already defined in this scope.");
+            if (env[0][key].override) {
+                return;
+            } else {
+                throw Error("Variable '"+key+"' is already defined in this scope. Trying to give it value: "+JSON.stringify(value)+", scope is: "+this.state());
+            }
         }
-        env[0][key] = value;
+        env[0][key] = {value: value, override: !!override};
     }
     this.addAll = function(obj) {
         var keys = Object.keys(obj);
@@ -142,7 +146,7 @@ function Scope() {
         for (var i=0; i<env.length; i++) {
             for (var k in env[i]) {
                 if (k==key) {
-                    return env[i][key];
+                    return env[i][key].value;
                 }
             }
         }
@@ -344,7 +348,13 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
 
     function evalAssignment(node) {
-        scope.add(node.leftSide.value, node.rightSide);
+        console.log("on evalAssignment, override is "+node.override+", node is...");
+        console.log(node);
+        if (node.override) {
+            scope.add(node.leftSide.value, node.rightSide,true);
+        } else {
+            scope.add(node.leftSide.value, node.rightSide);
+        }
         return "";
     }
 
