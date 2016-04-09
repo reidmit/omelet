@@ -1,0 +1,380 @@
+Document = contents:Content
+    {
+        return {
+            kind: "Document",
+            contents: contents
+        }
+    }
+
+_s
+    = [ ]*
+
+Content
+    = (LiquidExpression / Doctype / Comment / RawTag / Tag / Text)*
+
+LiquidExpression
+    = Include / Capture / LiquidComment / Raw / IfTag / For / Assign / Interpolation
+
+Range
+    = "(" start:(Number / Identifier) ".." end:(Number / Identifier) ")"
+    {
+        return {
+            kind: "Range",
+            startIndex: start,
+            endIndex: end
+        }
+    }
+
+For
+    = "{%" _s "for" _s iter:Identifier _s "in" _s data:(Identifier / Range) _s "%}" inner:Content "{%" _s "endfor" _s "%}"
+    {
+        return {
+            kind: "ForEach",
+            iterator: iter,
+            data: data,
+            body: inner
+        }
+    }
+
+FilterArgs
+    = ":" _s arg0:(Literal / Identifier) args:("," _s (Literal / Identifier))*
+    { return [arg0].concat(args.map(function(e){return e[2]})) }
+
+Filter
+    = "|" _s name:Identifier args:FilterArgs?
+    {
+        return {
+            kind: "Filter",
+            name: name,
+            arguments: args === null ? [] : args
+        }
+    }
+
+Interpolation
+    = "{{" _s id:(IdentifierComplex / Identifier) _s filters:(Filter _s)* "}}"
+    {
+        return {
+            kind: "Interpolation",
+            name: id,
+            arguments: [],
+            filters: filters.map(function(e){return e[0]})
+        }
+    }
+
+IfTag
+    = "{%" _s "if" _s pred:BooleanExpression _s "%}" inner:Content elsifs:(ElsifTag*) elseCase:(ElseTag?) _s "{%" _s "endif" _s "%}"
+    {
+        return {
+            kind: "IfStatement",
+            predicate: pred,
+            thenCase: inner,
+            elifCases: elsifs,
+            elseCase: elseCase
+        }
+    }
+
+ElsifTag
+    = "{%" _s "elsif" _s pred:BooleanExpression _s "%}" inner:Content
+    {
+        return {
+            kind: "IfStatement",
+            predicate: pred,
+            thenCase: inner
+        }
+    }
+
+ElseTag
+    = "{%" _s "else" _s "%}" inner:Content
+    { return inner }
+
+BooleanExpression
+    = Boolean / Identifier
+
+//TODO: optional spaces inside tags
+Raw
+    = ("{% raw %}" / "{%raw%}") c:(!"{% endraw %}" c:. {return c})* "{% endraw %}"
+    {
+        return {
+            kind: "Raw",
+            value: c.join("")
+        }
+    }
+
+Include
+    = "{%" _s "include" _s file:QuotedString _s "%}"
+    {
+        return {
+            kind: "Include",
+            file: file
+        }
+    }
+
+Capture
+    = "{%" _s "capture" id:Identifier _s "%}" val:Content "{%" _s "endcapture" _s "%}"
+    {
+        return {
+            kind: "Assignment",
+            leftSide: id,
+            rightSide: val
+        }
+    }
+
+Identifier
+    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
+    {
+        return {
+            kind: "Identifier",
+            value: id[0].concat(id[1].join(""))
+        }
+    }
+
+IdentifierComplex
+    = ident:([a-zA-z] [a-zA-Z0-9_-]*) mods:Modifier+
+    {
+        return {
+            kind: "Identifier",
+            value: ident[0].concat(ident[1].join("")),
+            modifiers: mods
+        }
+    }
+
+Modifier
+    = ("." mod:Identifier)
+    {
+        return {
+            kind: "Modifier",
+            value: mod
+        }
+    }
+    / ("[" mod:(Number / QuotedString / Identifier) "]")
+    {
+        return {
+            kind: "Modifier",
+            value: mod
+        }
+    }
+
+QuotedString = QuotedAttributeValue
+
+Literal
+    = QuotedString / Number / Boolean
+
+Boolean
+    = val:("true" / "false")
+    {
+        return {
+            kind: "Boolean",
+            value: val === "true"
+        }
+    }
+
+Number
+    = d1:[0-9]+ "." d2:[0-9]+
+    {
+        return {
+            kind: "Number",
+            value: parseFloat(d1.join("")+"."+d2.join(""))
+        }
+    }
+    / digits:[0-9]+
+    {
+        return {
+            kind: "Number",
+            value: parseInt(digits.join(""))
+        }
+    }
+
+Assign
+    = "{%" _s "assign" _s id:Identifier _s "=" _s val:Literal _s "%}"
+    {
+        return {
+            kind: "Assignment",
+            leftSide: id,
+            rightSide: val
+        }
+    }
+
+//TODO: optional spaces inside tags
+LiquidComment
+    = "{% comment %}" c:(!"{% endcomment %}" c:. {return c})* "{% endcomment %}"
+    {
+        return {
+            kind: "Comment",
+            value: c.join("")
+        }
+    }
+
+/* EVERYTHING BELOW THIS LINE IS PLAIN HTML
+   (except maybe Text, due to reserved special characters) */
+
+RawTag
+    = ScriptTag / StyleTag
+
+ScriptTag
+    = "<script"i _ attrs:(Attribute _)* ">" s:(!"</script>"i s:. {return s})* "</script>"i
+    {
+        return {
+            kind: "Tag",
+            name: "script",
+            attributes: attrs.map(function(a) { return a[0] }),
+            inner: {
+                kind: "Raw",
+                value: s.join("")
+            }
+        }
+    }
+
+StyleTag
+    = "<style"i _ attrs:(Attribute _)* ">" s:(!"</style>"i s:. {return s})* "</script>"i
+    {
+        return {
+            kind: "Tag",
+            name: "style",
+            attributes: attrs.map(function(a) { return a[0] }),
+            inner: {
+                kind: "Raw",
+                value: s.join("")
+            }
+        }
+    }
+
+Doctype
+    = "<!DOCTYPE "i _ doctype:[^\>]+ _ ">"
+    {
+        return {
+            kind: "Doctype",
+            value: doctype.join("").trim()
+        }
+    }
+
+VoidTag
+    = "<" tagName:TagName _ attrs:(Attribute _)* "/>"
+    {
+        return {
+            kind: "Tag",
+            name: tagName,
+            attributes: attrs.map(function(a) { return a[0] }),
+            inner: []
+        }
+    }
+
+Tag
+    = VoidTag
+    / openTag:OpenTag inner:Content closeTag:CloseTag
+    {
+        if (openTag.value !== closeTag.value) {
+            throw SyntaxError("Missing closing tag for element "+openTag.value);
+        }
+        return {
+            kind: "Tag",
+            name: openTag.value,
+            attributes: openTag.attributes,
+            inner: inner
+        }
+    }
+
+OpenTag
+    = "<" tagName:TagName _ attrs:(Attribute _)* ">"
+    {
+        return {
+            kind: "String",
+            value: tagName,
+            attributes: attrs.map(function(a) { return a[0] })
+        }
+    }
+
+CloseTag
+    = "</" tagName:TagName _ ">"
+    {
+        return {
+            kind: "String",
+            value: tagName
+        }
+    }
+
+AttributeName
+    = attrName:[^ \t\n\r\"\'\>\/\=]+
+    {
+        return {
+            kind: "String",
+            value: attrName.join("")
+        }
+    }
+
+UnquotedAttributeValue
+    = attrValue:[^ \t\n\r\"\'\=\<\>\`]+
+    {
+        return {
+            kind: "String",
+            value: attrValue.join("")
+        }
+    }
+
+QuotedAttributeValue
+    = attrValue:( "'" [^\']* "'" / '"' [^\"]* '"')
+    {
+        return {
+            kind: "String",
+            value: attrValue[1].join("")
+        }
+    }
+
+EmptyAttribute
+    = attrName:AttributeName
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrName
+        }
+    }
+
+UnquotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:UnquotedAttributeValue
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue
+        }
+    }
+
+QuotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:QuotedAttributeValue
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue
+        }
+    }
+
+Attribute
+    = QuotedAttribute / UnquotedAttribute / EmptyAttribute
+
+TagName
+    = tagName:([a-zA-Z0-9\_\-\:]*)
+    {
+        return tagName.join("")
+    }
+
+Text
+    = text:[^\<\>{]+
+    {
+        return {
+            kind: "String",
+            value: text.join("")
+        }
+    }
+
+Comment
+    = "<!--" c:(!"-->" c:. {return c})* "-->"
+    {
+        return {
+            kind: "CommentHTML",
+            value: c.join("")
+        }
+    }
+
+_ "whitespace"
+    = [ \t\n\r]*
