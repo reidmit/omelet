@@ -10,7 +10,8 @@ var extensions = {
     "jade":     ["jade"],
     "markdown": ["md","markdown"],
     "omelet":   ["oml","omelet"],
-    "smarty":   ["tpl"]
+    "smarty":   ["tpl"],
+    "liquid":   ["liquid"]
 }
 
 function extensionFor(language) {

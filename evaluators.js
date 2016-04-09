@@ -97,6 +97,23 @@ function collectDefinitions(ast) {
 }
 
 /*
+* Check to see if a node or its children contains any
+* references to a given identifier. This is used to prevent
+* recursion: in an assignment statement, the right side should
+* contain no references to the identifier on the left side.
+*/
+function checkForReferences(root, identString) {
+    var f = function(node,acc) {
+        if (node.kind === "Identifier" &&
+            node.value === identString) {
+            acc.push(true);
+        }
+    }
+    var res = visitor.visit(root,f,[]);
+    return res;
+}
+
+/*
 * Check to see if a document extends another document.
 * If so, we'll bypass the normal evaluation.
 * Again, this makes use of the visitor pattern.
@@ -171,6 +188,7 @@ evaluators.html = function(ast, originalCode, context, config) {
     scope.addAll(context);
 
     var extendsChain = [];
+    var includesChain = [];
 
     function evalInternalConditional(node) {
         var pred = eval("("+node.predicate.toString()+")()");
@@ -184,6 +202,13 @@ evaluators.html = function(ast, originalCode, context, config) {
     function evalInclude(node) {
         var file = evalExpr(node.file);
 
+        if (includesChain.indexOf(config.directory+"/"+file) > -1) {
+            throw err.EvalError({
+                msg: "Template inclusion loop detected. File '"+config.directory+"/"+file
+                     +"' has already been extended earlier in the includes chain."
+            }, originalCode)
+        }
+
         try {
             var stats = fs.lstatSync(config.directory+"/"+file);
             if (stats.isDirectory()) {
@@ -192,6 +217,8 @@ evaluators.html = function(ast, originalCode, context, config) {
         } catch (e) {
             throw EvalError("Included file '"+config.directory+"/"+file+"' could not be found.");
         }
+
+        includesChain.push(config.directory+"/"+file);
 
         var contents = fs.readFileSync(config.directory+"/"+file);
 
@@ -273,8 +300,6 @@ evaluators.html = function(ast, originalCode, context, config) {
     * should not parse all of the current file.
     */
     function evalExtend(rootDocument, extendNode) {
-        console.log("on evalExtend, extend node is ...");
-        console.log(extendNode);
         if (rootDocument.extend) {
             var rootFile = evalExpr(rootDocument.extend.file);
 
@@ -327,15 +352,6 @@ evaluators.html = function(ast, originalCode, context, config) {
 
         var extendedAST = parsers[config.sourceLanguage].parse(input);
 
-        // if (extendedAST.status === false) {
-        //     throw err.ParseError({
-        //         msg: "Could not parse imported file '"+config.directory+"/"+file+"'.",
-        //         index: extendedAST.furthest,
-        //         expected: extendedAST.expected
-        //     }, input);
-        // }
-        console.log("extendedAST is...");
-        console.log(extendedAST);
         if (extendedAST.imports) {
             extendedAST.imports.map(evalExpr);
         }
@@ -348,8 +364,15 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
 
     function evalAssignment(node) {
-        console.log("on evalAssignment, override is "+node.override+", node is...");
-        console.log(node);
+
+        var recursiveRefs = checkForReferences(node.rightSide, node.leftSide.value);
+        if (recursiveRefs.length > 0) {
+            throw err.EvalError({
+                msg: "Recursive assignment of '"+node.leftSide.value+"' detected. Recursion is not allowed in Toast templates.",
+                index: node.start
+            }, originalCode)
+        }
+
         if (node.override) {
             scope.add(node.leftSide.value, node.rightSide,true);
         } else {
@@ -520,7 +543,7 @@ evaluators.html = function(ast, originalCode, context, config) {
     function evalForEach(node) {
         var idx;
         var iterator;
-        if (node.iterator.value === "$_self") {
+        if (node.iterator.value === "self__") {
             //This applies to languages like Dust, where we iterate over an array without declaring a new
             //variable to refer to the current item. Instead, all properties of the current item are just added
             //to the top of the scope at the beginning of each loop.
@@ -548,6 +571,8 @@ evaluators.html = function(ast, originalCode, context, config) {
                             value: data[idx][keys[i]]
                         });
                     }
+                } else {
+                    scope.add("self__", data[idx]);
                 }
             }
 
@@ -597,13 +622,15 @@ evaluators.html = function(ast, originalCode, context, config) {
             //        we need to traverse through the person object
             var name = node.name.value;
             if (node.name.modifiers) {
-                val = val.values;
+                // val = val.values;
                 for (var i=0; i<node.name.modifiers.length; i++) {
                     var m = node.name.modifiers[i];
+
+                    //just used for error printing
                     name += ("["+m.value.value+"]");
 
                     var key = m.value.kind==="Number" ?
-                                parseInt(m.value.value) : "\""+m.value.value+"\"";
+                                parseInt(m.value.value) : m.value.value;
 
                     if (!val[key]) {
                         throw Error("Object '"+name+"' is not defined. val is "+JSON.stringify(val,null,4));
@@ -682,6 +709,9 @@ evaluators.html = function(ast, originalCode, context, config) {
     function evalComment(node) {
         return "";
     }
+    function evalCommentHTML(node) {
+        return "<!--"+node.value+"-->";
+    }
     function evalExpr(node) {
         switch (node.kind) {
             case "Number":
@@ -698,6 +728,8 @@ evaluators.html = function(ast, originalCode, context, config) {
                 return evalTag(node);
             case "Comment":
                 return evalComment(node);
+            case "CommentHTML":
+                return evalCommentHTML(node);
             case "Parenthetical":
                 return evalParenthetical(node);
             case "Assignment":
@@ -929,10 +961,10 @@ evaluators.omelet = function(ast, originalCode, context, config) {
         }
         if (node.filters) {
             for (var i=0; i<node.filters.length; i++) {
-                inner += "| "+evalExpr(node.filters[i].name);
+                out += "| "+evalExpr(node.filters[i].name);
                 if (node.filters[i].arguments.length > 0) {
-                    inner += " ";
-                    inner += node.filters[i].arguments.map(evalExpr).join(" ");
+                    out += " ";
+                    out += node.filters[i].arguments.map(evalExpr).join(" ");
                 }
             }
         }
@@ -990,6 +1022,8 @@ evaluators.omelet = function(ast, originalCode, context, config) {
                 return evalArray(node);
             case "Range":
                 return evalRange(node);
+            case "InternalConditional":
+                return evalExpr(node.thenCase);
             default:
                 throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }

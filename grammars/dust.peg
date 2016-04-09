@@ -71,14 +71,8 @@ SpecialCharacter
     }
 
 Identifier
-    = id:(([a-zA-Z] [a-zA-Z0-9_-]*) / ".")
+    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
     {
-        if (id === ".") {
-            return {
-                kind: "Identifier",
-                value: "$_self"
-            }
-        }
         return {
             kind: "Identifier",
             value: id[0].concat(id[1].join(""))
@@ -95,8 +89,17 @@ Filter
         }
     }
 
+Dot
+    = "."
+    {
+        return {
+            kind: "Identifier",
+            value: "self__"
+        }
+    }
+
 Key
-    = "{" id:Identifier filters:Filter* "}"
+    = "{" id:(Identifier / Dot) filters:Filter* "}"
     {
         return {
             kind: "Interpolation",
@@ -319,7 +322,7 @@ SectionWithElse
                         kind: "ForEach",
                         iterator: {
                             kind: "Identifier",
-                            value: "$_self"
+                            value: "self__"
                         },
                         data: openName,
                         body: contents,
@@ -366,7 +369,7 @@ SectionWithoutElse
                 kind: "ForEach",
                 iterator: {
                     kind: "Identifier",
-                    value: "$_self"
+                    value: "self__"
                 },
                 data: openName,
                 body: contents

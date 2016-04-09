@@ -61,14 +61,21 @@ IdentifierComplex
     = ident:([a-zA-z] [a-zA-Z0-9_-]*) mods:Modifier+
     {
         return {
-            kind: "Modifier",
+            kind: "Identifier",
             value: ident[0].concat(ident[1].join("")),
             modifiers: mods
         }
     }
 
 Modifier
-    = ("." mod:Identifier) / ("[" mod:(Number / QuotedString / Identifier) "]")
+    = ("." mod:Identifier)
+    {
+        return {
+            kind: "Modifier",
+            value: mod
+        }
+    }
+    / ("[" mod:(Number / QuotedString / Identifier) "]")
     {
         return {
             kind: "Modifier",
