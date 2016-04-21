@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Toast IDE</title>
+    <link rel="stylesheet" href="font-awesome-4.6.1/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+    <style type="text/css">
+      * {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+      }
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      textarea {
+        padding: 20px;
+        font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+        font-size: 18px;
+        line-height: 1.2em;
+        position: absolute;
+        top: 50px;
+        bottom: 0px;
+        border: none;
+        margin: 0;
+        resize: none;
+      }
+      textarea:active,
+      textarea:focus {
+        outline: none;
+        border: none;
+        -webkit-appearance: none;
+      }
+      .code-display {
+        /*-webkit-transition: left 0.1s, right 0.1s, width 0.1s;
+        -moz-transition: left 0.1s, right 0.1s, width 0.1s;
+        transition: left 0.1s, right 0.1s, width 0.1s;*/
+      }
+      .code-display.input {
+        background: rgb(90,160,170);
+        color: #fff;
+      }
+      .code-display.output {
+      }
+
+      #input {
+        left: 0px;
+        right: 50%;
+      }
+      #output {
+        left: 50%;
+        right: 0px;
+      }
+
+      #topbar {
+        background: rgb(47,87,92);
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 50px;
+      }
+      #menu-btn {
+        width: 50px;
+        height: 50px;
+        float: left;
+        cursor: pointer;
+        background: rgb(47,87,92);
+        outline: none;
+        border: none;
+        -webkit-appearance: none;
+        color: #fff;
+      }
+      #menu-btn:hover {
+        color: rgb(47,87,92);
+        background: #fff;
+      }
+      #menu-btn span {
+        font-size: 36px;
+        position: absolute;
+        left: 9px;
+        top: 3px;
+      }
+
+      #sidebar {
+        font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+        background: #fff;
+        width: 200px;
+        position: absolute;
+        left: -200px;
+        top: 50px;
+        bottom: 0px;
+        padding: 20px;
+        /*-webkit-transition: left 0.1s;
+        -moz-transition: left 0.1s;
+        transition: left 0.1s;*/
+      }
+
+      #nowediting {
+        font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+        color: #fff;
+        font-size: 20px;
+        height: 50px;
+        line-height: 50px;
+        position: absolute;
+        top: 0;
+        bottom: 50px;
+        left: 60px;
+      }
+      #filename {
+        font-size: 20px;
+        color: #fff;
+        font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+        padding: 0px;
+        background: none;
+        border: none;
+        /*border-bottom: 2px solid #eee;*/
+      }
+
+      #newfile-btn {
+        right: 359px;
+        top: 0px;
+      }
+      #download-btn {
+        right: 168px;
+        top: 0px;
+      }
+      #delete-btn {
+        right: 0px;
+        top: 0px;
+      }
+      #topbar button {
+        height: 50px;
+        position: absolute;
+
+        font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+        font-size: 20px;
+        background: none;
+        color: #fff;
+        padding-left: 10px;
+        padding-right: 10px;
+        outline: none;
+        -webkit-appearance: none;
+        border: none;
+        cursor: pointer;
+        margin: 0;
+      }
+      #topbar button:hover {
+        background: #fff;
+        color: rgb(47,87,92);
+      }
+
+      #sidebar ul {
+        padding: 0;
+      }
+      #sidebar li {
+        padding: 0;
+        list-style-type: none;
+        margin: 5px 0;
+      }
+      .file-list-item {
+        cursor: pointer;
+      }
+
+    </style>
+    <script>
+    var input, output;
+    var fileNameInput;
+    var sidebarShown = false;
+    var currentFileName = "";
+    var fileStoragePrefix = "__TOAST__IDE__file__:";
+    var fileStorageCurrent = "__TOAST__IDE__latest__";
+
+    function render(input) {
+      return input.toUpperCase();
+    }
+
+    function update() {
+        var unprocessed = input.value;
+        var processed = render(input.value);
+        output.value = processed;
+        saveFile(currentFileName);
+    }
+
+    function toggleSidebar() {
+      var inWindow = document.getElementById("input");
+      var outWindow = document.getElementById("output");
+      var sidebar = document.getElementById("sidebar");
+      var btn = document.getElementById("menu-btn");
+      if (!sidebarShown) {
+        sidebar.style.left = "0px";
+        inWindow.style.left = "200px";
+        inWindow.style.right = "calc(50% - 100px)";
+        outWindow.style.left = "calc(50% + 100px)";
+        btn.style.background = "#fff";
+        btn.style.color = "rgb(47,87,92)";
+        btn.innerHTML = "<i class='fa fa-folder-open' aria-hidden='true'></i>";
+        btn.paddingLeft = "6px";
+        sidebarShown = true;
+      } else {
+        sidebar.style.left = "-200px";
+        inWindow.style.left = "0px";
+        inWindow.style.right = "50%";
+        outWindow.style.left = "50%";
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.innerHTML = "<i class='fa fa-folder' aria-hidden='true'></i>";
+        btn.paddingLeft = "";
+        sidebarShown = false;
+      }
+    }
+
+    function loadFile(fileName) {
+      saveFile(currentFileName);
+      var storedFile = localStorage.getItem(fileStoragePrefix+fileName);
+      if (storedFile === null) {
+        //error case, should never really happen
+        currentFileName = "";
+      } else {
+        currentFileName = fileName;
+        input.value = storedFile;
+        console.log("about to update");
+        update();
+      }
+      fileNameInput.value = currentFileName;
+    }
+
+    function saveFile(fileName) {
+      if (fileName === "") return;
+      var text = input.value;
+      console.log("setting "+fileName+" to: "+text);
+      localStorage.setItem(fileStoragePrefix+fileName, text);
+      localStorage.setItem(fileStorageCurrent,fileName);
+    }
+
+    function deleteFile(fileName) {
+      if (fileName === "") return;
+      localStorage.removeItem(fileStoragePrefix+fileName);
+    }
+
+    function newFile() {
+      saveFile(currentFileName);
+      input.value = "";
+      output.value = "";
+      currentFileName = "";
+      fileNameInput.value = "";
+      fileNameInput.focus();
+    }
+
+    function getFileList() {
+      var sidebar = document.getElementById("sidebar");
+      var list = [];
+      for (var i=0; i<localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key.indexOf(fileStoragePrefix) === 0) {
+          var file = key.replace(fileStoragePrefix,"");
+          var elt = "<span class='file-list-item' onclick='loadFile(\""+file+"\");'>"+file+"</a>";
+          list.push(elt);
+        }
+      }
+      sidebar.innerHTML = "<ul><li>"+list.join("</li><li>")+"</li></ul>";
+    }
+
+    function checkForFileNameChange() {
+      var fileNameInput = document.getElementById("filename");
+      if (currentFileName === "") {
+        currentFileName = fileNameInput.value;
+        saveFile(currentFileName);
+      } else if (currentFileName !== fileNameInput.value){
+        var res = confirm("Are you sure you want to rename "+currentFileName
+                    +" to "+fileNameInput.value+"?");
+        if (res) {
+          deleteFile(currentFileName);
+          currentFileName = fileNameInput.value;
+          saveFile(currentFileName);
+          getFileList();
+        } else {
+          fileNameInput.value = currentFileName;
+          return;
+        }
+      }
+    }
+
+    window.onload = function() {
+      fileNameInput = document.getElementById("filename");
+      input = document.getElementById("input");
+      output = document.getElementById("output");
+
+      getFileList();
+
+      var storedCurrent = localStorage.getItem(fileStorageCurrent);
+      if (storedCurrent === null) {
+        currentFileName = "";
+      } else {
+
+        var storedFile = localStorage.getItem(fileStoragePrefix+storedCurrent);
+        if (storedFile === null) {
+          //error case, should never really happen
+          currentFileName = "";
+        } else {
+          currentFileName = storedCurrent;
+          input.value = storedFile;
+          update();
+        }
+        fileNameInput.value = currentFileName;
+      }
+
+      input.onkeydown = function(e){
+        if(e.keyCode==9 || e.which==9){
+          e.preventDefault();
+          var s = this.selectionStart;
+          this.value = this.value.substring(0,this.selectionStart) + "  " + this.value.substring(this.selectionEnd);
+          this.selectionEnd = s+2;
+        }
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="topbar">
+      <button id="menu-btn" onclick="toggleSidebar();">
+        <i class="fa fa-folder" aria-hidden="true"></i>
+      </button>
+      <div id="nowediting">file: <input type="text" onblur="checkForFileNameChange();" id="filename" placeholder="enter file name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
+      <button id="newfile-btn" onclick="newFile();"><i class="fa fa-file"></i> new file</button>
+      <button id="download-btn"><i class="fa fa-download"></i> download file</button>
+      <button id="delete-btn"><i class="fa fa-trash"></i> delete file</button>
+    </div>
+    <div id="sidebar">ok</div>
+    <textarea id="input"
+              onkeyup="update();"
+              onchange="update();"
+              class="code-display input"
+              name="input"
+              autocomplete="off" autocorrect="off"
+              autocapitalize="off" spellcheck="false"
+              autofocus></textarea>
+    <textarea id="output"
+              class="code-display output"
+              name="output"
+              readonly disabled></textarea>
+  </body>
+</html>
