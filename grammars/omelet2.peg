@@ -1,0 +1,527 @@
+{
+    function isArray(obj) {
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
+    function mergeAttributes(attrList,attrName) {
+        if (attrList.length < 2) return attrList;
+
+        var toMerge = [];
+        var indices = [];
+
+        for (var i=0; i<attrList.length; i++) {
+            if (attrList[i].name.value === attrName) {
+                toMerge.push(attrList[i]);
+                indices.push(i);
+            }
+        }
+
+        if (toMerge.length == 0) return attrList;
+
+        var newAttrVal = "";
+        for (var i=0; i<toMerge.length; i++) {
+            newAttrVal += toMerge[i].value.value + " ";
+        }
+        newAttrVal = newAttrVal.trim();
+        toMerge[0].value.value = newAttrVal;
+
+        for (var i=1; i<toMerge.length; i++) {
+            attrList.splice(indices[i],1);
+        }
+
+        return attrList;
+    }
+}
+
+Document = top:TopLevelContent _ contents:Content
+    {
+        var imps = [], exts = [], defs = [], coms = [];
+        for (var i=0; i<top.length; i++) {
+            switch(top[i].kind) {
+                case "Comment": coms.push(top[i]); break;
+                case "Extend" : exts.push(top[i]); break;
+                case "Import" : imps.push(top[i]); break;
+                case "MacroDefinition": defs.push(top[i]); break;
+            }
+        }
+        //TODO: this would be neater:
+        /*return {
+            kind: "Document",
+            imports: imps,
+            extend: exts.length === 0 ? undefined : exts,
+            definitions: defs,
+            contents: coms.concat(contents)
+        }*/
+        return {
+            kind: "Document",
+            imports: imps,
+            extends: exts,
+            contents: defs.concat(coms.concat(contents))
+        }
+    }
+
+TopLevelContent
+    = (Comment / Extend / Import / Definition)*
+
+Extend "an extend statement"
+    = CommandPrefix "extend" __ file:FilePath _
+    {
+        return {
+            kind: "Extend",
+            file: file
+        }
+    }
+
+Import "an import statement"
+    = CommandPrefix "import" __ file:FilePath _
+    {
+        return {
+            kind: "Import",
+            file: file
+        }
+    }
+
+ParameterList
+    = first:Identifier rest:(__ "," __ Identifier)*
+    {
+        return [first].concat(rest.map(function(a){return a[3]}));
+    }
+
+Definition "a macro definition"
+    = CommandPrefix "def" " " name:Identifier "(" params:ParameterList? ")" ":" __ body:(Indent Content Dedent)?
+    {
+        return {
+            kind: "MacroDefinition",
+            name: name,
+            params: params === null ? [] : params,
+            body: body === null ? [] : body[1]
+        }
+    }
+
+Content
+    = (Comment / If / For / Doctype / RawTag / Tag / Interpolation / Text)*
+
+Doctype "a doctype"
+	= "@doctype" __ val:[^⇐⇒@%{}\[\]# \t\n\r]+
+    {
+    	return {
+        	kind: "Doctype",
+            value: val.join("")
+        }
+    }
+
+Comment "a comment"
+    = LineComment //possible todo: block comments
+
+LineComment
+    = "##" value:[^\n]* "\n"
+    {
+        return {
+            kind: "Comment",
+            value: value.join("")
+        }
+    }
+
+If
+    = CommandPrefix "if" " " pred:Identifier ":" __ body:(Indent Content Dedent)? elifs:Elif* elseCase:Else?
+    {
+        return {
+            kind: "IfStatement",
+            predicate: pred,
+            thenCase: body === null ? [] : body[1],
+            elifCases: elifs,
+            elseCase: elseCase === null ? undefined : elseCase
+        }
+    }
+
+Elif
+    = CommandPrefix "elif" " " pred:Identifier ":" __ body:(Indent Content Dedent)?
+    {
+        return {
+            kind: "IfStatement",
+            predicate: pred,
+            thenCase: body === null ? [] : body[1]
+        }
+    }
+
+Else
+    = CommandPrefix "else" ":" __ body:(Indent Content Dedent)?
+    {
+        return body === null ? null : body[1]
+    }
+
+For
+    = CommandPrefix "for" " " id:Identifier " in " data:Identifier ":" __ body:(Indent Content Dedent)?
+    {
+        return {
+            kind: "ForEach",
+            iterator: id,
+            data: data,
+            body: body === null ? [] : body[1]
+        }
+    }
+
+Tag
+    = LineTag / BlockTag
+
+BlockTag
+    = openTag:OpenTag inner:(Indent Content Dedent)?
+    {
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class")
+            };
+            var curr = o;
+
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = [{
+                    kind: "Tag",
+                    name: openTag[i].value,
+                    attributes: mergeAttributes(openTag[i].attributes,"class")
+                }]
+                curr = curr.inner[0];
+            }
+            curr.inner = inner === null ? [] : inner[1];
+
+            return o;
+        } else {
+            return {
+                kind: "Tag",
+                name: openTag.value,
+                attributes: mergeAttributes(openTag.attributes,"class"),
+                inner: inner === null ? [] : inner[1]
+            }
+        }
+    }
+
+RawTag
+	= "@" tag:SingleTag __ "<!" r:(!"!>" r:. {return r})* "!>"
+    {
+    	return {
+        	kind: "Tag",
+            name: tag.value,
+            attributes: tag.attributes,
+            inner: [{
+            	kind: "Raw",
+                value: r.join("").replace(/[⇐⇒]/g,"")
+            }]
+        }
+    }
+
+LineOfText
+    = text:[^\n⇐⇒{}]* other:(Interpolation [^\n⇐⇒{}]*)*
+    {
+    	var line = [{
+        	kind: "String",
+            value: text.join("")
+        }];
+        for (var i=0; i<other.length; i++) {
+        	line.push(other[i][0]);
+            line.push({
+            	kind: "String",
+                value: other[i][1].join("")
+            });
+        }
+        return line;
+    }
+
+LineTag
+    = openTag:OpenTag __ line:LineOfText "\n" !Indent
+    {
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class")
+            };
+            var curr = o;
+
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = [{
+                    kind: "Tag",
+                    name: openTag[i].value,
+                    attributes: mergeAttributes(openTag[i].attributes,"class")
+                }]
+                curr = curr.inner[0];
+            }
+            curr.inner = line;
+
+            return o;
+        } else {
+            return {
+                kind: "Tag",
+                name: openTag.value,
+                attributes: mergeAttributes(openTag.attributes,"class"),
+                inner: line
+            }
+        }
+    }
+
+FilePath "a relative path name"
+    = prefix:"/"? part0:([a-zA-Z0-9-_]+ / "." ".")
+      parts:("/" ([a-zA-Z0-9-_]+ / "." "."))* ext:("." [a-zA-Z0-9]+)?
+    {
+        prefix = prefix === null ? "" : prefix
+        ext = ext === null ? "" : "."+ext[1].join("");
+        return prefix + [part0.join("")]
+                    .concat(parts.map(function(a){return "/"+a[1].join("")}))
+                    .join("") + ext;
+    }
+
+Interpolation
+    = "{>" " "? "include" __ filePath:FilePath " "? "}"
+    {
+        return {
+            kind: "Include",
+            file: {
+                kind: "String",
+                value: filePath
+            }
+        }
+    }
+    / "{" openTag:OpenTag contents:Text "}"
+    {
+    	return {
+        	kind: "Tag",
+            name: openTag.value,
+            attributes: mergeAttributes(openTag.attributes,"class"),
+            inner: contents
+        }
+    }
+    / "{" " "? id:Identifier parens:("(" ArgumentList? ")")? " "? __ filters:Filter* "}"
+    {
+        return {
+            kind: "Interpolation",
+            name: id,
+            isMacroCall: parens !== null,
+            arguments: parens === null ? [] :
+                            parens[1] === null ? [] : parens[1],
+            filters: filters
+        }
+    }
+
+FilterArgument "a filter argument"
+    = __ arg:Argument
+    { return arg }
+
+Filter "a filter"
+    = "|" __ name:Identifier args:FilterArgument* __
+    {
+        return {
+            kind: "Filter",
+            name: name,
+            arguments: args
+        }
+    }
+
+Argument "an argument"
+    = QuotedString / Number / Boolean / Identifier
+
+ArgumentList
+    = first:Argument __ rest:("," __ Argument)*
+    {
+        var newRest = rest.map(function(a) { return a[2] });
+        return [first].concat(newRest);
+    }
+
+AttributeList
+    = "[" attrs:(Attribute _)+ "]"
+    { return attrs.map(function(a) { return a[0] }) }
+
+SpecialAttribute
+    = ClassAttribute / IdAttribute
+
+IdentifierString "an identifier"
+    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
+    {
+        return {
+            kind: "String",
+            value: id[0].concat(id[1].join(""))
+        }
+    }
+
+Identifier "an identifier"
+    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
+    {
+        return {
+            kind: "Identifier",
+            value: id[0].concat(id[1].join(""))
+        }
+    }
+
+ClassAttribute
+    = "." className:Identifier
+    {
+        return {
+            kind: "Attribute",
+            name: {
+                kind: "String",
+                value: "class"
+            },
+            value: className
+        }
+    }
+
+IdAttribute
+    = "#" id:Identifier
+    {
+        return {
+            kind: "Attribute",
+            name: {
+                kind: "String",
+                value: "id"
+            },
+            value: id
+        }
+    }
+
+OpenTag
+    = "@" first:SingleTag rest:("|" SingleTag)+ " "?
+    { var newRest = rest.map(function(a) { return a[1]; });
+      return [first].concat(newRest) }
+    / "@" single:SingleTag " "?
+    { return single }
+
+SingleTag
+    = tagName:TagName specialAttrs:SpecialAttribute* attrList:AttributeList?
+    {
+        var attrs = specialAttrs;
+        attrs = attrList === null ? specialAttrs : specialAttrs.concat(attrList);
+        return {
+            kind: "String",
+            value: tagName,
+            attributes: attrs
+        }
+    }
+
+/* TODO: single colons should be allowed here */
+AttributeName
+    = attrName:[^ \t\n\r\"\'\>\/\=\)\(\[\]\:]+
+    {
+        return {
+            kind: "String",
+            value: attrName.join("")
+        }
+    }
+
+UnquotedAttributeValue
+    = attrValue:[^ \t\n\r\"\'\=\<\>\`\,\.\]]+
+    {
+        return {
+            kind: "String",
+            value: attrValue.join("")
+        }
+    }
+
+QuotedAttributeValue
+    = QuotedString
+
+QuotedString
+    = value:( "'" [^\']* "'" / '"' [^\"]* '"')
+    {
+        return {
+            kind: "String",
+            value: value[1].join("")
+        }
+    }
+
+EmptyAttribute
+    = attrName:AttributeName
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrName
+        }
+    }
+
+UnquotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:UnquotedAttributeValue
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue
+        }
+    }
+
+QuotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:QuotedAttributeValue
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue
+        }
+    }
+
+Attribute "an attribute"
+    = QuotedAttribute / UnquotedAttribute / EmptyAttribute
+
+//TODO: colons here...
+TagName "a tag name"
+    = tagName:([a-zA-Z] [a-zA-Z0-9\_\-\:]*)
+    {
+        return {
+            kind: "String",
+            value: tagName[0].concat(tagName[1].join(""))
+        }
+    }
+
+Number "a number"
+    = minus:"-"? first:[0-9]+ second:("." [0-9]+)?
+    {
+        second = second === null ? [] : "."+second[1].join("");
+        var value = parseInt(first.join("")+second);
+        if (minus !== null) {
+        	value = 0-value;
+        }
+        return {
+            kind: "Number",
+            value: value
+        }
+    }
+
+Boolean "a boolean value"
+    = value:("true" / "false")
+    {
+        return {
+            kind: "Boolean",
+            value: value === "true"
+        }
+    }
+
+Text "plain text"
+    = text:[^⇐⇒%@{}\[\]#\\]+
+    {
+        return {
+            kind: "String",
+            value: text.join("")
+        }
+    }
+    / EscapedCharacter
+
+EscapedCharacter
+    = "\\" char:([\{\}\|\@\\])?
+    {
+        return {
+            kind: "String",
+            value: char ? char : "\\"
+        }
+    }
+
+Indent "an indent"
+    = _ "⇒" _
+
+Dedent "a dedent"
+    = _ "⇐" _
+
+CommandPrefix
+    = ">"
+
+_ "whitespace"
+    = [ \t\n\r]*
+
+__
+    = [ ]*
