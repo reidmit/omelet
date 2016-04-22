@@ -22965,7 +22965,18 @@ module.exports = (function() {
         if (s1 !== peg$FAILED) {
           s2 = peg$parseOpenTag();
           if (s2 !== peg$FAILED) {
-            s3 = peg$parseText();
+            s3 = [];
+            s4 = peg$parseText();
+            if (s4 === peg$FAILED) {
+              s4 = peg$parseInterpolation();
+            }
+            while (s4 !== peg$FAILED) {
+              s3.push(s4);
+              s4 = peg$parseText();
+              if (s4 === peg$FAILED) {
+                s4 = peg$parseInterpolation();
+              }
+            }
             if (s3 !== peg$FAILED) {
               if (input.charCodeAt(peg$currPos) === 125) {
                 s4 = peg$c80;
