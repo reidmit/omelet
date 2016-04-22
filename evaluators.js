@@ -433,6 +433,8 @@ evaluators.html = function(ast, originalCode, context, config) {
         if (childExtendNode !== false) {
             return evalExtend(extendedAST, childExtendNode);
         }
+
+        console.log("evalextend returning "+extendedAST.contents.map(evalExpr).join(""))
         return extendedAST.contents.map(evalExpr).join("");
     }
 

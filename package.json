@@ -15,7 +15,8 @@
   },
   "scripts": {
     "test": "jasmine",
-    "web": "browserify -s module.exports toast-o.js > ide/toast-web.js && uglifyjs ide/toast-web.js -o ide/toast-web.min.js"
+    "web": "browserify -s module.exports toast-o.js > ide/toast-web.js && uglifyjs ide/toast-web.js -o ide/toast-web.min.js",
+    "parsers": "pegjs grammars/dust.peg parsers/dust.js && pegjs grammars/liquid.peg parsers/liquid.js && pegjs grammars/omelet.peg parsers/omelet.js && pegjs grammars/html.peg parsers/html.js && pegjs grammars/omelet2.peg parsers/omelet2.js"
   },
   "author": "Reid Mitchell",
   "license": "MIT",
@@ -31,11 +32,10 @@
     "omelet",
     "template",
     "engine",
-    "template",
     "language"
   ],
   "bugs": {
-    "url": "https://github.com/reid47/omelet/issues"
+    "url": "https://github.com/reid47/toast/issues"
   },
-  "homepage": "https://github.com/reid47/omelet#readme"
+  "homepage": "https://github.com/reid47/toast#readme"
 }

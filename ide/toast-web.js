@@ -754,6 +754,8 @@ evaluators.html = function(ast, originalCode, context, config) {
         if (childExtendNode !== false) {
             return evalExtend(extendedAST, childExtendNode);
         }
+
+        console.log("evalextend returning "+extendedAST.contents.map(evalExpr).join(""))
         return extendedAST.contents.map(evalExpr).join("");
     }
 
@@ -20617,7 +20619,7 @@ module.exports = (function() {
                 return {
                     kind: "Document",
                     imports: imps,
-                    extends: exts,
+                    extend: exts[0], //TODO: exts should always be size 1
                     contents: defs.concat(coms.concat(contents))
                 }
             },
@@ -22540,6 +22542,9 @@ module.exports = (function() {
               s4 = peg$FAILED;
               if (peg$silentFails === 0) { peg$fail(peg$c36); }
             }
+            if (s4 === peg$FAILED) {
+              s4 = null;
+            }
             if (s4 !== peg$FAILED) {
               s5 = peg$currPos;
               peg$silentFails++;
@@ -23536,7 +23541,7 @@ module.exports = (function() {
         if (peg$silentFails === 0) { peg$fail(peg$c72); }
       }
       if (s1 !== peg$FAILED) {
-        s2 = peg$parseIdentifier();
+        s2 = peg$parseIdentifierString();
         if (s2 !== peg$FAILED) {
           peg$savedPos = s0;
           s1 = peg$c106(s2);
@@ -23565,7 +23570,7 @@ module.exports = (function() {
         if (peg$silentFails === 0) { peg$fail(peg$c108); }
       }
       if (s1 !== peg$FAILED) {
-        s2 = peg$parseIdentifier();
+        s2 = peg$parseIdentifierString();
         if (s2 !== peg$FAILED) {
           peg$savedPos = s0;
           s1 = peg$c109(s2);

@@ -54,7 +54,7 @@ Document = top:TopLevelContent _ contents:Content
         return {
             kind: "Document",
             imports: imps,
-            extends: exts,
+            extend: exts[0], //TODO: exts should always be size 1
             contents: defs.concat(coms.concat(contents))
         }
     }
@@ -227,7 +227,7 @@ LineOfText
     }
 
 LineTag
-    = openTag:OpenTag __ line:LineOfText "\n" !Indent
+    = openTag:OpenTag __ line:LineOfText "\n"? !Indent
     {
         if (isArray(openTag)) {
             var o = {
@@ -351,7 +351,7 @@ Identifier
     }
 
 ClassAttribute
-    = "." className:Identifier
+    = "." className:IdentifierString
     {
         return {
             kind: "Attribute",
@@ -364,7 +364,7 @@ ClassAttribute
     }
 
 IdAttribute
-    = "#" id:Identifier
+    = "#" id:IdentifierString
     {
         return {
             kind: "Attribute",
