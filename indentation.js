@@ -1,44 +1,15 @@
 var dedent_token = "\u21d0";
 var indent_token = "\u21d2";
 
-function attributesToSingleLine(text) {
-    return text;
-
-    var sawAt = false;
-    var sawTagName = false;
-    var sawParen = false;
-    var inAttrs = false;
-    var out = "";
-    for (var i = 0; i < text.length; i++) {
-        var c = text[i];
-        var elseCase = false;
-
-        if (c === "@") {
-            if (text.substr(i).test(/^@[a-zA-Z][a-zA-Z0-9_-]*\(/)) {
-                //found it
-                var stk = ["("];
-                var j = i;
-                while (stk.length > 0) {
-
-                }
-            } else {
-                elseCase = true;
-            }
-        } else {
-            elseCase = true;
-        }
-    }
-}
-
 function preprocessIndentation(text) {
-    text = attributesToSingleLine(text);
-
     var lines = text.split("\n").filter(function(s) {
         return !s.split("").every(function(c) {
             return c == " " && c == "\t"
         });
     });
+    // var lines = text.split("\n");
     var processedLines = insertTokens(lines, []);
+    console.log(text);
     return processedLines.join("\n");
 }
 
@@ -68,7 +39,7 @@ function insertTokens(lines, stack) {
 
     if (indentation < top) {
         stack.pop();
-        return [dedent_token].concat(insertTokens(lines,stack));
+        return [dedent_token].concat(insertTokens(lines, stack));
     }
 
 }

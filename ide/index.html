@@ -33,8 +33,14 @@
     <script src="toast-ide.js"></script>
     <script src="toast-web.min.js"></script>
     <script>
+        var context = {
+            items: ["reid","caroline","scott","luke"],
+            name: "Reid Mitchell",
+            age: 22,
+            favoriteNumber: 47
+        }
         var T = new module.exports.Toast({
-            sourceLanguage: "omelet",
+            sourceLanguage: "omelet2",
             targetLanguage: "html",
             prettyPrint: true,
             isWeb: true
@@ -42,7 +48,7 @@
         function render(input) {
             output.style.color = "";
             try {
-                return T.renderString(input, {}, currentFileName);
+                return T.renderString(input, context, currentFileName);
             } catch (e) {
                 output.style.color = "red";
                 return e.toString();

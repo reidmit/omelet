@@ -14,6 +14,7 @@ function update() {
 }
 
 function toggleSidebar() {
+  getFileList();
   var inWindow = document.getElementById("input");
   var outWindow = document.getElementById("output");
   var sidebar = document.getElementById("sidebar");
@@ -49,6 +50,7 @@ function loadFile(fileName) {
     currentFileName = "";
   } else {
     currentFileName = fileName;
+    getFileList();
     input.value = storedFile;
     update();
   }
@@ -90,7 +92,8 @@ function getFileList() {
     var key = localStorage.key(i);
     if (key.indexOf(fileStoragePrefix) === 0) {
       var file = key.replace(fileStoragePrefix,"");
-      var elt = "<span class='file-list-item' onclick='loadFile(\""+file+"\");'>"+file+"</a>";
+      var c = file == currentFileName ? " active" : "";
+      var elt = "<span class='file-list-item"+c+"' onclick='loadFile(\""+file+"\");'>"+file+"</a>";
       list.push(elt);
     }
   }

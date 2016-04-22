@@ -1,4 +1,4 @@
-LANGUAGES = omelet html dust liquid
+LANGUAGES = omelet omelet2 html dust liquid
 
 .PHONY:parsers
 parsers:

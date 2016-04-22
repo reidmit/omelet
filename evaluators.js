@@ -5,6 +5,7 @@ var parsers = require('./parsers.js');
 var err = require('./errors.js');
 var filters = require('./filters.js');
 var visitor = require('./visitor.js');
+var indentation = require('./indentation');
 
 var fileStoragePrefix = "__TOAST__IDE__file__:";
 var fileStorageCurrent = "__TOAST__IDE__latest__";
@@ -251,6 +252,11 @@ evaluators.html = function(ast, originalCode, context, config) {
             input = contents;
         }
 
+        //TODO: generalize this
+        if (config.sourceLanguage === "omelet2") {
+            input = indentation.preprocess(input);
+        }
+
         try {
             var includedAST = parsers[config.sourceLanguage].parse(input);
         } catch (e) {
@@ -308,7 +314,14 @@ evaluators.html = function(ast, originalCode, context, config) {
             input = contents;
         }
 
+        //TODO: generalize this
+        if (config.sourceLanguage === "omelet2") {
+            input = indentation.preprocess(input);
+        }
+
         var importedAST = parsers[config.sourceLanguage].parse(input);
+        console.log("importedAST is ...");
+        __.printAST(importedAST);
 
         if (importedAST.status === false) {
             throw err.ParseError({
@@ -405,6 +418,11 @@ evaluators.html = function(ast, originalCode, context, config) {
             input = contents;
         }
 
+        //TODO: generalize this
+        if (config.sourceLanguage === "omelet2") {
+            input = indentation.preprocess(input);
+        }
+
         var extendedAST = parsers[config.sourceLanguage].parse(input);
 
         if (extendedAST.imports) {
@@ -437,6 +455,7 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
 
     function evalMacroDefinition(node) {
+        console.log("on macrodef, adding "+JSON.stringify(node));
         scope.add(node.name.value, {params: node.params, body: node.body});
         return "";
     }
@@ -483,8 +502,11 @@ evaluators.html = function(ast, originalCode, context, config) {
         var val = scope.find(node.value);
         if (val) {
             return evalExpr(val);
+        } else {
+            //new
+            return undefined;
         }
-        return node.value;
+        // return node.value;
     }
     function evalAttribute(node) {
         return evalExpr(node.name)+"=\""+evalExpr(node.value)+"\"";
@@ -565,18 +587,17 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
     function evalIfStatement(node) {
         var pred = evalExpr(node.predicate);
+        console.log("at IfStatement");
+        console.log(JSON.stringify(pred));
+        console.log(JSON.stringify(node.predicate));
         pred = pred === "false" ? false : (pred === "true" ? true : pred);
 
         scope.open();
-        if (pred === true) {
-            var out = node.thenCase.map(evalExpr).join("");
-            scope.close();
-            return out;
-        } else if (pred === false) {
+        if (pred === false || typeof pred === 'undefined' || pred === null) {
             if (node.elifCases) {
                 for (var i=0; i<node.elifCases.length; i++) {
                     pred = evalExpr(node.elifCases[i].predicate);
-                    if (pred) {
+                    if (pred !== false || !(typeof pred ==='undefined') || pred !== null) {
                         var out = node.elifCases[i].thenCase.map(evalExpr).join("");
                         scope.close();
                         return out;
@@ -592,7 +613,9 @@ evaluators.html = function(ast, originalCode, context, config) {
                 return "";
             }
         } else {
-            throw Error("Condition in if statement must evaluate to a boolean.");
+            var out = node.thenCase.map(evalExpr).join("");
+            scope.close();
+            return out;
         }
     }
     function evalForEach(node) {
@@ -607,6 +630,12 @@ evaluators.html = function(ast, originalCode, context, config) {
             iterator = node.iterator.value;
         }
         var data = evalExpr(node.data);
+
+        if (!__.isArray(data)) {
+            data = [data];
+        } else if (typeof data === "undefined") {
+            data = [];
+        }
 
         var output = [];
 
@@ -648,6 +677,8 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
     function evalInterpolation(node) {
         var val = scope.find(node.name.value);
+        console.log("tryig to find "+node.name.value+", found "+JSON.stringify(val));
+        console.log("and node is "+JSON.stringify(node));
         var output;
 
         if (!val) {
@@ -705,7 +736,12 @@ evaluators.html = function(ast, originalCode, context, config) {
             for (var i=0; i<val.params.length; i++) {
                 scope.add(val.params[i].value,node.arguments[i]);
             }
-            var body = evalExpr(val.body);
+            var body;
+            if (__.isArray(val.body)) {
+                body = val.body.map(evalExpr).join("");
+            } else {
+                body = evalExpr(val.body);
+            }
 
             scope.close();
 
@@ -867,7 +903,11 @@ evaluators.omelet = function(ast, originalCode, context, config) {
                 out += " "+node.params[i].value;
             }
         }
-        out += " = "+evalExpr(node.body);
+        if (__.isArray(node.body)) {
+            out += " = (" + val.body.map(evalExpr).join("\n") + ")";
+        } else {
+            out += " = " + evalExpr(node.body);
+        }
         return out+"\n";
     }
     function evalBoolean(node) {

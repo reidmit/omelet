@@ -1,7 +1,7 @@
 var fs = require('fs');
 var parsers = require('./parsers.js');
 var evaluators = require('./evaluators.js');
-// var indentation = require('./indentation');
+var indentation = require('./indentation');
 var extensions = require('./extensions.js');
 var beautify = require('js-beautify').html;
 var __ = require('./util.js');
@@ -16,6 +16,7 @@ var Toast = function(options) {
     var prettyPrint = options.prettyPrint;
     var outputDirectory = options.outputDirectory || ".";
     var isWeb = !!options.isWeb;
+    var whitespaceSensitive = sourceLanguage === "omelet2"; //TODO: generalize this
 
     var parser = parsers[sourceLanguage];
     var evaluate = evaluators[targetLanguage];
@@ -57,6 +58,11 @@ var Toast = function(options) {
 
     this.renderString = function(input, context, inputFilePath) {
         context = context || {};
+
+        if (whitespaceSensitive) {
+            input = indentation.preprocess(input);
+        }
+
         var ast = parsers[sourceLanguage].parse(input);
         // var astString = __.printAST(ast);
         var output = "";
@@ -85,6 +91,8 @@ var Toast = function(options) {
                 extra_liners: []
             });
         }
+
+        console.log("renderstring returning "+output);
 
         if (!isWeb)
             self.writeFile(self.getOutputFilePath(inputFilePath), output);
