@@ -120,11 +120,12 @@
       }
 
       #newfile-btn {
-        right: 359px;
+        /*right: 359px;*/
+        right: 168px;
         top: 0px;
       }
       #download-btn {
-        right: 168px;
+        /*right: 168px;*/
         top: 0px;
       }
       #delete-btn {
@@ -221,7 +222,6 @@
       } else {
         currentFileName = fileName;
         input.value = storedFile;
-        console.log("about to update");
         update();
       }
       fileNameInput.value = currentFileName;
@@ -235,9 +235,15 @@
       localStorage.setItem(fileStorageCurrent,fileName);
     }
 
-    function deleteFile(fileName) {
-      if (fileName === "") return;
-      localStorage.removeItem(fileStoragePrefix+fileName);
+    function deleteCurrentFile() {
+      if (currentFileName === "") return;
+      var res = confirm("Are you sure you want to delete "+currentFileName+"?");
+      if (res) {
+        localStorage.removeItem(fileStoragePrefix+currentFileName);
+        currentFileName = "";
+        getFileList();
+        newFile();
+      }
     }
 
     function newFile() {
@@ -268,6 +274,7 @@
       if (currentFileName === "") {
         currentFileName = fileNameInput.value;
         saveFile(currentFileName);
+        getFileList();
       } else if (currentFileName !== fileNameInput.value){
         var res = confirm("Are you sure you want to rename "+currentFileName
                     +" to "+fileNameInput.value+"?");
@@ -325,8 +332,8 @@
       </button>
       <div id="nowediting">file: <input type="text" onblur="checkForFileNameChange();" id="filename" placeholder="enter file name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
       <button id="newfile-btn" onclick="newFile();"><i class="fa fa-file"></i> new file</button>
-      <button id="download-btn"><i class="fa fa-download"></i> download file</button>
-      <button id="delete-btn"><i class="fa fa-trash"></i> delete file</button>
+      <!-- <button id="download-btn"><i class="fa fa-download"></i> download file</button> -->
+      <button id="delete-btn" onclick="deleteCurrentFile();"><i class="fa fa-trash"></i> delete file</button>
     </div>
     <div id="sidebar">ok</div>
     <textarea id="input"

@@ -120,7 +120,9 @@ util.toMap = function(commaSeparatedItems) {
 }
 
 util.printAST = function(ast) {
-    console.log(JSON.stringify(ast,null,4));
+    var printed = JSON.stringify(ast,null,4)
+    console.log(printed);
+    return printed;
 }
 
 module.exports = util;

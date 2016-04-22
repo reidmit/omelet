@@ -258,7 +258,7 @@ TagName
     }
 
 Tag
-    = _ "(" name:TagName attrs:Attribute* _ "::" inner:Expression* filters:Filter* ")"
+    = _ "(" name:TagName attrs:Attribute* _ "::" " "? inner:Expression* filters:Filter* ")"
     {
         return {
             kind: "Tag",
@@ -388,7 +388,7 @@ BooleanId
     { return b }
 
 If
-    = _ "(if " _ pred:BooleanId "::" body:Expression* ")" elifs:Elif* elseCase:Else?
+    = _ "(if " _ pred:BooleanId "::" " "? body:Expression* ")" elifs:Elif* elseCase:Else?
     {
         return {
             kind: "IfStatement",
@@ -400,7 +400,7 @@ If
     }
 
 Elif
-    = _ "(elif " _ pred:BooleanId "::" body:Expression* ")"
+    = _ "(elif " _ pred:BooleanId "::" " "? body:Expression* ")"
     {
         return {
             kind: "IfStatement",
@@ -410,11 +410,11 @@ Elif
     }
 
 Else
-    = _ "(else" _ "::" body:Expression* ")"
+    = _ "(else" _ "::" " "? body:Expression* ")"
     { return body }
 
 For
-    = _ "(for " _ iter:Identifier _ "in" _ data:(Range / Array / Identifier) _ "::" body:Expression* ")"
+    = _ "(for " _ iter:Identifier _ "in" _ data:(Range / Array / Identifier) _ "::" " "? body:Expression* ")"
     {
         return {
             kind: "ForEach",
@@ -426,4 +426,3 @@ For
 
 _ "whitespace"
     = [ \t\r\n]*
-
