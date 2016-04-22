@@ -667,7 +667,7 @@ evaluators.html = function(ast, originalCode, context, config) {
                     }
                 }
 
-                throw Error("Could not evaluate undefined variable '"+node.name.value+"' in file: "+config.file+" at position "+node.start+"->"+node.end);
+                throw Error("Could not evaluate undefined variable '"+node.name.value+"' in file: "+config.file);
             }
 
         } else {

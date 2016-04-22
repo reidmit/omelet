@@ -1,0 +1,158 @@
+* {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+body {
+  padding: 0;
+  margin: 0;
+}
+textarea {
+  padding: 20px;
+  font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+  font-size: 18px;
+  line-height: 1.2em;
+  position: absolute;
+  top: 50px;
+  bottom: 0px;
+  border: none;
+  margin: 0;
+  resize: none;
+}
+textarea:active,
+textarea:focus {
+  outline: none;
+  border: none;
+  -webkit-appearance: none;
+}
+.code-display {
+  /*-webkit-transition: left 0.1s, right 0.1s, width 0.1s;
+  -moz-transition: left 0.1s, right 0.1s, width 0.1s;
+  transition: left 0.1s, right 0.1s, width 0.1s;*/
+}
+.code-display.input {
+  background: rgb(90,160,170);
+  color: #fff;
+}
+.code-display.output {
+}
+
+#input {
+  left: 0px;
+  right: 50%;
+}
+#output {
+  left: 50%;
+  right: 0px;
+}
+
+#topbar {
+  background: rgb(47,87,92);
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 50px;
+}
+#menu-btn {
+  width: 50px;
+  height: 50px;
+  float: left;
+  cursor: pointer;
+  background: rgb(47,87,92);
+  outline: none;
+  border: none;
+  -webkit-appearance: none;
+  color: #fff;
+}
+#menu-btn:hover {
+  color: rgb(47,87,92);
+  background: #fff;
+}
+#menu-btn span {
+  font-size: 36px;
+  position: absolute;
+  left: 9px;
+  top: 3px;
+}
+
+#sidebar {
+  font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+  background: #fff;
+  width: 200px;
+  position: absolute;
+  left: -200px;
+  top: 50px;
+  bottom: 0px;
+  padding: 20px;
+  /*-webkit-transition: left 0.1s;
+  -moz-transition: left 0.1s;
+  transition: left 0.1s;*/
+}
+
+#nowediting {
+  font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+  color: #fff;
+  font-size: 20px;
+  height: 50px;
+  line-height: 50px;
+  position: absolute;
+  top: 0;
+  bottom: 50px;
+  left: 60px;
+}
+#filename {
+  font-size: 20px;
+  color: #fff;
+  font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+  padding: 0px;
+  background: none;
+  border: none;
+  /*border-bottom: 2px solid #eee;*/
+}
+
+#newfile-btn {
+  /*right: 359px;*/
+  right: 168px;
+  top: 0px;
+}
+#download-btn {
+  /*right: 168px;*/
+  top: 0px;
+}
+#delete-btn {
+  right: 0px;
+  top: 0px;
+}
+#topbar button {
+  height: 50px;
+  position: absolute;
+
+  font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
+  font-size: 20px;
+  background: none;
+  color: #fff;
+  padding-left: 10px;
+  padding-right: 10px;
+  outline: none;
+  -webkit-appearance: none;
+  border: none;
+  cursor: pointer;
+  margin: 0;
+}
+#topbar button:hover {
+  background: #fff;
+  color: rgb(47,87,92);
+}
+
+#sidebar ul {
+  padding: 0;
+}
+#sidebar li {
+  padding: 0;
+  list-style-type: none;
+  margin: 5px 0;
+}
+.file-list-item {
+  cursor: pointer;
+}

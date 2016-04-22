@@ -14,7 +14,8 @@
     "watchify": "^3.7.0"
   },
   "scripts": {
-    "test": "jasmine"
+    "test": "jasmine",
+    "web": "browserify -s module.exports toast-o.js > ide/toast-web.js && uglifyjs ide/toast-web.js -o ide/toast-web.min.js"
   },
   "author": "Reid Mitchell",
   "license": "MIT",
@@ -28,7 +29,6 @@
   "keywords": [
     "parser",
     "omelet",
-    "template",
     "template",
     "engine",
     "template",
