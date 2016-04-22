@@ -174,9 +174,6 @@
     var fileStoragePrefix = "__TOAST__IDE__file__:";
     var fileStorageCurrent = "__TOAST__IDE__latest__";
 
-    function render(input) {
-      return input.toUpperCase();
-    }
 
     function update() {
         var unprocessed = input.value;
@@ -348,5 +345,17 @@
               class="code-display output"
               name="output"
               readonly disabled></textarea>
+    <script src="../toast-web.js"></script>
+    <script>
+        var T = new module.exports.Toast({
+            sourceLanguage: "omelet",
+            targetLanguage: "html",
+            prettyPrint: true,
+            isWeb: true
+        });
+        function render(input) {
+          return T.renderString(input);
+        }
+    </script>
   </body>
 </html>
