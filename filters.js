@@ -1,6 +1,4 @@
-var assert = require('./assertions.js');
 var __ = require('./util.js');
-var markdown = require("markdown").markdown;
 
 var filters = {};
 
@@ -10,10 +8,6 @@ var filters = {};
 STRING FILTERS
 (these filters return strings)
 */
-
-filters.markdown = filters.md = function(input) {
-    return markdown.toHTML(input);
-}
 
 filters.escape = function(input) {
     return input.replace(/\'/g, "&apos;")

@@ -1,4 +1,3 @@
-var colors = require('colors/safe');
 var __ = require('./util.js');
 
 module.exports.EvalError = function(state, input) {
@@ -54,7 +53,7 @@ module.exports.ParseError = function(filePath,err) {
     console.log(err);
     expected = err.expected.map(function(v) { return v.description }).join(" or ");
 
-    return colors.bold.red("Parser Error: ")+"Could not parse file '"+filePath+"'\n"+
+    return "Parser Error: Could not parse file '"+filePath+"'\n"+
            "    At line "+err.location.start.line+", column "+err.location.start.column+"\n"+
            "    Expected "+expected+", but found \""+err.found+"\""
 }
@@ -80,4 +79,3 @@ module.exports.SyntaxError = function(properties) {
 module.exports.AssertionError = function(properties) {
     return console.error("Assertion Failed:",properties.message)
 }
-

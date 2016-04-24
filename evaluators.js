@@ -3,7 +3,6 @@ var ast = require('./ast.js');
 var fs = require('fs');
 var parsers = require('./parsers.js');
 var err = require('./errors.js');
-var func = require('./func.js');
 var filters = require('./filters.js');
 var visitor = require('./visitor.js');
 var indentation = require('./indentation.js');
@@ -470,7 +469,6 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
     function evalString(node) {
         return node.value.replace(/\n[ ]+/g, "\n");
-        // return node.value.split("\n").map(func.trim).join("\n");
     }
     function evalRange(node) {
         var arr = [];
