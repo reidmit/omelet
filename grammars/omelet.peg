@@ -31,10 +31,6 @@
         return attrList;
     }
 }
-/*
-TODO:
-- modifiers (qualified access) ; items[0], person.name
-*/
 
 Document = top:TopLevelContent _ contents:Content
     {
@@ -84,7 +80,7 @@ Import "an import statement"
         }
     }
 
-ParameterList
+ParameterList "a list of parameters"
     = first:Identifier rest:(__ "," __ Identifier)*
     {
         return [first].concat(rest.map(function(a){return a[3]}));
@@ -117,7 +113,7 @@ Comment "a comment"
     = LineComment //possible todo: block comments
 
 LineComment
-    = "##" " "? value:[^\n]* "\n"?
+    = "##" value:[^\n]* "\n"?
     {
         return {
             kind: "Comment",
@@ -125,8 +121,8 @@ LineComment
         }
     }
 
-If
-    = CommandPrefix "if" __ negated:"!"? pred:Identifier ":" __ body:(Indent Content Dedent)? elifs:Elif* elseCase:Else?
+If "an if statement"
+    = CommandPrefix "if" __ negated:"!"? pred:(IdentifierComplex / Identifier) ":" __ body:(Indent Content Dedent)? elifs:Elif* elseCase:Else?
     {
         return {
             kind: "IfStatement",
@@ -138,8 +134,8 @@ If
         }
     }
 
-Elif
-    = CommandPrefix "elif" __ negated:"!"? pred:Identifier ":" __ body:(Indent Content Dedent)?
+Elif "an elif case"
+    = CommandPrefix "elif" __ negated:"!"? pred:(IdentifierComplex / Identifier) ":" __ body:(Indent Content Dedent)?
     {
         return {
             kind: "IfStatement",
@@ -149,14 +145,14 @@ Elif
         }
     }
 
-Else
+Else "an else case"
     = CommandPrefix "else" ":" __ body:(Indent Content Dedent)?
     {
         return body === null ? null : body[1]
     }
 
-For
-    = CommandPrefix "for" " " id:Identifier " in " data:Identifier ":" __ body:(Indent Content Dedent)?
+For "a for-in loop"
+    = CommandPrefix "for" " " id:Identifier " in " data:(IdentifierComplex / Identifier) ":" __ body:(Indent Content Dedent)?
     {
         return {
             kind: "ForEach",
@@ -166,7 +162,7 @@ For
         }
     }
 
-Tag
+Tag "a tag"
     = LineTag / BlockTag
 
 BlockTag
@@ -202,7 +198,7 @@ BlockTag
     }
 
 RawTag
-	= "@" tag:SingleTag __ "<!" r:(!"!>" r:. {return r})* "!>"
+	= "@" tag:SingleTag __ "`" r:(!"`" r:. {return r})* "`"
     {
     	return {
         	kind: "Tag",
@@ -525,7 +521,7 @@ Boolean "a boolean value"
     }
 
 Text "plain text"
-    = text:[^⇐⇒>@{}\[\]#\\]+
+    = text:[^⇐⇒%@{}\[\]#\\]+
     {
         return {
             kind: "String",

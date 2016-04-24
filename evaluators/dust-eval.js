@@ -207,11 +207,11 @@ module.exports = function(ast, originalCode, context, config) {
         var iterPattern = new RegExp("{"+iterator+"[\.]?","g");
         console.log("iterpattern is "+iterPattern);
         out = out.replace(iterPattern, "{.");
-        // if (node.elseCase) {
-        //     out += "{:else}\n";
-        //     out += node.elseCase.map(evalExpr).join("");
-        // }
-        out += "\n{/"+data+"}";
+        if (node.elseCase) {
+            out += "{:else}\n";
+            out += node.elseCase.map(evalExpr).join("");
+        }
+        out += "{/"+data+"}\n";
         return out;
     }
     function evalInterpolation(node) {

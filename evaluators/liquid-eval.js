@@ -73,7 +73,7 @@ module.exports = function(ast, originalCode, context, config) {
         return node.value;
     }
     function evalString(node) {
-        return "\""+node.value+"\"";
+        return node.value;
     }
     function evalRange(node) {
         return "("+evalExpr(node.start)+".."+evalExpr(node.end)+")";
@@ -96,7 +96,7 @@ module.exports = function(ast, originalCode, context, config) {
         return out;
     }
     function evalAttribute(node) {
-        return evalExpr(node.name)+"="+evalExpr(node.value);
+        return evalExpr(node.name)+"=\""+evalExpr(node.value)+"\"";
     }
     function evalTag(node) {
         var s;
@@ -155,7 +155,7 @@ module.exports = function(ast, originalCode, context, config) {
         if (node.elifCases) {
             for (var i=0; i<node.elifCases.length; i++) {
                 out += "{% elsif "+evalExpr(node.elifCases[i].predicate)+" %}\n";
-                out += evalExpr(node.elifCases[i].thenCase);
+                out += node.elifCases[i].thenCase.map(evalExpr).join("");
             }
         }
 
@@ -169,7 +169,6 @@ module.exports = function(ast, originalCode, context, config) {
         } else {
             out += "{% endunless %}\n";
         }
-
         return out;
     }
     function evalForEach(node) {
@@ -177,10 +176,7 @@ module.exports = function(ast, originalCode, context, config) {
         var iter = evalExpr(node.iterator);
         var out = "{% for "+iter+" in "+data+" %}\n";
         out += node.body.map(evalExpr).join("");
-        if (node.elseCase) {
-            console.warn("Liquid does not support else cases in for loops.");
-        }
-        out += "\n{% endfor %}";
+        out += "{% endfor %}\n";
         return out;
     }
     function evalInterpolation(node) {
