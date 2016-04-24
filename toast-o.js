@@ -88,11 +88,10 @@ var Toast = function(options) {
             output = beautify(output, {
                 indent_size: 2,
                 indent_inner_html: true,
-                extra_liners: []
+                extra_liners: [],
+                preserve_newlines: true
             });
         }
-
-        console.log("renderstring returning "+output);
 
         if (!isWeb)
             self.writeFile(self.getOutputFilePath(inputFilePath), output);

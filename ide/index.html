@@ -13,6 +13,20 @@
         <i class="fa fa-folder" aria-hidden="true"></i>
       </button>
       <div id="nowediting">file: <input type="text" onblur="checkForFileNameChange();" id="filename" placeholder="enter file name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
+      <select id="sourceLanguage" name="sourceLanguage" onchange="updateToastSettings();">
+          <option value="omelet2" selected>Omelet</option>
+          <option value="dust">Dust</option>
+          <option value="liquid">Liquid</option>
+          <option value="html">HTML</option>
+      </select>
+      <i id="languageArrow" class="fa fa-arrow-circle-right"></i>
+      <select id="targetLanguage" name="targetLanguage" onchange="updateToastSettings();">
+          <option value="omelet2">Omelet</option>
+          <option value="dust">Dust</option>
+          <option value="liquid">Liquid</option>
+          <option value="html" selected>HTML</option>
+      </select>
+
       <button id="newfile-btn" onclick="newFile();"><i class="fa fa-file"></i> new file</button>
       <!-- <button id="download-btn"><i class="fa fa-download"></i> download file</button> -->
       <button id="delete-btn" onclick="deleteCurrentFile();"><i class="fa fa-trash"></i> delete file</button>
@@ -33,17 +47,24 @@
     <script src="toast-ide.js"></script>
     <script src="toast-web.min.js"></script>
     <script>
+        var sourceLanguage = "omelet2";
+        var targetLanguage = "html";
+
         var context = {
             items: ["reid","caroline","scott","luke"],
             name: "Reid Mitchell",
             age: 22,
             favoriteNumber: 47,
-            pageTitle: "Omelet"
+            people: [
+                {name: "Alice", age: 22},
+                {name: "Bob", age: 30},
+                {name: "Carol", age: 47}
+            ]
         }
         var T = new module.exports.Toast({
-            sourceLanguage: "omelet2",
-            targetLanguage: "html",
-            prettyPrint: true,
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage,
+            prettyPrint: false,
             isWeb: true
         });
         function render(input) {

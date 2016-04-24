@@ -3,9 +3,10 @@ var ast = require('./ast.js');
 var fs = require('fs');
 var parsers = require('./parsers.js');
 var err = require('./errors.js');
+var func = require('./func.js');
 var filters = require('./filters.js');
 var visitor = require('./visitor.js');
-var indentation = require('./indentation');
+var indentation = require('./indentation.js');
 
 var fileStoragePrefix = "__TOAST__IDE__file__:";
 var fileStorageCurrent = "__TOAST__IDE__latest__";
@@ -253,7 +254,7 @@ evaluators.html = function(ast, originalCode, context, config) {
         }
 
         //TODO: generalize this
-        if (config.sourceLanguage === "omelet2") {
+        if (indentation.isIndentedLanguage(config.sourceLanguage)) {
             input = indentation.preprocess(input);
         }
 
@@ -315,7 +316,7 @@ evaluators.html = function(ast, originalCode, context, config) {
         }
 
         //TODO: generalize this
-        if (config.sourceLanguage === "omelet2") {
+        if (indentation.isIndentedLanguage(config.sourceLanguage)) {
             input = indentation.preprocess(input);
         }
 
@@ -419,7 +420,7 @@ evaluators.html = function(ast, originalCode, context, config) {
         }
 
         //TODO: generalize this
-        if (config.sourceLanguage === "omelet2") {
+        if (indentation.isIndentedLanguage(config.sourceLanguage)) {
             input = indentation.preprocess(input);
         }
 
@@ -468,7 +469,8 @@ evaluators.html = function(ast, originalCode, context, config) {
         return parseInt(node.value);
     }
     function evalString(node) {
-        return node.value;
+        return node.value.replace(/\n[ ]+/g, "\n");
+        // return node.value.split("\n").map(func.trim).join("\n");
     }
     function evalRange(node) {
         var arr = [];
@@ -552,17 +554,7 @@ evaluators.html = function(ast, originalCode, context, config) {
                 inner += tmp;
             }
 
-            if (node.filters) {
-                for (var i=0; i<node.filters.length; i++) {
-                    var filterArgs = [];
-                    for (var j=0; j<node.filters[i].arguments.length; j++) {
-                        filterArgs.push([node.filters[i].arguments[j]].map(evalExpr).join(""))
-                    }
-                    inner = applyFilter(node.filters[i],inner,filterArgs,originalCode);
-                }
-            }
-
-            s += inner;
+            s += inner.trim();
             s += "</"+tagName+">";
         }
 
@@ -589,17 +581,24 @@ evaluators.html = function(ast, originalCode, context, config) {
     }
     function evalIfStatement(node) {
         var pred = evalExpr(node.predicate);
-        console.log("at IfStatement");
-        console.log(JSON.stringify(pred));
-        console.log(JSON.stringify(node.predicate));
         pred = pred === "false" ? false : (pred === "true" ? true : pred);
 
+        var predIsTruthy = pred === false || typeof pred === 'undefined' || pred === null;
+
+        if (node.negated) { //??
+            predIsTruthy = !predIsTruthy;
+        }
+
         scope.open();
-        if (pred === false || typeof pred === 'undefined' || pred === null) {
+        if (predIsTruthy) {
             if (node.elifCases) {
                 for (var i=0; i<node.elifCases.length; i++) {
                     pred = evalExpr(node.elifCases[i].predicate);
-                    if (pred !== false || !(typeof pred ==='undefined') || pred !== null) {
+                    var elifPredIsTruthy = pred !== false || !(typeof pred ==='undefined') || pred !== null;
+                    if (node.elifCases[i].negated) {
+                        elifPredIsTruthy = !elifPredIsTruthy;
+                    }
+                    if (elifPredIsTruthy) {
                         var out = node.elifCases[i].thenCase.map(evalExpr).join("");
                         scope.close();
                         return out;
@@ -675,7 +674,7 @@ evaluators.html = function(ast, originalCode, context, config) {
             scope.close();
         }
 
-        return output.join("");
+        return output.join("\n");
     }
     function evalInterpolation(node) {
         var val = scope.find(node.name.value);

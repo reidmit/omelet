@@ -31,6 +31,10 @@
         return attrList;
     }
 }
+/*
+TODO:
+- modifiers (qualified access) ; items[0], person.name
+*/
 
 Document = top:TopLevelContent _ contents:Content
     {
@@ -113,7 +117,7 @@ Comment "a comment"
     = LineComment //possible todo: block comments
 
 LineComment
-    = "##" value:[^\n]* "\n"
+    = "##" " "? value:[^\n]* "\n"?
     {
         return {
             kind: "Comment",
@@ -122,11 +126,12 @@ LineComment
     }
 
 If
-    = CommandPrefix "if" " " pred:Identifier ":" __ body:(Indent Content Dedent)? elifs:Elif* elseCase:Else?
+    = CommandPrefix "if" __ negated:"!"? pred:Identifier ":" __ body:(Indent Content Dedent)? elifs:Elif* elseCase:Else?
     {
         return {
             kind: "IfStatement",
             predicate: pred,
+            negated: negated !== null,
             thenCase: body === null ? [] : body[1],
             elifCases: elifs,
             elseCase: elseCase === null ? undefined : elseCase
@@ -134,11 +139,12 @@ If
     }
 
 Elif
-    = CommandPrefix "elif" " " pred:Identifier ":" __ body:(Indent Content Dedent)?
+    = CommandPrefix "elif" __ negated:"!"? pred:Identifier ":" __ body:(Indent Content Dedent)?
     {
         return {
             kind: "IfStatement",
             predicate: pred,
+            negated: negated !== null,
             thenCase: body === null ? [] : body[1]
         }
     }
@@ -289,7 +295,7 @@ Interpolation
             inner: contents
         }
     }
-    / "{" " "? id:Identifier parens:("(" ArgumentList? ")")? " "? __ filters:Filter* "}"
+    / "{" " "? id:(IdentifierComplex / Identifier) parens:("(" ArgumentList? ")")? " "? __ filters:Filter* "}"
     {
         return {
             kind: "Interpolation",
@@ -347,6 +353,32 @@ Identifier
         return {
             kind: "Identifier",
             value: id[0].concat(id[1].join(""))
+        }
+    }
+
+IdentifierComplex
+    = ident:([a-zA-z] [a-zA-Z0-9_-]*) mods:Modifier+
+    {
+        return {
+            kind: "Identifier",
+            value: ident[0].concat(ident[1].join("")),
+            modifiers: mods
+        }
+    }
+
+Modifier
+    = ("." mod:Identifier)
+    {
+        return {
+            kind: "Modifier",
+            value: mod
+        }
+    }
+    / ("[" mod:(Number / QuotedString / Identifier) "]")
+    {
+        return {
+            kind: "Modifier",
+            value: mod
         }
     }
 
@@ -493,7 +525,7 @@ Boolean "a boolean value"
     }
 
 Text "plain text"
-    = text:[^⇐⇒%@{}\[\]#\\]+
+    = text:[^⇐⇒>@{}\[\]#\\]+
     {
         return {
             kind: "String",

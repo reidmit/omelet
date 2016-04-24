@@ -42,8 +42,23 @@ module.exports = function(ast, originalCode, context, config) {
         return out;
     }
     function evalMacroDefinition(node) {
-        //Dust has no macros... unless some assignments turn into macros?
-        return "";
+        var name = evalExpr(node.name);
+        var out = "{<"+name+"}\n";
+
+        if (node.params && node.params.length > 0) {
+            console.warn("Dust does not support macros (inline partials)"+
+                        " that take parameters. The parameters defined for"+
+                        " macro '"+name+"' are being ignored.");
+        }
+
+        if (__.isArray(node.body)) {
+            out += node.body.map(evalExpr).join("");
+        } else {
+            out += evalExpr(node.body);
+        }
+
+        out += "{/"+name+"}\n";
+        return out;
     }
     function evalBoolean(node) {
         return node.value;
@@ -91,7 +106,7 @@ module.exports = function(ast, originalCode, context, config) {
         var tagName = evalExpr(node.name);
         s = "<"+tagName;
 
-        var attributes = mergeAttributes(node.attributes,"class");
+        var attributes = __.mergeAttributes(node.attributes,"class");
         for (var i=0; i<attributes.length; i++) {
             s += " "+evalExpr(attributes[i]);
         }
@@ -127,55 +142,101 @@ module.exports = function(ast, originalCode, context, config) {
         return node.inner.map(evalExpr).join("");
     }
     function evalIfStatement(node) {
-        if (node.predicate.kind !== "Interpolation") {
-            console.warn("Dust only supports if statements where the predicate is a variable (or an interpolation).");
+        if (node.predicate.kind !== "Identifier") {
+            console.warn("Dust only supports if statements where the predicate is an identifier.");
             return "";
         }
         var pred = evalExpr(node.predicate);
         var out;
-        if (node.predicate.filters.length === 1) {
-            if (node.predicate.filters[0].name === "exists") {
-                out = "{?"+pred+"}";
-            } else if (node.predicate.filters[0].name === "notexists") {
-                out = "{^"+pred+"}";
-            } else {
-                out = "{#"+pred+"}";
-            }
+
+        if (node.negated) {
+            out = "{^"+pred+"}\n"
         } else {
-            out = "{#"+pred+"}";
-        }
-        out += "\n"+node.thenCase.map(evalExpr).join("");
-
-        if (node.elifCases) {
-            console.warn("Dust does not currently support elifs.");
+            out = "{?"+pred+"}\n";
         }
 
-        if (node.elseCase) {
+        out += node.thenCase.map(evalExpr).join("");
+
+        if (node.elifCases || node.elseCase) {
             out += "{:else}\n";
-            out += node.elseCase.map(evalExpr).join("");
+            /*
+            * We can restructure the elifs to be nested if/else nodes!
+            * If                    If
+            *   thenCase              thenCase
+            *   elifCase[0]           else(new)
+            *   elifCase[1]    ->       If
+            *   elifCase[2]               thenCase(from elifCase[0])
+            *   elseCase                  else(new)
+            *                               If...
+            */
+            if (node.elifCases && node.elifCases.length > 0) {
+                var newIf = {
+                    kind: "IfStatement",
+                    predicate: node.elifCases[0].predicate,
+                    negated: node.elifCases[0].negated,
+                    thenCase: node.elifCases[0].thenCase
+                }
+                var ptr = newIf;
+                for (var i=1; i<node.elifCases.length; i++) {
+                    var elif = node.elifCases[i];
+                    ptr.elseCase = [{
+                        kind: "IfStatement",
+                        predicate: elif.predicate,
+                        negated: elif.negated,
+                        thenCase: elif.thenCase
+                    }];
+                    ptr = ptr.elseCase[0];
+                }
+                ptr.elseCase = node.elseCase;
+
+                out += evalExpr(newIf);
+
+            } else if (node.elseCase) {
+                out += node.elseCase.map(evalExpr).join("");
+            }
         }
-        out += "\n{/"+pred+"}";
+        out += "{/"+pred+"}\n";
         return out;
     }
     function evalForEach(node) {
-        //TODO: replace instances of iterator in node.body with .
+        var iterator = evalExpr(node.iterator);
         var data = evalExpr(node.data);
         var out = "{#"+data+"}\n";
         out += node.body.map(evalExpr).join("");
-        if (node.elseCase) {
-            out += "{:else}\n";
-            out += node.elseCase.map(evalExpr).join("");
-        }
+        console.log("iterator is "+iterator);
+        var iterPattern = new RegExp("{"+iterator+"[\.]?","g");
+        console.log("iterpattern is "+iterPattern);
+        out = out.replace(iterPattern, "{.");
+        // if (node.elseCase) {
+        //     out += "{:else}\n";
+        //     out += node.elseCase.map(evalExpr).join("");
+        // }
         out += "\n{/"+data+"}";
         return out;
     }
     function evalInterpolation(node) {
-        var out = "{"+node.name;
-        for (var i=0; i<node.filters.length; i++) {
-            //Filters don't take params in Dust
-            out += "|"+node.filters[i].name;
+        var out;
+        if (node.isMacroCall) {
+            //Macros don't take args in Dust
+            if (node.arguments.length > 0) {
+                console.warn("Partials don't take arguments in Dust. The arguments given "+
+                             "to partial "+evalExpr(node.name)+" have been ignored.");
+            }
+            out = "{+"+evalExpr(node.name)+"/}";
+        } else {
+            out = "{"+evalExpr(node.name);
+            for (var i=0; i<node.filters.length; i++) {
+                //Filters don't take args in Dust
+                if (["s","u","h","j"].indexOf(node.filters[i].name) > -1) {
+                    out += "|"+node.filters[i].name;
+                } else {
+                    console.warn("Only filters |s, |u, |j, and |h "+
+                                    "are allowed in Dust. Filter |"+
+                                    node.filters[i].name+" was not translated.");
+                }
+            }
+            out += "}";
         }
-        out += "}";
         return out;
     }
     function evalDoctype(node) {
@@ -216,7 +277,7 @@ module.exports = function(ast, originalCode, context, config) {
         }
     }
     function evalComment(node) {
-        return "{! "+node.value+" !}";
+        return "{! "+node.value+" !}\n";
     }
     function evalCommentHTML(node) {
         return "<!--"+node.value+"-->";

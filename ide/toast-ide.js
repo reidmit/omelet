@@ -110,7 +110,7 @@ function checkForFileNameChange() {
     var res = confirm("Are you sure you want to rename "+currentFileName
                 +" to "+fileNameInput.value+"?");
     if (res) {
-      deleteFile(currentFileName);
+      deleteCurrentFile();
       currentFileName = fileNameInput.value;
       saveFile(currentFileName);
       getFileList();
@@ -119,6 +119,20 @@ function checkForFileNameChange() {
       return;
     }
   }
+}
+
+function updateToastSettings() {
+    var sourceLangSelect = document.getElementById("sourceLanguage");
+    var targetLangSelect = document.getElementById("targetLanguage");
+    sourceLanguage = sourceLangSelect.value;
+    targetLanguage = targetLangSelect.value;
+    T = new module.exports.Toast({
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
+        prettyPrint: false,
+        isWeb: true
+    });
+    update();
 }
 
 window.onload = function() {

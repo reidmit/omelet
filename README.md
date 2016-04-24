@@ -10,7 +10,7 @@
        ╚═╝  ▀▀▀▀  ╚═╝╚═╝ ╚════╝ ╚═╝
                       version 0.0.1
 
-**Toast** is a universal transpiler for template languages (Jinja2, Jade, Mustache, etc). It will parse as many of these languages as possible into an abstract syntax tree of a single, standard form. It can then turn that tree back into code in any of the languages it supports.
+**Toast** is a transpiler for template languages (Jinja2, Jade, Dust, Liquid, Mustache, etc). It will parse as many of these languages as possible into an abstract syntax tree of a single, standard form. It can then turn that tree back into code in any of the languages it supports.
 
 Toast is currently in its early stages. At this point, it can translate to and from HTML and Omelet (a new template language that I wrote). I'm actively working on adding support for other languages.
 
