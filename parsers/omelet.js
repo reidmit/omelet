@@ -67,7 +67,10 @@ module.exports = (function() {
         peg$c4 = function(file) {
                 return {
                     kind: "Extend",
-                    file: file
+                    file: {
+                        kind: "String",
+                        value: file
+                    }
                 }
             },
         peg$c5 = { type: "other", description: "an import statement" },
@@ -2716,7 +2719,7 @@ module.exports = (function() {
       if (s1 !== peg$FAILED) {
         s2 = peg$parse__();
         if (s2 !== peg$FAILED) {
-          s3 = peg$parseIdentifier();
+          s3 = peg$parseIdentifierString();
           if (s3 !== peg$FAILED) {
             s4 = [];
             s5 = peg$parseFilterArgument();

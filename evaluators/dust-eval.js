@@ -336,9 +336,11 @@ module.exports = function(ast, originalCode, context, config) {
         }
     }
 
+    var o = "";
     if (ast.extend) {
-        return evalExtend(ast);
+        o += evalExtend(ast.extend);
     }
-    ast.imports.map(evalExpr);
-    return ast.contents.map(evalExpr).join("");
+    o += ast.imports.map(evalExpr);
+    o += ast.contents.map(evalExpr).join("");
+    return o;
 }

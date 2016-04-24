@@ -32,7 +32,7 @@ module.exports = function(ast, originalCode, context, config) {
         return "";
     }
     function evalExtend(node) {
-        return "{% extends '"+evalExpr(node.file)+"' %}\n";
+        return "{% extends \""+evalExpr(node.file)+"\" %}\n";
         return "";
     }
     function evalAssignment(node) {
@@ -41,11 +41,6 @@ module.exports = function(ast, originalCode, context, config) {
         out += evalExpr(node.rightSide);
         out += " %}";
         return out;
-    }
-    function evalMacroDefinition(node) {
-
-        console.warn("Liquid does not support macro definitions.");
-        return "";
     }
     function evalMacroDefinition(node) {
         var name = evalExpr(node.name);
@@ -180,12 +175,24 @@ module.exports = function(ast, originalCode, context, config) {
         return out;
     }
     function evalInterpolation(node) {
-        var out = "{{ "+node.name;
+        var out = "{{ "+evalExpr(node.name);
         for (var i=0; i<node.filters.length; i++) {
-            out += " | "+node.filters[i].name;
+            //TODO: translate filter names when possible, e.g. uppercase <-> upper
+            //      something like getFilterName(evaledName, inputLanguage, outputLanguage)
+            out += " | "+evalExpr(node.filters[i].name);
             if (node.filters[i].arguments.length > 0) {
                 out += ": ";
-                out += node.filters[i].arguments.map(evalExpr).join(", ");
+                for (var j=0; j<node.filters[i].arguments.length; j++) {
+                    var isString = node.filters[i].arguments[j].kind === "String";
+                    if (isString) {
+                        out += "\""+evalExpr(node.filters[i].arguments[i])+"\"";
+                    } else {
+                        out += evalExpr(node.filters[i].arguments[i]);
+                    }
+                    if (j < node.filters[i].arguments.length-1) {
+                        out += ", "
+                    }
+                }
             }
         }
         out += " }}";
@@ -292,9 +299,11 @@ module.exports = function(ast, originalCode, context, config) {
         }
     }
 
+    var o = "";
     if (ast.extend) {
-        return evalExtend(ast);
+        o += evalExtend(ast.extend);
     }
-    ast.imports.map(evalExpr);
-    return ast.contents.map(evalExpr).join("");
+    o += ast.imports.map(evalExpr);
+    o += ast.contents.map(evalExpr).join("");
+    return o;
 }

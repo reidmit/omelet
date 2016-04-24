@@ -67,7 +67,10 @@ Extend "an extend statement"
     {
         return {
             kind: "Extend",
-            file: file
+            file: {
+                kind: "String",
+                value: file
+            }
         }
     }
 
@@ -308,7 +311,7 @@ FilterArgument "a filter argument"
     { return arg }
 
 Filter "a filter"
-    = "|" __ name:Identifier args:FilterArgument* __
+    = "|" __ name:IdentifierString args:FilterArgument* __
     {
         return {
             kind: "Filter",

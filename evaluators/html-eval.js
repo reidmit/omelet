@@ -12,6 +12,7 @@ var parsers = require('../parsers.js');
 var err = require('../errors.js');
 var filters = require('../filters.js');
 var evaluators = require('../evaluators.js');
+var indentation = require('../indentation.js');
 
 var html_elements = {
     void: __.toMap("area,base,br,col,embed,hr,img,input,keygen,link,meta,param,source,track,wbr"),
@@ -23,6 +24,8 @@ module.exports = function(ast, originalCode, context, config) {
     if (!ast) {
         return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
     }
+
+    console.log("EVAL! evaluators is "+JSON.stringify(evaluators));
 
     var scope = new evaluators.Scope();
     scope.addAll(context);
@@ -358,7 +361,7 @@ module.exports = function(ast, originalCode, context, config) {
         var tagName = evalExpr(node.name);
         s = "<"+tagName;
 
-        var attributes = mergeAttributes(node.attributes,"class");
+        var attributes = evaluators.mergeAttributes(node.attributes,"class");
         for (var i=0; i<attributes.length; i++) {
             s += " "+evalExpr(attributes[i]);
         }

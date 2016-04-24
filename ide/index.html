@@ -45,7 +45,7 @@
               name="output"
               readonly disabled></textarea>
     <script src="toast-ide.js"></script>
-    <script src="toast-web.min.js"></script>
+    <script src="toast-web.js"></script>
     <script>
         var sourceLanguage = "omelet";
         var targetLanguage = "html";
@@ -64,7 +64,7 @@
         var T = new module.exports.Toast({
             sourceLanguage: sourceLanguage,
             targetLanguage: targetLanguage,
-            prettyPrint: false,
+            prettyPrint: true,
             isWeb: true
         });
         function render(input) {
@@ -73,7 +73,8 @@
                 return T.renderString(input, context, currentFileName);
             } catch (e) {
                 output.style.color = "red";
-                return e.toString();
+                // return e.toString();
+                return e.toString()+"\n\n"+JSON.stringify(e);
             }
         }
     </script>

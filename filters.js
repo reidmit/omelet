@@ -247,4 +247,17 @@ filters.contains = function(input, other) {
     }
 }
 
+//added 4/24...
+
+filters.split = function(input, separator) {
+    return input.split(separator);
+}
+
+filters.join = function(input, separator) {
+    if (!__.isArray(input)) {
+        input = [input];
+    }
+    return input.join(separator);
+}
+
 module.exports = filters;

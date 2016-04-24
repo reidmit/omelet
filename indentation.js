@@ -7,12 +7,12 @@ function isIndentedLanguage(language) {
 }
 
 function preprocessIndentation(text) {
-    var lines = text.split("\n").filter(function(s) {
-        return !s.split("").every(function(c) {
-            return c == " " && c == "\t"
-        });
-    });
-    // var lines = text.split("\n");
+    // var lines = text.split("\n").filter(function(s) {
+    //     return !s.split("").every(function(c) {
+    //         return c == " " && c == "\t"
+    //     });
+    // });
+    var lines = text.split("\n");
     var processedLines = insertTokens(lines, []);
     console.log(text);
     return processedLines.join("\n");
@@ -29,6 +29,11 @@ function insertTokens(lines, stack) {
 
     var line = lines[0];
     var rest = lines.slice(1);
+
+    //new 4/24
+    if (line.length === 0) {
+        return [line].concat(insertTokens(rest, stack))
+    }
 
     var indentation = calculateIndentation(line);
     var top = stack.length ? stack[stack.length-1] : 0;

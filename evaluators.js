@@ -458,6 +458,7 @@ module.exports.html = require('./evaluators/html-eval.js');
 
 module.exports.Scope = Scope;
 module.exports.applyFilter = applyFilter;
+module.exports.escapeHTML = escapeHTML;
 module.exports.mergeAttributes = mergeAttributes;
 module.exports.checkForReferences = checkForReferences;
 module.exports.checkExtends = checkExtends;
