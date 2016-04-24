@@ -67,7 +67,7 @@ function saveFile(fileName) {
 
 function deleteCurrentFile() {
   if (currentFileName === "") return;
-  var res = confirm("Are you sure you want to delete "+currentFileName+"?");
+  var res = confirm("Are you sure you want to delete the file '"+currentFileName+"'?");
   if (res) {
     localStorage.removeItem(fileStoragePrefix+currentFileName);
     currentFileName = "";

@@ -10,10 +10,10 @@ body {
 textarea {
   padding: 20px;
   font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.2em;
   position: absolute;
-  top: 50px;
+  top: 45px;
   bottom: 0px;
   border: none;
   margin: 0;
@@ -52,14 +52,14 @@ textarea:focus {
   left: 0;
   top: 0;
   right: 0;
-  height: 50px;
+  height: 45px;
 }
 #topbar select {
-    font-size: 20px;
+    font-size: 18px;
     font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
     width: 120px;
     position: absolute;
-    top: 13px;
+    top: 10px;
     left: 50%;
     border: none;
     border-radius: 0;
@@ -76,15 +76,15 @@ textarea:focus {
 #languageArrow {
     position: absolute;
     color: #fff;
-    font-size: 20px;
-    top: 15px;
+    font-size: 18px;
+    top: 14px;
     left: 50%;
-    margin-left: -9px;
+    margin-left: -8px;
 }
 
 #menu-btn {
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   float: left;
   cursor: pointer;
   background: rgb(47,87,92);
@@ -110,7 +110,7 @@ textarea:focus {
   width: 200px;
   position: absolute;
   left: -200px;
-  top: 50px;
+  top: 45px;
   bottom: 0px;
   padding: 20px;
 }
@@ -118,16 +118,16 @@ textarea:focus {
 #nowediting {
   font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
   color: #fff;
-  font-size: 20px;
-  height: 50px;
-  line-height: 50px;
+  font-size: 18px;
+  height: 45px;
+  line-height: 45px;
   position: absolute;
   top: 0;
-  bottom: 50px;
-  left: 60px;
+  bottom: 45px;
+  left: 52px;
 }
 #filename {
-  font-size: 20px;
+  font-size: 18px;
   color: #fff;
   font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
   padding: 0px;
@@ -137,12 +137,7 @@ textarea:focus {
 }
 
 #newfile-btn {
-  /*right: 359px;*/
-  right: 168px;
-  top: 0px;
-}
-#download-btn {
-  /*right: 168px;*/
+  right: 100px;
   top: 0px;
 }
 #delete-btn {
@@ -150,15 +145,15 @@ textarea:focus {
   top: 0px;
 }
 #topbar button {
-  height: 50px;
+  height: 45px;
   position: absolute;
 
   font-family: 'Inconsolata', 'Consolas', 'Source Code Pro', monospace;
-  font-size: 20px;
+  font-size: 18px;
   background: none;
   color: #fff;
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: 9px;
+  padding-right: 9px;
   outline: none;
   -webkit-appearance: none;
   border: none;
