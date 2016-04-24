@@ -1,7 +1,9 @@
 {
-    function isArray(obj) {
-        return Object.prototype.toString.call(obj) === '[object Array]';
-    }
+    /*
+    * A function to merge attributes that have the same name.
+    *   param: attrList (list of AST Attribute nodes)
+    *   param: attrName (string name of attribute to merge)
+    */
     function mergeAttributes(attrList,attrName) {
         if (attrList.length < 2) return attrList;
 
@@ -31,328 +33,27 @@
         return attrList;
     }
 }
-/*
-TODO:
-- modifiers (qualified access) ; items[0], person.name
-*/
 
-Document = top:TopLevelContent _ contents:Content
+//TODO: comments here are not put into AST
+Document = _ comms:Comment* _ extend:Extend? _ imports:Import* _ defs:Definition* _ contents:Expression*
     {
-        var imps = [], exts = [], defs = [], coms = [];
-        for (var i=0; i<top.length; i++) {
-            switch(top[i].kind) {
-                case "Comment": coms.push(top[i]); break;
-                case "Extend" : exts.push(top[i]); break;
-                case "Import" : imps.push(top[i]); break;
-                case "MacroDefinition": defs.push(top[i]); break;
-            }
-        }
-        //TODO: this would be neater:
-        /*return {
-            kind: "Document",
-            imports: imps,
-            extend: exts.length === 0 ? undefined : exts,
-            definitions: defs,
-            contents: coms.concat(contents)
-        }*/
         return {
             kind: "Document",
-            imports: imps,
-            extend: exts[0], //TODO: exts should always be size 1
-            contents: defs.concat(coms.concat(contents))
+            extend: extend !== null ? extend : undefined,
+            imports: imports,
+            contents: defs.concat(contents)
         }
     }
 
-TopLevelContent
-    = (Comment / Extend / Import / Definition)*
-
-Extend "an extend statement"
-    = CommandPrefix "extend" __ file:FilePath _
-    {
-        return {
-            kind: "Extend",
-            file: file
-        }
-    }
-
-Import "an import statement"
-    = CommandPrefix "import" __ file:FilePath _
-    {
-        return {
-            kind: "Import",
-            file: file
-        }
-    }
-
-ParameterList
-    = first:Identifier rest:(__ "," __ Identifier)*
-    {
-        return [first].concat(rest.map(function(a){return a[3]}));
-    }
-
-Definition "a macro definition"
-    = CommandPrefix "def" " " name:Identifier "(" params:ParameterList? ")" ":" __ body:(Indent Content Dedent)?
-    {
-        return {
-            kind: "MacroDefinition",
-            name: name,
-            params: params === null ? [] : params,
-            body: body === null ? [] : body[1]
-        }
-    }
-
-Content
-    = (Comment / If / For / Doctype / RawTag / Tag / Interpolation / Text)*
-
-Doctype "a doctype"
-	= "@doctype" __ val:[^⇐⇒@%{}\[\]# \t\n\r]+
-    {
-    	return {
-        	kind: "Doctype",
-            value: val.join("")
-        }
-    }
-
-Comment "a comment"
-    = LineComment //possible todo: block comments
-
-LineComment
-    = "##" " "? value:[^\n]* "\n"?
-    {
-        return {
-            kind: "Comment",
-            value: value.join("")
-        }
-    }
-
-If
-    = CommandPrefix "if" __ negated:"!"? pred:Identifier ":" __ body:(Indent Content Dedent)? elifs:Elif* elseCase:Else?
-    {
-        return {
-            kind: "IfStatement",
-            predicate: pred,
-            negated: negated !== null,
-            thenCase: body === null ? [] : body[1],
-            elifCases: elifs,
-            elseCase: elseCase === null ? undefined : elseCase
-        }
-    }
-
-Elif
-    = CommandPrefix "elif" __ negated:"!"? pred:Identifier ":" __ body:(Indent Content Dedent)?
-    {
-        return {
-            kind: "IfStatement",
-            predicate: pred,
-            negated: negated !== null,
-            thenCase: body === null ? [] : body[1]
-        }
-    }
-
-Else
-    = CommandPrefix "else" ":" __ body:(Indent Content Dedent)?
-    {
-        return body === null ? null : body[1]
-    }
-
-For
-    = CommandPrefix "for" " " id:Identifier " in " data:Identifier ":" __ body:(Indent Content Dedent)?
-    {
-        return {
-            kind: "ForEach",
-            iterator: id,
-            data: data,
-            body: body === null ? [] : body[1]
-        }
-    }
-
-Tag
-    = LineTag / BlockTag
-
-BlockTag
-    = openTag:OpenTag inner:(Indent Content Dedent)?
-    {
-        if (isArray(openTag)) {
-            var o = {
-                kind: "Tag",
-                name: openTag[0].value,
-                attributes: mergeAttributes(openTag[0].attributes,"class")
-            };
-            var curr = o;
-
-            for (var i=1; i<openTag.length; i++) {
-                curr.inner = [{
-                    kind: "Tag",
-                    name: openTag[i].value,
-                    attributes: mergeAttributes(openTag[i].attributes,"class")
-                }]
-                curr = curr.inner[0];
-            }
-            curr.inner = inner === null ? [] : inner[1];
-
-            return o;
-        } else {
-            return {
-                kind: "Tag",
-                name: openTag.value,
-                attributes: mergeAttributes(openTag.attributes,"class"),
-                inner: inner === null ? [] : inner[1]
-            }
-        }
-    }
-
-RawTag
-	= "@" tag:SingleTag __ "<!" r:(!"!>" r:. {return r})* "!>"
-    {
-    	return {
-        	kind: "Tag",
-            name: tag.value,
-            attributes: tag.attributes,
-            inner: [{
-            	kind: "Raw",
-                value: r.join("").replace(/[⇐⇒]/g,"")
-            }]
-        }
-    }
-
-LineOfText
-    = text:[^\n⇐⇒{}]* other:(Interpolation [^\n⇐⇒{}]*)*
-    {
-    	var line = [{
-        	kind: "String",
-            value: text.join("")
-        }];
-        for (var i=0; i<other.length; i++) {
-        	line.push(other[i][0]);
-            line.push({
-            	kind: "String",
-                value: other[i][1].join("")
-            });
-        }
-        return line;
-    }
-
-LineTag
-    = openTag:OpenTag __ line:LineOfText "\n"? !Indent
-    {
-        if (isArray(openTag)) {
-            var o = {
-                kind: "Tag",
-                name: openTag[0].value,
-                attributes: mergeAttributes(openTag[0].attributes,"class")
-            };
-            var curr = o;
-
-            for (var i=1; i<openTag.length; i++) {
-                curr.inner = [{
-                    kind: "Tag",
-                    name: openTag[i].value,
-                    attributes: mergeAttributes(openTag[i].attributes,"class")
-                }]
-                curr = curr.inner[0];
-            }
-            curr.inner = line;
-
-            return o;
-        } else {
-            return {
-                kind: "Tag",
-                name: openTag.value,
-                attributes: mergeAttributes(openTag.attributes,"class"),
-                inner: line
-            }
-        }
-    }
-
-FilePath "a relative path name"
-    = prefix:"/"? part0:([a-zA-Z0-9-_]+ / "." ".")
-      parts:("/" ([a-zA-Z0-9-_]+ / "." "."))* ext:("." [a-zA-Z0-9]+)?
-    {
-        prefix = prefix === null ? "" : prefix
-        ext = ext === null ? "" : "."+ext[1].join("");
-        return prefix + [part0.join("")]
-                    .concat(parts.map(function(a){return "/"+a[1].join("")}))
-                    .join("") + ext;
-    }
-
-Interpolation
-    = "{>" " "? "include" __ filePath:FilePath " "? "}"
-    {
-        return {
-            kind: "Include",
-            file: {
-                kind: "String",
-                value: filePath
-            }
-        }
-    }
-    / "{" openTag:OpenTag contents:(Text / Interpolation)* "}"
-    {
-    	return {
-        	kind: "Tag",
-            name: openTag.value,
-            attributes: mergeAttributes(openTag.attributes,"class"),
-            inner: contents
-        }
-    }
-    / "{" " "? id:(IdentifierComplex / Identifier) parens:("(" ArgumentList? ")")? " "? __ filters:Filter* "}"
-    {
-        return {
-            kind: "Interpolation",
-            name: id,
-            isMacroCall: parens !== null,
-            arguments: parens === null ? [] :
-                            parens[1] === null ? [] : parens[1],
-            filters: filters
-        }
-    }
-
-FilterArgument "a filter argument"
-    = __ arg:Argument
-    { return arg }
-
-Filter "a filter"
-    = "|" __ name:Identifier args:FilterArgument* __
-    {
-        return {
-            kind: "Filter",
-            name: name,
-            arguments: args
-        }
-    }
-
-Argument "an argument"
-    = QuotedString / Number / Boolean / Identifier
-
-ArgumentList
-    = first:Argument __ rest:("," __ Argument)*
-    {
-        var newRest = rest.map(function(a) { return a[2] });
-        return [first].concat(newRest);
-    }
-
-AttributeList
-    = "[" attrs:(Attribute _)+ "]"
-    { return attrs.map(function(a) { return a[0] }) }
-
-SpecialAttribute
-    = ClassAttribute / IdAttribute
-
-IdentifierString
-    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
-    {
-        return {
-            kind: "String",
-            value: id[0].concat(id[1].join(""))
-        }
-    }
+Expression
+    = Raw / Doctype / Comment / Include / If / For / Tag / Parenthetical / Atom
 
 Identifier
-    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
+    = ident:([a-zA-z] [a-zA-Z0-9_-]*)
     {
         return {
             kind: "Identifier",
-            value: id[0].concat(id[1].join(""))
+            value: ident[0].concat(ident[1].join(""))
         }
     }
 
@@ -382,8 +83,140 @@ Modifier
         }
     }
 
+Raw
+    = "<!" r:(!"!>" r:. {return r})* "!>"
+    {
+        return {
+            kind: "Raw",
+            value: r.join("")
+        }
+    }
+
+Number
+    = digits:[0-9]+
+    {
+        return {
+            kind: "Number",
+            value: parseInt(digits.join(""))
+        }
+    }
+
+Boolean
+    = value:("true"/"false")
+    {
+        return {
+            kind: "Boolean",
+            value: value
+        }
+    }
+
+AttributeName
+    = name:([a-zA-Z] [a-zA-Z0-9-]*)
+    {
+        return {
+            kind: "String",
+            value: name[0].concat(name[1].join(""))
+        }
+    }
+
+EscapedCharacter
+    = "\\" char:([\(\)\{\}\|])?
+    {
+        return {
+            kind: "String",
+            value: char ? char : "\\"
+        }
+    }
+
+UnquotedString
+    = string:[^\)\|\(\{\\]+
+    {
+        return {
+            kind: "String",
+            value: string.join("")
+        }
+    }
+
+SingleQuotedString
+    = "'" value:[^\']* "'"
+    {
+        return {
+            kind: "String",
+            value: value.join("")
+        }
+    }
+
+DoubleQuotedString
+    = "\"" value:[^\"]* "\""
+    {
+        return {
+            kind: "String",
+            value: value.join("")
+        }
+    }
+
+QuotedString
+    = SingleQuotedString / DoubleQuotedString
+
+Comment
+    = "(*" c:(!"*)" c:. {return c})* "*)"
+    {
+        return {
+            kind: "Comment",
+            value: c.join("")
+        }
+    }
+
+FilterArgument
+    = _ arg:(Number / QuotedString / Identifier)
+    { return arg }
+
+Filter
+    = "|" _ name:Identifier args:FilterArgument* _
+    {
+        return {
+            kind: "Filter",
+            name: name,
+            arguments: args
+        }
+    }
+
+MacroArgument
+    = _ arg:(Number / Boolean / QuotedString / Identifier / Parenthetical / Interpolation)
+    { return arg }
+
+Interpolation
+    = "{" _ name:(IdentifierComplex / Identifier) args:MacroArgument* _ filters:Filter* "}"
+    {
+        return {
+            kind: "Interpolation",
+            name: name,
+            arguments: args,
+            filters: filters
+        }
+    }
+
+CSSIdentifier
+    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
+    {
+        return {
+            kind: "String",
+            value: id[0].concat(id[1].join(""))
+        }
+    }
+
+BasicAttribute
+    = name:AttributeName _ "=" _ value:(QuotedString / Interpolation)
+    {
+        return {
+            kind: "Attribute",
+            name: name,
+            value: value
+        }
+    }
+
 ClassAttribute
-    = "." className:IdentifierString
+    = "." className:CSSIdentifier
     {
         return {
             kind: "Attribute",
@@ -396,7 +229,7 @@ ClassAttribute
     }
 
 IdAttribute
-    = "#" id:IdentifierString
+    = "#" id:CSSIdentifier
     {
         return {
             kind: "Attribute",
@@ -408,152 +241,188 @@ IdAttribute
         }
     }
 
-OpenTag
-    = "@" first:SingleTag rest:("|" SingleTag)+ " "?
-    { var newRest = rest.map(function(a) { return a[1]; });
-      return [first].concat(newRest) }
-    / "@" single:SingleTag " "?
-    { return single }
+Attribute
+    = _ attr:(BasicAttribute / ClassAttribute / IdAttribute)
+    { return attr }
 
-SingleTag
-    = tagName:TagName specialAttrs:SpecialAttribute* attrList:AttributeList?
-    {
-        var attrs = specialAttrs;
-        attrs = attrList === null ? specialAttrs : specialAttrs.concat(attrList);
-        return {
-            kind: "String",
-            value: tagName,
-            attributes: attrs
-        }
-    }
+Atom
+    = Number / Interpolation / UnquotedString / EscapedCharacter
 
-/* TODO: single colons should be allowed here */
-AttributeName
-    = attrName:[^ \t\n\r\"\'\>\/\=\)\(\[\]\:]+
+TagName
+    = name:([a-zA-Z] [a-zA-Z0-9_-]*)
     {
         return {
             kind: "String",
-            value: attrName.join("")
+            value: name[0].concat(name[1].join(""))
         }
     }
 
-UnquotedAttributeValue
-    = attrValue:[^ \t\n\r\"\'\=\<\>\`\,\.\]]+
+Tag
+    = _ "(" name:TagName attrs:Attribute* _ "::" " "? inner:Expression* filters:Filter* ")"
     {
         return {
-            kind: "String",
-            value: attrValue.join("")
+            kind: "Tag",
+            name: name,
+            attributes: mergeAttributes(attrs,"class"),
+            inner: inner,
+            filters: filters
         }
     }
 
-QuotedAttributeValue
-    = QuotedString
-
-QuotedString
-    = value:( "'" [^\']* "'" / '"' [^\"]* '"')
+Parenthetical
+    = "(" inner:Expression+ filters:Filter* ")"
     {
         return {
-            kind: "String",
-            value: value[1].join("")
+            kind: "Parenthetical",
+            inner: inner,
+            filters: filters
         }
     }
 
-EmptyAttribute
-    = attrName:AttributeName
+ArrayElement
+    = Number / Boolean / QuotedString / Tag
+
+EmptyArray
+    = "[" _ "]"
     {
         return {
-            kind: "Attribute",
-            name: attrName,
-            value: attrName
+            kind: "Array",
+            elements: []
         }
     }
 
-UnquotedAttribute
-    = attrName:AttributeName _ "=" _ attrValue:UnquotedAttributeValue
+Range
+    = "[" start:(Number / Identifier) ".." end:(Number / Identifier) "]"
     {
         return {
-            kind: "Attribute",
-            name: attrName,
-            value: attrValue
+            kind: "Range",
+            startIndex: start,
+            endIndex: end
         }
     }
 
-QuotedAttribute
-    = attrName:AttributeName _ "=" _ attrValue:QuotedAttributeValue
+NonEmptyArray
+    = "[" elt:ArrayElement elts:("," _ ArrayElement)* "]"
     {
         return {
-            kind: "Attribute",
-            name: attrName,
-            value: attrValue
+            kind: "Array",
+            elements: [elt].concat(elts.map(function(e) { return e[2] }))
         }
     }
 
-Attribute "an attribute"
-    = QuotedAttribute / UnquotedAttribute / EmptyAttribute
+Array = EmptyArray / Range / NonEmptyArray
 
-//TODO: colons here...
-TagName "a tag name"
-    = tagName:([a-zA-Z] [a-zA-Z0-9\_\-\:]*)
+Assignment
+    = _ "def" _ id:Identifier _ "=" _ val:(Array / Number / Boolean / QuotedString / Tag / Parenthetical) _
     {
         return {
-            kind: "String",
-            value: tagName[0].concat(tagName[1].join(""))
+            kind: "Assignment",
+            leftSide: id,
+            rightSide: val
         }
     }
 
-Number "a number"
-    = minus:"-"? first:[0-9]+ second:("." [0-9]+)?
-    {
-        second = second === null ? [] : "."+second[1].join("");
-        var value = parseInt(first.join("")+second);
-        if (minus !== null) {
-        	value = 0-value;
-        }
-        return {
-            kind: "Number",
-            value: value
-        }
-    }
+ParamList
+    = params:(Identifier _)*
+    { return params.map(function (e) { return e[0] }) }
 
-Boolean "a boolean value"
-    = value:("true" / "false")
+MacroDefinition
+    = _ "def" _ id:Identifier _ params:ParamList _ "=" _ body:Expression
     {
         return {
-            kind: "Boolean",
-            value: value === "true"
+            kind: "MacroDefinition",
+            name: id,
+            params: params,
+            body: body
         }
     }
 
-Text "plain text"
-    = text:[^⇐⇒>@{}\[\]#\\]+
+Definition
+    = Assignment / MacroDefinition
+
+FilePath
+    = path:[^ \t\n\r\)]+
+    { return path.join("") }
+
+Include
+    = "(include " _ path:FilePath _ ")"
     {
         return {
-            kind: "String",
-            value: text.join("")
+            kind: "Include",
+            file: {
+                kind: "String",
+                value: path
+            }
         }
     }
-    / EscapedCharacter
 
-EscapedCharacter
-    = "\\" char:([\{\}\|\@\\])?
+Extend
+    = "extend " _ path:FilePath _
     {
         return {
-            kind: "String",
-            value: char ? char : "\\"
+            kind: "Extend",
+            file: path
         }
     }
 
-Indent "an indent"
-    = _ "⇒" _
+Import
+    = "import " _ path:FilePath _
+    {
+        return {
+            kind: "Import",
+            file: path
+        }
+    }
 
-Dedent "a dedent"
-    = _ "⇐" _
+Doctype
+    = "(doctype " _ val:[^\) \t\r\n]+ ")"
+    {
+        return {
+            kind: "Doctype",
+            value: val.join("")
+        }
+    }
 
-CommandPrefix
-    = ">"
+BooleanId
+    = b:(Boolean / Parenthetical / Interpolation) _
+    { return b }
+
+If
+    = _ "(if " _ pred:BooleanId "::" " "? body:Expression* ")" elifs:Elif* elseCase:Else?
+    {
+        return {
+            kind: "IfStatement",
+            predicate: pred,
+            thenCase: body,
+            elifCases: elifs,
+            elseCase: elseCase !== null ? elseCase : undefined
+        }
+    }
+
+Elif
+    = _ "(elif " _ pred:BooleanId "::" " "? body:Expression* ")"
+    {
+        return {
+            kind: "IfStatement",
+            predicate: pred,
+            thenCase: body
+        }
+    }
+
+Else
+    = _ "(else" _ "::" " "? body:Expression* ")"
+    { return body }
+
+For
+    = _ "(for " _ iter:Identifier _ "in" _ data:(Range / Array / Identifier) _ "::" " "? body:Expression* ")"
+    {
+        return {
+            kind: "ForEach",
+            iterator: iter,
+            data: data,
+            body: body
+        }
+    }
 
 _ "whitespace"
-    = [ \t\n\r]*
-
-__
-    = [ ]*
+    = [ \t\r\n]*

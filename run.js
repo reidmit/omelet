@@ -1,7 +1,7 @@
 var Toast = require('./toast-o.js');
 
 var T = new Toast.Toast({
-    sourceLanguage: "omelet2",
+    sourceLanguage: "omelet",
     targetLanguage: "dust",
     prettyPrint: false,
     isWeb: false

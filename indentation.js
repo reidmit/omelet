@@ -1,6 +1,6 @@
 var dedent_token = "\u21d0";
 var indent_token = "\u21d2";
-var indentedLanguages = ["omelet2"];
+var indentedLanguages = ["omelet"];
 
 function isIndentedLanguage(language) {
     return indentedLanguages.indexOf(langage) > -1;

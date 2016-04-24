@@ -2040,7 +2040,7 @@ module.exports = filters;
 },{"./util.js":19}],7:[function(require,module,exports){
 var dedent_token = "\u21d0";
 var indent_token = "\u21d2";
-var indentedLanguages = ["omelet2"];
+var indentedLanguages = ["omelet"];
 
 function isIndentedLanguage(language) {
     return indentedLanguages.indexOf(langage) > -1;
@@ -22000,8 +22000,8 @@ var Toast = function(options) {
     var prettyPrint = options.prettyPrint;
     var outputDirectory = options.outputDirectory || ".";
     var isWeb = !!options.isWeb;
-    var whitespaceSensitive = sourceLanguage === "omelet2"; //TODO: generalize this
-
+    var whitespaceSensitive = indentation.isIndentedLanguage(sourceLanguage);
+    
     var parser = parsers[sourceLanguage];
     var evaluate = evaluators[targetLanguage];
 

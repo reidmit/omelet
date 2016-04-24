@@ -16,8 +16,8 @@ var Toast = function(options) {
     var prettyPrint = options.prettyPrint;
     var outputDirectory = options.outputDirectory || ".";
     var isWeb = !!options.isWeb;
-    var whitespaceSensitive = sourceLanguage === "omelet2"; //TODO: generalize this
-
+    var whitespaceSensitive = indentation.isIndentedLanguage(sourceLanguage);
+    
     var parser = parsers[sourceLanguage];
     var evaluate = evaluators[targetLanguage];
 
