@@ -25,14 +25,14 @@ module.exports = function(ast, originalCode, context, config) {
     }
 
     function evalInclude(node) {
-        return "{% include '"+evalExpr(node.file)+"' %}";
+        return "{% include '"+evalExpr(node.file)+"' %}\n";
     }
     function evalImport(node) {
         console.warn("Liquid does not support import statements.");
         return "";
     }
     function evalExtend(node) {
-        console.warn("Liquid does not support extend statements.");
+        return "{% extends '"+evalExpr(node.file)+"' %}\n";
         return "";
     }
     function evalAssignment(node) {
@@ -43,8 +43,28 @@ module.exports = function(ast, originalCode, context, config) {
         return out;
     }
     function evalMacroDefinition(node) {
+
         console.warn("Liquid does not support macro definitions.");
         return "";
+    }
+    function evalMacroDefinition(node) {
+        var name = evalExpr(node.name);
+        var out = "{% capture "+name+" %}\n";
+
+        if (node.params && node.params.length > 0) {
+            console.warn("Liquid does not support macros (captures)"+
+                        " that take parameters. The parameters defined for"+
+                        " the capture '"+name+"' are being ignored.");
+        }
+
+        if (__.isArray(node.body)) {
+            out += node.body.map(evalExpr).join("");
+        } else {
+            out += evalExpr(node.body);
+        }
+
+        out += "{% endcapture %}\n";
+        return out;
     }
     function evalBoolean(node) {
         return node.value;
@@ -76,14 +96,13 @@ module.exports = function(ast, originalCode, context, config) {
         return out;
     }
     function evalAttribute(node) {
-        return evalExpr(node.name)+"=\""+evalExpr(node.value)+"\"";
+        return evalExpr(node.name)+"="+evalExpr(node.value);
     }
     function evalTag(node) {
         var s;
         var tagName = evalExpr(node.name);
         s = "<"+tagName;
 
-        var attributes = mergeAttributes(node.attributes,"class");
         for (var i=0; i<attributes.length; i++) {
             s += " "+evalExpr(attributes[i]);
         }
@@ -120,13 +139,18 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalIfStatement(node) {
         if (node.predicate.kind !== "Identifier") {
-            console.warn("Dust only supports if statements where the predicate is a variable.");
+            console.warn("Toast only supports if statements where the predicate is a variable.");
             return "";
         }
         var pred = evalExpr(node.predicate);
         var out;
-        out = "{% if "+pred+" %}";
-        out += "\n"+node.thenCase.map(evalExpr).join("");
+
+        if (!node.negated) {
+            out = "{% if "+pred+" %}\n";
+        } else {
+            out = "{% unless "+pred+" %}\n"
+        }
+        out += node.thenCase.map(evalExpr).join("");
 
         if (node.elifCases) {
             for (var i=0; i<node.elifCases.length; i++) {
@@ -139,7 +163,13 @@ module.exports = function(ast, originalCode, context, config) {
             out += "{% else %}\n";
             out += node.elseCase.map(evalExpr).join("");
         }
-        out += "\n{% endif %}";
+
+        if (!node.negated) {
+            out += "{% endif %}\n";
+        } else {
+            out += "{% endunless %}\n";
+        }
+
         return out;
     }
     function evalForEach(node) {

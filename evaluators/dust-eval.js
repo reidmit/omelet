@@ -48,7 +48,7 @@ module.exports = function(ast, originalCode, context, config) {
         if (node.params && node.params.length > 0) {
             console.warn("Dust does not support macros (inline partials)"+
                         " that take parameters. The parameters defined for"+
-                        " macro '"+name+"' are being ignored.");
+                        " the partial '"+name+"' are being ignored.");
         }
 
         if (__.isArray(node.body)) {
