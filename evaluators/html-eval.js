@@ -49,7 +49,7 @@ module.exports = function(ast, originalCode, context, config) {
 
         if (!config.isWeb) {
             if (includesChain.indexOf(config.directory+"/"+file) > -1) {
-                throw err.EvalError({
+                throw EvalError({
                     msg: "Template inclusion loop detected. File '"+config.directory+"/"+file
                          +"' has already been included earlier in the includes chain."
                 }, originalCode)

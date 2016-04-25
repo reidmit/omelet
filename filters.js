@@ -23,7 +23,7 @@ filters.escape = function(input) {
                 .replace(/\>/g, "&gt;");
 }
 
-filters.uppercase = function (input) {
+filters.upper = function (input) {
     if (__.isString(input)) {
         return input.toUpperCase();
     } else {
@@ -31,7 +31,7 @@ filters.uppercase = function (input) {
     }
 }
 
-filters.lowercase = function (input) {
+filters.lower = function (input) {
     if (__.isString(input)) {
         return input.toLowerCase();
     } else {

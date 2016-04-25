@@ -385,11 +385,7 @@ function applyFilter(filterNode,input,filterArgs,originalCode) {
     var filterName = filterNode.name.value;
 
     if (filters[filterName]===undefined) {
-        return err.SyntaxError({
-            message: "Cannot apply undefined filter '"+filterName+"'.",
-            // index: filterNode.value[0].start,
-            input: originalCode
-        });
+        throw EvalError("Cannot apply undefined filter '"+filterName+"'.");
     }
     filterArgs.unshift(input);
     filterArgs = input===undefined ? [undefined] : filterArgs;
@@ -1140,7 +1136,7 @@ module.exports = function(ast, originalCode, context, config) {
 
         if (!config.isWeb) {
             if (includesChain.indexOf(config.directory+"/"+file) > -1) {
-                throw err.EvalError({
+                throw EvalError({
                     msg: "Template inclusion loop detected. File '"+config.directory+"/"+file
                          +"' has already been included earlier in the includes chain."
                 }, originalCode)
@@ -2163,22 +2159,30 @@ module.exports.for = extensionFor;
 },{}],8:[function(require,module,exports){
 var __ = require('./util.js');
 
-var filters = {};
-
 /*
-STRING FILTERS
-(these filters return strings)
-*/
+ * FILTERS
+ *
+ * All of the filters listed here are the ones supported in Omelet
+ * templates (since Toast works as a template engine for Omelet, so
+ * it needs to actually run the filters).
+ *
+ * This file also contains the $translate function, which tries to
+ * translate filters from one language to another (e.g. |upper in
+ * Omelet and |upcase in Liquid). If it can't translate it, it just
+ * passes the given filter name as-is to the other language.
+ */
+
+var filters = {};
 
 filters.escape = function(input) {
     return input.replace(/\'/g, "&apos;")
                 .replace(/\"/g, "&quot;")
-                .replace(/(?![^\s]+\;)\&/g, "&amp;")
+                .replace(/\&/g, "&amp;")
                 .replace(/\</g, "&lt;")
                 .replace(/\>/g, "&gt;");
 }
 
-filters.uppercase = function (input) {
+filters.upper = function (input) {
     if (__.isString(input)) {
         return input.toUpperCase();
     } else {
@@ -2186,7 +2190,7 @@ filters.uppercase = function (input) {
     }
 }
 
-filters.lowercase = function (input) {
+filters.lower = function (input) {
     if (__.isString(input)) {
         return input.toLowerCase();
     } else {
@@ -2294,37 +2298,6 @@ filters.join = function(input, separator) {
  * to translate the filter name into the corresponding filter name in the
  * target language. If one can't be found, just return the original name.
  * The names of the filters supported by Omelet/Dust/Liquid are as follows:
- *      OMELET                      DUST            LIQUID
- *      length                                      size
- *      upper                                       upcase
- *      lower                                       downcase
- *      split (char)                                split
- *      join (char)                                 join
- *      escape                      h               escape/escape_once
- *      trim                                        strip
- *      rtrim                                       rstrip
- *      ltrim                                       lstrip
- *      truncate (number)                           truncate
- *      truncate_words (number)                     truncatewords
- *      default (value)                             default
- *      first                                       first
- *      last                                        last
- *      safe                        s
- *      url                         u               ->url_encode
- *                                  uc              url_encode
- *                                  j
- *                                  js
- *                                  jp
- *                                                  capitalize
- *                                                  reverse/slice/sort
- *                                                  strip_html/strip_newlines
- *                                                  append/prepend
- *                                                  abs/ceil/floor/divided_by/minus/modulo/plus/round/times
- *                                                  date
- *                                                  map
- *                                                  newline_to_br
- *                                                  remove/remove_first
- *                                                  replace/replace_first
  */
  var lang_filter_lang = {
      omelet: {

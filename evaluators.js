@@ -108,11 +108,7 @@ function applyFilter(filterNode,input,filterArgs,originalCode) {
     var filterName = filterNode.name.value;
 
     if (filters[filterName]===undefined) {
-        return err.SyntaxError({
-            message: "Cannot apply undefined filter '"+filterName+"'.",
-            // index: filterNode.value[0].start,
-            input: originalCode
-        });
+        throw EvalError("Cannot apply undefined filter '"+filterName+"'.");
     }
     filterArgs.unshift(input);
     filterArgs = input===undefined ? [undefined] : filterArgs;

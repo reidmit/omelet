@@ -74,7 +74,8 @@
             } catch (e) {
                 output.style.color = "red";
                 // return e.toString();
-                return e.toString()+"\n\n"+JSON.stringify(e);
+                return e.toString().replace("\"\\u21D2\"","an indent")
+                                   .replace("\"\\u21D0\"","an outdent")+"\n\n"+JSON.stringify(e);
             }
         }
     </script>
