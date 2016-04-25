@@ -1,26 +1,5 @@
 var ast = {};
 
-ast.ArithExpr = function ArithExpr(properties) {
-    this.kind = "ArithExpr";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
-ast.Array = function Array(properties) {
-    this.kind = "Array";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
-ast.Assignment = function String(properties) {
-    this.kind = "Assignment";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
 ast.Attribute = function Attribute(properties) {
     this.kind = "Attribute";
     for (var prop in properties) {
@@ -35,22 +14,15 @@ ast.Boolean = function Boolean(properties) {
     }
 }
 
-ast.BooleanExpression = function BooleanExpression(properties) {
-    this.kind = "BooleanExpression";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
-ast.BooleanOperator = function BooleanOperator(properties) {
-    this.kind = "BooleanOperator";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
 ast.Comment = function Comment(properties) {
     this.kind = "Comment";
+    for (var prop in properties) {
+        this[prop] = properties[prop];
+    }
+}
+
+ast.CommentHTML = function CommentHTML(properties) {
+    this.kind = "CommentHTML";
     for (var prop in properties) {
         this[prop] = properties[prop];
     }
@@ -147,20 +119,6 @@ ast.Number = function Number(properties) {
     }
 }
 
-ast.Operator = function Operator(properties) {
-    this.kind = "Operator";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
-ast.Parenthetical = function Parenthetical(properties) {
-    this.kind = "Parenthetical";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
 ast.Raw = function Raw(properties) {
     this.kind = "Raw";
     for (var prop in properties) {
@@ -170,13 +128,6 @@ ast.Raw = function Raw(properties) {
 
 ast.String = function String(properties) {
     this.kind = "String";
-    for (var prop in properties) {
-        this[prop] = properties[prop];
-    }
-}
-
-ast.Symbol = function Symbol(properties) {
-    this.kind = "Symbol";
     for (var prop in properties) {
         this[prop] = properties[prop];
     }

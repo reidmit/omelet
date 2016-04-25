@@ -15,18 +15,8 @@ Content
 LiquidExpression
     = Include / Capture / LiquidComment / Raw / IfTag / For / Assign / Interpolation
 
-Range
-    = "(" start:(Number / Identifier) ".." end:(Number / Identifier) ")"
-    {
-        return {
-            kind: "Range",
-            startIndex: start,
-            endIndex: end
-        }
-    }
-
 For
-    = "{%" _s "for" _s iter:Identifier _s "in" _s data:(Identifier / Range) _s "%}" inner:Content "{%" _s "endfor" _s "%}"
+    = "{%" _s "for" _s iter:Identifier _s "in" _s data:Identifier _s "%}" inner:Content "{%" _s "endfor" _s "%}"
     {
         return {
             kind: "ForEach",

@@ -34,13 +34,6 @@ module.exports = function(ast, originalCode, context, config) {
     function evalExtend(node) {
         return "{>"+evalExpr(node.file)+"/}";
     }
-    function evalAssignment(node) {
-        var left = evalExpr(node.leftSide);
-        var out = "{+"+left+"}\n";
-        out += evalExpr(node.rightSide);
-        out += "\n{/"+left+"}";
-        return out;
-    }
     function evalMacroDefinition(node) {
         var name = evalExpr(node.name);
         var out = "{<"+name+"}\n";
@@ -75,14 +68,6 @@ module.exports = function(ast, originalCode, context, config) {
             case "}":  return "{~rb}";
         }
         return node.value;
-    }
-    function evalRange(node) {
-        console.warn("Dust does not support ranges. Ranges will not be translated into anything at all.");
-        return "";
-    }
-    function evalArray(node) {
-        console.warn("Dust does not support arrays. Arrays will not be translated into anything at all.");
-        return "";
     }
     function evalIdentifier(node) {
         var out = node.value;
@@ -137,9 +122,6 @@ module.exports = function(ast, originalCode, context, config) {
         }
 
         return s+"\n";
-    }
-    function evalParenthetical(node) {
-        return node.inner.map(evalExpr).join("");
     }
     function evalIfStatement(node) {
         if (node.predicate.kind !== "Identifier") {
@@ -303,10 +285,6 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalComment(node);
             case "CommentHTML":
                 return evalCommentHTML(node);
-            case "Parenthetical":
-                return evalParenthetical(node);
-            case "Assignment":
-                return evalAssignment(node);
             case "IfStatement":
                 return evalIfStatement(node);
             case "ForEach":
@@ -325,10 +303,6 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalExtend(node);
             case "Doctype":
                 return evalDoctype(node);
-            case "Array":
-                return evalArray(node);
-            case "Range":
-                return evalRange(node);
             case "InternalConditional":
                 return evalInternalConditional(node);
             default:

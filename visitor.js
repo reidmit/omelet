@@ -10,11 +10,6 @@ function visitNode(node, func, acc) {
                 visitNode(node.elements[i],func,acc);
             }
             break;
-        case "Assignment":
-            func(node,acc)
-            visitNode(node.leftSide,func,acc);
-            visitNode(node.rightSide,func,acc);
-            break;
         case "Attribute":
             func(node,acc);
             visitNode(node.name,func,acc);
@@ -132,24 +127,7 @@ function visitNode(node, func, acc) {
         case "Number":
             func(node,acc);
             break;
-        case "Parenthetical":
-            func(node,acc);
-            for (var i=0; i<node.inner.length; i++) {
-                visitNode(node.inner[i],func,acc);
-            }
-            for (var i=0; i<node.filters.length; i++) {
-                visitNode(node.filters[i],func,acc);
-            }
-            break;
-        case "Range":
-            func(node,acc);
-            visitNode(node.startIndex,func,acc);
-            visitNode(node.endIndex,func,acc);
-            break;
         case "String":
-            func(node,acc);
-            break;
-        case "Symbol":
             func(node,acc);
             break;
         case "Tag":

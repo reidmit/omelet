@@ -36,13 +36,6 @@ module.exports = function(ast, originalCode, context, config) {
         return "{% extends \""+evalExpr(node.file)+"\" %}\n";
         return "";
     }
-    function evalAssignment(node) {
-        var left = evalExpr(node.leftSide);
-        var out = "{% assign "+left+" = ";
-        out += evalExpr(node.rightSide);
-        out += " %}";
-        return out;
-    }
     function evalMacroDefinition(node) {
         var name = evalExpr(node.name);
         var out = "{% capture "+name+" %}\n";
@@ -70,12 +63,6 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalString(node) {
         return node.value;
-    }
-    function evalRange(node) {
-        return "("+evalExpr(node.start)+".."+evalExpr(node.end)+")";
-    }
-    function evalArray(node) {
-        return "["+node.elements.map(evalExpr).join(",")+"]";
     }
     function evalIdentifier(node) {
         var out = node.value;
@@ -134,9 +121,6 @@ module.exports = function(ast, originalCode, context, config) {
         }
 
         return s;
-    }
-    function evalParenthetical(node) {
-        return "{{ '"+node.inner.map(evalExpr).join("")+"' }}";
     }
     function evalIfStatement(node) {
         if (node.predicate.kind !== "Identifier") {
@@ -250,10 +234,6 @@ module.exports = function(ast, originalCode, context, config) {
     function evalCommentHTML(node) {
         return "<!--"+node.value+"-->";
     }
-    function evalInternalConditional(node) {
-        //TODO: FIX THIS! Shouldn't always be thenCase!
-        return evalExpr(node.thenCase);
-    }
     function evalRaw(node) {
         return "{% raw %}"+node.value+"{% endraw %}";
     }
@@ -275,10 +255,6 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalComment(node);
             case "CommentHTML":
                 return evalCommentHTML(node);
-            case "Parenthetical":
-                return evalParenthetical(node);
-            case "Assignment":
-                return evalAssignment(node);
             case "IfStatement":
                 return evalIfStatement(node);
             case "ForEach":
@@ -297,12 +273,6 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalExtend(node);
             case "Doctype":
                 return evalDoctype(node);
-            case "Array":
-                return evalArray(node);
-            case "Range":
-                return evalRange(node);
-            case "InternalConditional":
-                return evalInternalConditional(node);
             default:
                 throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }

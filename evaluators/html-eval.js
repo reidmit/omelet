@@ -277,68 +277,24 @@ module.exports = function(ast, originalCode, context, config) {
         return extendedAST.contents.map(evalExpr).join("");
     }
 
-    function evalAssignment(node) {
-
-        var recursiveRefs = evaluators.checkForReferences(node.rightSide, node.leftSide.value);
-        if (recursiveRefs.length > 0) {
-            throw err.EvalError({
-                msg: "Recursive assignment of '"+node.leftSide.value+"' detected. Recursion is not allowed in Toast templates.",
-                index: node.start
-            }, originalCode)
-        }
-
-        if (node.override) {
-            scope.add(node.leftSide.value, node.rightSide,true);
-        } else {
-            scope.add(node.leftSide.value, node.rightSide);
-        }
-        return "";
-    }
-
     function evalMacroDefinition(node) {
         console.log("on macrodef, adding "+JSON.stringify(node));
         scope.add(node.name.value, {params: node.params, body: node.body});
         return "";
     }
+
     function evalBoolean(node) {
         return node.value === "true";
     }
+
     function evalNumber(node) {
         return parseInt(node.value);
     }
+
     function evalString(node) {
         return node.value.replace(/\n[ ]+/g, "\n");
     }
-    function evalRange(node) {
-        var arr = [];
-        var start = evalExpr(node.startIndex);
-        var end = evalExpr(node.endIndex);
-        if (typeof start !== "number") {
-            throw new TypeError("Start index of range must resolve to a number.");
-        }
-        if (typeof end !== "number") {
-            throw new TypeError("End index of range must resolve to a number.");
-        }
-        if (start < end) {
-            for (var i=start; i<=end; i++) {
-                arr.push(i);
-            }
-        } else if (start > end) {
-            for (var i=start; i>=end; i--) {
-                arr.push(i);
-            }
-        } else {
-            arr.push(start);
-        }
-        return arr;
-    }
-    function evalArray(node) {
-        var arr = [];
-        for (var i=0; i<node.elements.length; i++) {
-            arr.push(evalExpr(node.elements[i]));
-        }
-        return arr;
-    }
+
     function evalIdentifier(node) {
         var val = scope.find(node.value);
 
@@ -373,7 +329,6 @@ module.exports = function(ast, originalCode, context, config) {
         return evalExpr(node.name)+"=\""+evalExpr(node.value)+"\"";
     }
     function evalTag(node) {
-
         //open a new scope within tag
         scope.open();
 
@@ -420,32 +375,13 @@ module.exports = function(ast, originalCode, context, config) {
 
         return s;
     }
-    function evalParenthetical(node) {
-        //TODO: scopes in here?
 
-        var inner = "";
-        for (var i=0; i<node.inner.length; i++) {
-            inner += evalExpr(node.inner[i]);
-        }
-        for (var i=0; i<node.filters.length; i++) {
-            var filterArgs = [];
-            for (var j=0; j<node.filters[i].arguments.length; j++) {
-                filterArgs.push([node.filters[i].arguments[j]].map(evalExpr).join(""));
-            }
-            inner = evaluators.applyFilter(node.filters[i],inner,filterArgs,originalCode);
-        }
-        return inner;
-    }
     function evalIfStatement(node) {
         var pred = evalExpr(node.predicate);
         var predIsFalsy = (pred === false || typeof pred === 'undefined' || pred === null);
         if (node.negated) {
             predIsFalsy = !predIsFalsy;
         }
-
-        console.log("node.negated is "+node.negated);
-        console.log("pred is"+pred);
-        console.log("predfalsy is"+predIsFalsy);
 
         scope.open();
         if (predIsFalsy) {
@@ -500,7 +436,6 @@ module.exports = function(ast, originalCode, context, config) {
         var output = [];
 
         for (idx = 0; idx < data.length; idx++) {
-            console.log("IN FOR LOOP for "+data[idx])
             scope.open();
 
             if (iterator) {
@@ -585,8 +520,6 @@ module.exports = function(ast, originalCode, context, config) {
             }
         }
 
-        console.log("arguments is \n\n"+JSON.stringify(node.arguments));
-
         if (val.params) {
             if (val.params.length !== node.arguments.length) {
                 throw Error("Incorrect number of arguments given to macro '"+
@@ -595,7 +528,6 @@ module.exports = function(ast, originalCode, context, config) {
             }
             scope.open();
             for (var i=0; i<val.params.length; i++) {
-                console.log("adding to scope:\n"+val.params[i].value+"\n=\n"+JSON.stringify(evalExpr(node.arguments[i])));
                 scope.add(val.params[i].value, evalExpr(node.arguments[i]));
             }
             var body;
@@ -683,10 +615,6 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalComment(node);
             case "CommentHTML":
                 return evalCommentHTML(node);
-            case "Parenthetical":
-                return evalParenthetical(node);
-            case "Assignment":
-                return evalAssignment(node);
             case "IfStatement":
                 return evalIfStatement(node);
             case "ForEach":
@@ -705,10 +633,6 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalExtend(node);
             case "Doctype":
                 return evalDoctype(node);
-            case "Array":
-                return evalArray(node);
-            case "Range":
-                return evalRange(node);
             case "InternalConditional":
                 return evalInternalConditional(node);
             default:
