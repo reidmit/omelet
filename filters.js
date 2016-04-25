@@ -1,256 +1,130 @@
 var __ = require('./util.js');
 
-var filters = {};
-
-//TODO: type-check parameters & check arguments.length
-
 /*
-STRING FILTERS
-(these filters return strings)
-*/
+ * FILTERS
+ *
+ * All of the filters listed here are the ones supported in Omelet
+ * templates (since Toast works as a template engine for Omelet, so
+ * it needs to actually run the filters).
+ *
+ * This file also contains the $translate function, which tries to
+ * translate filters from one language to another (e.g. |upper in
+ * Omelet and |upcase in Liquid). If it can't translate it, it just
+ * passes the given filter name as-is to the other language.
+ */
+
+var filters = {};
 
 filters.escape = function(input) {
     return input.replace(/\'/g, "&apos;")
                 .replace(/\"/g, "&quot;")
-                .replace(/(?![^\s]+\;)\&/g, "&amp;")
+                .replace(/\&/g, "&amp;")
                 .replace(/\</g, "&lt;")
                 .replace(/\>/g, "&gt;");
 }
 
 filters.uppercase = function (input) {
-    __.checkFilterArgs(filters.uppercase,arguments,["String"]);
-    return input.toUpperCase();
+    if (__.isString(input)) {
+        return input.toUpperCase();
+    } else {
+        return input;
+    }
 }
 
 filters.lowercase = function (input) {
-    return input.toLowerCase();
-}
-
-filters.capitalize = function(input) {
-    return input.split(" ").map(function(word) {
-        return word.charAt(0).toUpperCase()+word.slice(1);
-    }).join(" ");
+    if (__.isString(input)) {
+        return input.toLowerCase();
+    } else {
+        return input;
+    }
 }
 
 filters.trim = function (input) {
-    return input.replace(/^\s\s*/,'').replace(/\s\s*$/,'');
+    if (__.isString(input)) {
+        return input.replace(/^\s\s*/,'').replace(/\s\s*$/,'');
+    } else {
+        return input;
+    }
 }
 
 filters.ltrim = function(input) {
-    return input.replace(/^\s\s*/,'')
+    if (__.isString(input)) {
+        return input.replace(/^\s\s*/,'')
+    } else {
+        return input;
+    }
 }
 
 filters.rtrim = function(input) {
-    return input.replace(/\s\s*$/,'');
-}
-
-filters.append = function(input, suffix) {
-    return input+suffix;
-}
-
-filters.prepend = function(input, prefix) {
-    return prefix+input;
-}
-
-filters.strip_whitespace = function(input) {
-    return input.replace(/\s/g,'');
-}
-
-filters.remove = function(input, toRemove) {
-    var re = new RegExp(toRemove, 'g');
-    return input.replace(re,'');
-}
-
-filters.remove_first = function(input, toRemove) {
-    var re = new RegExp(toRemove);
-    return input.replace(re,'');
-}
-
-filters.replace = function(input, pattern, replacement) {
-    var re = new RegExp(pattern);
-    return input.replace(re,replacement);
+    if (__.isString(input)) {
+        return input.replace(/\s\s*$/,'')
+    } else {
+        return input;
+    }
 }
 
 filters.default = function(input, defaultValue) {
-    return (input === "") ? defaultValue : input;
+    return (input === "" || typeof input === "undefined" ||
+            input === null) ? defaultValue : input;
 }
 
-//TODO: figure out what this should do to nested tags.
-//right now it just chops up tags like strings
 filters.truncate = function(input, n) {
-    return input.replace( /\s\s+/g, ' ' ).slice(0,n)+"...";
+    if (__.isString(input)) {
+        return input.replace( /\s\s+/g, ' ' ).slice(0,n)+"...";
+    } else {
+        return input;
+    }
 }
 
 filters.truncate_words = function(input, n) {
-    console.log(n);
-    var arr = input.replace( /\s\s+/g, ' ' ).split(" ");
-    if (n >= arr.length) {
-        return arr.join(" ");
+    if (__.isString(input)) {
+        var arr = input.replace( /\s\s+/g, ' ' ).split(" ");
+        if (n >= arr.length) {
+            return arr.join(" ");
+        }
+        arr.splice(n);
+        return arr.join(" ")+"...";
+    } else {
+        return input;
     }
-    arr.splice(n);
-    return arr.join(" ")+"...";
 }
-
-filters.today = function(_) {
-    return new Date();
-}
-
-filters.date_format = function(input, formatString) {
-    var date = new Date(input);
-    var days   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday",
-                  "Saturday"];
-    var months = ["January","February","March","April","May","June","July",
-                  "August","September","October","November","December"]
-    var options = {
-        //DAY of week, short (Tue, Wed, etc.)
-        "w": days[date.getDay()].substring(0,3),
-
-        //DAY of week, full (Tuesday, Wednesday, etc.)
-        "W": days[date.getDay()],
-
-        //DAY, numeric, no leading zeros (1 to 31)
-        "d": date.getDate().toString(),
-
-        //DAY, numeric, with leading zeros (01 to 31)
-        "D": (date.getDate().toString().length > 1) ?
-                date.getDate().toString() : "0"+date.getDate(),
-
-        //MONTH, full (January, February, etc.)
-        "N": months[date.getMonth()],
-
-        //MONTH, short (Jan, Feb, etc.)
-        "n": months[date.getMonth()].substring(0,3),
-
-        //MONTH, numeric, no leading zeros (1 to 12)
-        "m": (date.getMonth()+1).toString(),
-
-        //MONTH, numeric, with leading zeros (01 to 12)
-        "M": ((date.getMonth()+1).toString().length > 1) ?
-                (date.getMonth()+1).toString() : "0"+(date.getMonth()+1),
-
-        //YEAR, last 2 digits (15, etc.)
-        "y": date.getFullYear().toString().slice(2),
-
-        //YEAR, all 4 digits (2015, etc.)
-        "Y": date.getFullYear().toString()
-    };
-    var out = [];
-    for (var i=0; i<formatString.length; i++) {
-        var c = formatString.charAt(i);
-        if (options[c]) { out.push(options[c]); }
-        else            { out.push(c); }
-    }
-    return out.join("");
-}
-
-filters.if_then_else = function(input,thenCase,elseCase) {
-    return input ? thenCase : elseCase;
-}
-
-/*
-NUMBER FILTERS
-(these filters return numbers)
-*/
 
 filters.length = function(input) {
     if (__.isString(input) || __.isArray(input)) {
         return input.length;
     }
-    throw Error("`length` filter can only be applied to Strings and Arrays");
-}
-
-/*
-BOOLEAN FILTERS
-(these filters return booleans)
-*/
-
-filters.defined = function(input) {
-    return typeof input !== "undefined";
-}
-filters.undefined = function(input) {
-    return typeof input === "undefined";
-}
-
-filters.notexists = function(input) {
-    return input == false;
-}
-filters.exists = function(input) {
-    console.log("checking if "+input+" is not falsy and getting "+(input == true));
-    return !(input == false);
-}
-
-filters.empty = function(input) {
-    if (__.isString(input)) {
-        return input === "";
-    }
-    if (__.isArray(input)) {
-        return input.length === 0;
-    }
-    if (__.isObject(input)) {
-        return Object.keys(input).length === 0;
-    }
-    throw Error("`empty` filter can only be applied to Strings, Arrays, or Objects.");
-}
-
-filters.lt = filters.less_than = filters["<"] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) < parseInt(other);
-    }
-    return input < other;
-}
-
-filters.gt = filters.greater_than = filters[">"] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) > parseInt(other);
-    }
-    return input > other;
-}
-
-filters.leq = filters.less_than_equals = filters["<="] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) <= parseInt(other);
-    }
-    return input <= other;
-}
-
-filters.geq = filters.greater_than_equals = filters[">="] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) >= parseInt(other);
-    }
-    return input >= other;
-}
-
-filters.eq = filters.equals = filters["=="] = function(input, other) {
-    if (!isNaN(input) && !isNaN(other)) {
-        return parseInt(input) === parseInt(other);
-    }
-    return input === other;
+    return 1;
 }
 
 filters.starts_with = function(input, needle) {
-    return input.indexOf(needle) === 0;
+    if (__.isString(input) || __.isArray(input)) {
+        return input.indexOf(needle) === 0;
+    } else {
+        return false;
+    }
 }
 
 filters.ends_with = function(input, needle) {
-    return input.indexOf(needle) === (input.length - needle.length);
-}
-
-filters.starts_with_vowel = function(input) {
-    return /[aeiouAEIOU]/.test(input.charAt(0));
+    if (__.isString(input) || __.isArray(input)) {
+        return input.indexOf(needle) === (input.length - needle.length);
+    } else {
+        return false;
+    }
 }
 
 filters.contains = function(input, other) {
     if (__.isArray(input) || __.isString(input)) {
         return input.indexOf(other) !== -1;
-    } else {
-        throw Error("`contains` filter can only be applied to a String or an Array");
     }
+    return false;
 }
 
-//added 4/24...
-
 filters.split = function(input, separator) {
-    return input.split(separator);
+    if (__.isString(input)) {
+        return input.split(separator);
+    } else {
+        return [input];
+    }
 }
 
 filters.join = function(input, separator) {
@@ -258,6 +132,54 @@ filters.join = function(input, separator) {
         input = [input];
     }
     return input.join(separator);
+}
+
+/*
+ * Given a filter name, a source language, and a target language, attempt
+ * to translate the filter name into the corresponding filter name in the
+ * target language. If one can't be found, just return the original name.
+ * The names of the filters supported by Omelet/Dust/Liquid are as follows:
+ */
+ var lang_filter_lang = {
+     omelet: {
+         length: {liquid: "size"},
+         upper: {liquid: "upcase"},
+         lower: {liquid: "downcase"},
+         escape: {liquid: "escape_once", dust: "h"},
+         trim: {liquid: "strip"},
+         rtrim: {liquid: "rstrip"},
+         ltrim: {liquid: "lstrip"},
+         truncate_words: {liquid: "truncatewords"},
+         safe: {dust: "s"},
+         url: {dust: "u", liquid: "url_encode"}
+     },
+     liquid: {
+         size: {omelet: "length"},
+         upcase: {omelet: "upper"},
+         downcase: {omelet: "lower"},
+         escape_once: {omelet: "escape", dust: "h"},
+         strip: {omelet: "trim"},
+         rstrip: {omelet: "rtrim"},
+         lstrip: {omelet: "ltrim"},
+         truncatewords: {omelet: "truncate_words"},
+         url_encode: {omelet: "url", dust: "u"}
+     },
+     dust: {
+         h: {omelet: "escape", liquid: "escape_once"},
+         s: {omelet: "safe"},
+         u: {omelet: "url", liquid: "url_encode"},
+         uc: {omelet: "url", liquid: "url_encode"}
+     }
+ }
+filters.$translate = function(filterName, sourceLanguage, targetLanguage) {
+    if (sourceLanguage === targetLanguage) return filterName;
+    if (lang_filter_lang[sourceLanguage] &&
+        lang_filter_lang[sourceLanguage][filterName] &&
+        lang_filter_lang[sourceLanguage][filterName][targetLanguage]) {
+        return lang_filter_lang[sourceLanguage][filterName][targetLanguage];
+    } else {
+        return filterName;
+    }
 }
 
 module.exports = filters;

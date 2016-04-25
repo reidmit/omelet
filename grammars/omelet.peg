@@ -43,14 +43,6 @@ Document = top:TopLevelContent _ contents:Content
                 case "MacroDefinition": defs.push(top[i]); break;
             }
         }
-        //TODO: this would be neater:
-        /*return {
-            kind: "Document",
-            imports: imps,
-            extend: exts.length === 0 ? undefined : exts,
-            definitions: defs,
-            contents: coms.concat(contents)
-        }*/
         return {
             kind: "Document",
             imports: imps,
@@ -311,7 +303,7 @@ FilterArgument "a filter argument"
     { return arg }
 
 Filter "a filter"
-    = "|" __ name:IdentifierString args:FilterArgument* __
+    = "|" __ name:Identifier args:FilterArgument* __
     {
         return {
             kind: "Filter",
@@ -321,7 +313,7 @@ Filter "a filter"
     }
 
 Argument "an argument"
-    = QuotedString / Number / Boolean / Identifier
+    = QuotedString / Number / Boolean / IdentifierComplex / Identifier
 
 ArgumentList
     = first:Argument __ rest:("," __ Argument)*
@@ -524,7 +516,7 @@ Boolean "a boolean value"
     }
 
 Text "plain text"
-    = text:[^⇐⇒%@{}\[\]#\\]+
+    = text:[^⇐⇒@{}\\]+
     {
         return {
             kind: "String",
@@ -534,11 +526,18 @@ Text "plain text"
     / EscapedCharacter
 
 EscapedCharacter
-    = "\\" char:([\{\}\|\@\\])?
+    = "\\" char:([{}@\\])?
     {
         return {
             kind: "String",
             value: char ? char : "\\"
+        }
+    }
+    / "#" !"#"
+    {
+    	return {
+        	kind: "String",
+            value: "#"
         }
     }
 
@@ -553,6 +552,6 @@ CommandPrefix
 
 _ "whitespace"
     = [ \t\n\r]*
-
+    
 __
     = [ ]*

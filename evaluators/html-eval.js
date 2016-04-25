@@ -341,6 +341,26 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalIdentifier(node) {
         var val = scope.find(node.value);
+
+        var name = node.value;
+        if (node.modifiers) {
+            // val = val.values;
+            for (var i=0; i<node.modifiers.length; i++) {
+                var m = node.modifiers[i];
+
+                //just used for error printing
+                name += ("["+m.value.value+"]");
+
+                var key = m.value.kind==="Number" ?
+                            parseInt(m.value.value) : m.value.value;
+
+                if (!val[key]) {
+                    throw Error("Object '"+name+"' is not defined. val is "+JSON.stringify(val,null,4));
+                }
+                val = val[key]
+            }
+        }
+
         if (val) {
             return evalExpr(val);
         } else {
@@ -436,9 +456,6 @@ module.exports = function(ast, originalCode, context, config) {
                     if (node.elifCases[i].negated) {
                         elifPredIsTruthy = !elifPredIsTruthy;
                     }
-                    console.log("elif.negated is "+node.elifCases[i].negated);
-                    console.log("elifpred is "+pred);
-                    console.log("elifpredtruthy is "+elifPredIsTruthy);
 
                     if (elifPredIsTruthy) {
                         var out = node.elifCases[i].thenCase.map(evalExpr).join("");
@@ -474,15 +491,16 @@ module.exports = function(ast, originalCode, context, config) {
         }
         var data = evalExpr(node.data);
 
-        if (!__.isArray(data)) {
-            data = [data];
-        } else if (typeof data === "undefined") {
+        if (data === false || typeof data ==='undefined' || data === null) {
             data = [];
+        } else if (!__.isArray(data)) {
+            data = [data];
         }
 
         var output = [];
 
         for (idx = 0; idx < data.length; idx++) {
+            console.log("IN FOR LOOP for "+data[idx])
             scope.open();
 
             if (iterator) {
@@ -520,8 +538,6 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalInterpolation(node) {
         var val = scope.find(node.name.value);
-        console.log("tryig to find "+node.name.value+", found "+JSON.stringify(val));
-        console.log("and node is "+JSON.stringify(node));
         var output;
 
         if (!val) {
@@ -569,6 +585,8 @@ module.exports = function(ast, originalCode, context, config) {
             }
         }
 
+        console.log("arguments is \n\n"+JSON.stringify(node.arguments));
+
         if (val.params) {
             if (val.params.length !== node.arguments.length) {
                 throw Error("Incorrect number of arguments given to macro '"+
@@ -577,7 +595,8 @@ module.exports = function(ast, originalCode, context, config) {
             }
             scope.open();
             for (var i=0; i<val.params.length; i++) {
-                scope.add(val.params[i].value,node.arguments[i]);
+                console.log("adding to scope:\n"+val.params[i].value+"\n=\n"+JSON.stringify(evalExpr(node.arguments[i])));
+                scope.add(val.params[i].value, evalExpr(node.arguments[i]));
             }
             var body;
             if (__.isArray(val.body)) {

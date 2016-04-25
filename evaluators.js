@@ -95,7 +95,7 @@ function mergeAttributes(attrList,attrName) {
 function escapeHTML(input) {
     return input.replace(/\'/g, "&apos;")
                 .replace(/\"/g, "&quot;")
-                .replace(/(?![^\s]+\;)\&/g, "&amp;")
+                .replace(/\&/g, "&amp;")
                 .replace(/\</g, "&lt;")
                 .replace(/\>/g, "&gt;");
 }

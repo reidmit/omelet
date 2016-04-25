@@ -372,7 +372,7 @@ function mergeAttributes(attrList,attrName) {
 function escapeHTML(input) {
     return input.replace(/\'/g, "&apos;")
                 .replace(/\"/g, "&quot;")
-                .replace(/(?![^\s]+\;)\&/g, "&amp;")
+                .replace(/\&/g, "&amp;")
                 .replace(/\</g, "&lt;")
                 .replace(/\>/g, "&gt;");
 }
@@ -1432,6 +1432,26 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalIdentifier(node) {
         var val = scope.find(node.value);
+
+        var name = node.value;
+        if (node.modifiers) {
+            // val = val.values;
+            for (var i=0; i<node.modifiers.length; i++) {
+                var m = node.modifiers[i];
+
+                //just used for error printing
+                name += ("["+m.value.value+"]");
+
+                var key = m.value.kind==="Number" ?
+                            parseInt(m.value.value) : m.value.value;
+
+                if (!val[key]) {
+                    throw Error("Object '"+name+"' is not defined. val is "+JSON.stringify(val,null,4));
+                }
+                val = val[key]
+            }
+        }
+
         if (val) {
             return evalExpr(val);
         } else {
@@ -1527,9 +1547,6 @@ module.exports = function(ast, originalCode, context, config) {
                     if (node.elifCases[i].negated) {
                         elifPredIsTruthy = !elifPredIsTruthy;
                     }
-                    console.log("elif.negated is "+node.elifCases[i].negated);
-                    console.log("elifpred is "+pred);
-                    console.log("elifpredtruthy is "+elifPredIsTruthy);
 
                     if (elifPredIsTruthy) {
                         var out = node.elifCases[i].thenCase.map(evalExpr).join("");
@@ -1565,15 +1582,16 @@ module.exports = function(ast, originalCode, context, config) {
         }
         var data = evalExpr(node.data);
 
-        if (!__.isArray(data)) {
-            data = [data];
-        } else if (typeof data === "undefined") {
+        if (data === false || typeof data ==='undefined' || data === null) {
             data = [];
+        } else if (!__.isArray(data)) {
+            data = [data];
         }
 
         var output = [];
 
         for (idx = 0; idx < data.length; idx++) {
+            console.log("IN FOR LOOP for "+data[idx])
             scope.open();
 
             if (iterator) {
@@ -1611,8 +1629,6 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalInterpolation(node) {
         var val = scope.find(node.name.value);
-        console.log("tryig to find "+node.name.value+", found "+JSON.stringify(val));
-        console.log("and node is "+JSON.stringify(node));
         var output;
 
         if (!val) {
@@ -1660,6 +1676,8 @@ module.exports = function(ast, originalCode, context, config) {
             }
         }
 
+        console.log("arguments is \n\n"+JSON.stringify(node.arguments));
+
         if (val.params) {
             if (val.params.length !== node.arguments.length) {
                 throw Error("Incorrect number of arguments given to macro '"+
@@ -1668,7 +1686,8 @@ module.exports = function(ast, originalCode, context, config) {
             }
             scope.open();
             for (var i=0; i<val.params.length; i++) {
-                scope.add(val.params[i].value,node.arguments[i]);
+                console.log("adding to scope:\n"+val.params[i].value+"\n=\n"+JSON.stringify(evalExpr(node.arguments[i])));
+                scope.add(val.params[i].value, evalExpr(node.arguments[i]));
             }
             var body;
             if (__.isArray(val.body)) {
@@ -1814,6 +1833,7 @@ var fs = require('fs');
 var parsers = require('../parsers.js');
 var err = require('../errors.js');
 var filters = require('../filters.js');
+var evaluators = require('../evaluators.js');
 
 var html_elements = {
     void: __.toMap("area,base,br,col,embed,hr,img,input,keygen,link,meta,param,source,track,wbr"),
@@ -1900,6 +1920,7 @@ module.exports = function(ast, originalCode, context, config) {
         var tagName = evalExpr(node.name);
         s = "<"+tagName;
 
+        var attributes = evaluators.mergeAttributes(node.attributes,"class");
         for (var i=0; i<attributes.length; i++) {
             s += " "+evalExpr(attributes[i]);
         }
@@ -1922,14 +1943,18 @@ module.exports = function(ast, originalCode, context, config) {
 
             var inner = "";
             for (var i=0; i<node.inner.length; i++) {
-                inner += evalExpr(node.inner[i]);
+                var tmp = evalExpr(node.inner[i]);
+                if (node.inner[i].kind==="String") {
+                    tmp = evaluators.escapeHTML(tmp);
+                }
+                inner += tmp;
             }
 
-            s += inner;
+            s += inner.trim();
             s += "</"+tagName+">";
         }
 
-        return s+"\n";
+        return s;
     }
     function evalParenthetical(node) {
         return "{{ '"+node.inner.map(evalExpr).join("")+"' }}";
@@ -1981,7 +2006,10 @@ module.exports = function(ast, originalCode, context, config) {
         for (var i=0; i<node.filters.length; i++) {
             //TODO: translate filter names when possible, e.g. uppercase <-> upper
             //      something like getFilterName(evaledName, inputLanguage, outputLanguage)
-            out += " | "+evalExpr(node.filters[i].name);
+            var rawFilterName = evalExpr(node.filters[i].name);
+            var translatedFilterName = filters.$translate(rawFilterName, config.sourceLanguage, "liquid");
+
+            out += " | "+translatedFilterName;
             if (node.filters[i].arguments.length > 0) {
                 out += ": ";
                 for (var j=0; j<node.filters[i].arguments.length; j++) {
@@ -2110,7 +2138,7 @@ module.exports = function(ast, originalCode, context, config) {
     return o;
 }
 
-},{"../ast.js":1,"../errors.js":2,"../filters.js":8,"../parsers.js":14,"../util.js":20,"fs":22}],7:[function(require,module,exports){
+},{"../ast.js":1,"../errors.js":2,"../evaluators.js":3,"../filters.js":8,"../parsers.js":14,"../util.js":20,"fs":22}],7:[function(require,module,exports){
 /*
 Filename extensions for all of the languages supported by Toast.
 Each language has a list of possible extensions. For outputting
@@ -2137,8 +2165,6 @@ var __ = require('./util.js');
 
 var filters = {};
 
-//TODO: type-check parameters & check arguments.length
-
 /*
 STRING FILTERS
 (these filters return strings)
@@ -2153,239 +2179,107 @@ filters.escape = function(input) {
 }
 
 filters.uppercase = function (input) {
-    __.checkFilterArgs(filters.uppercase,arguments,["String"]);
-    return input.toUpperCase();
+    if (__.isString(input)) {
+        return input.toUpperCase();
+    } else {
+        return input;
+    }
 }
 
 filters.lowercase = function (input) {
-    return input.toLowerCase();
-}
-
-filters.capitalize = function(input) {
-    return input.split(" ").map(function(word) {
-        return word.charAt(0).toUpperCase()+word.slice(1);
-    }).join(" ");
+    if (__.isString(input)) {
+        return input.toLowerCase();
+    } else {
+        return input;
+    }
 }
 
 filters.trim = function (input) {
-    return input.replace(/^\s\s*/,'').replace(/\s\s*$/,'');
+    if (__.isString(input)) {
+        return input.replace(/^\s\s*/,'').replace(/\s\s*$/,'');
+    } else {
+        return input;
+    }
 }
 
 filters.ltrim = function(input) {
-    return input.replace(/^\s\s*/,'')
+    if (__.isString(input)) {
+        return input.replace(/^\s\s*/,'')
+    } else {
+        return input;
+    }
 }
 
 filters.rtrim = function(input) {
-    return input.replace(/\s\s*$/,'');
-}
-
-filters.append = function(input, suffix) {
-    return input+suffix;
-}
-
-filters.prepend = function(input, prefix) {
-    return prefix+input;
-}
-
-filters.strip_whitespace = function(input) {
-    return input.replace(/\s/g,'');
-}
-
-filters.remove = function(input, toRemove) {
-    var re = new RegExp(toRemove, 'g');
-    return input.replace(re,'');
-}
-
-filters.remove_first = function(input, toRemove) {
-    var re = new RegExp(toRemove);
-    return input.replace(re,'');
-}
-
-filters.replace = function(input, pattern, replacement) {
-    var re = new RegExp(pattern);
-    return input.replace(re,replacement);
+    if (__.isString(input)) {
+        return input.replace(/\s\s*$/,'')
+    } else {
+        return input;
+    }
 }
 
 filters.default = function(input, defaultValue) {
-    return (input === "") ? defaultValue : input;
+    return (input === "" || typeof input === "undefined" ||
+            input === null) ? defaultValue : input;
 }
 
-//TODO: figure out what this should do to nested tags.
-//right now it just chops up tags like strings
 filters.truncate = function(input, n) {
-    return input.replace( /\s\s+/g, ' ' ).slice(0,n)+"...";
+    if (__.isString(input)) {
+        return input.replace( /\s\s+/g, ' ' ).slice(0,n)+"...";
+    } else {
+        return input;
+    }
 }
 
 filters.truncate_words = function(input, n) {
-    console.log(n);
-    var arr = input.replace( /\s\s+/g, ' ' ).split(" ");
-    if (n >= arr.length) {
-        return arr.join(" ");
+    if (__.isString(input)) {
+        var arr = input.replace( /\s\s+/g, ' ' ).split(" ");
+        if (n >= arr.length) {
+            return arr.join(" ");
+        }
+        arr.splice(n);
+        return arr.join(" ")+"...";
+    } else {
+        return input;
     }
-    arr.splice(n);
-    return arr.join(" ")+"...";
 }
-
-filters.today = function(_) {
-    return new Date();
-}
-
-filters.date_format = function(input, formatString) {
-    var date = new Date(input);
-    var days   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday",
-                  "Saturday"];
-    var months = ["January","February","March","April","May","June","July",
-                  "August","September","October","November","December"]
-    var options = {
-        //DAY of week, short (Tue, Wed, etc.)
-        "w": days[date.getDay()].substring(0,3),
-
-        //DAY of week, full (Tuesday, Wednesday, etc.)
-        "W": days[date.getDay()],
-
-        //DAY, numeric, no leading zeros (1 to 31)
-        "d": date.getDate().toString(),
-
-        //DAY, numeric, with leading zeros (01 to 31)
-        "D": (date.getDate().toString().length > 1) ?
-                date.getDate().toString() : "0"+date.getDate(),
-
-        //MONTH, full (January, February, etc.)
-        "N": months[date.getMonth()],
-
-        //MONTH, short (Jan, Feb, etc.)
-        "n": months[date.getMonth()].substring(0,3),
-
-        //MONTH, numeric, no leading zeros (1 to 12)
-        "m": (date.getMonth()+1).toString(),
-
-        //MONTH, numeric, with leading zeros (01 to 12)
-        "M": ((date.getMonth()+1).toString().length > 1) ?
-                (date.getMonth()+1).toString() : "0"+(date.getMonth()+1),
-
-        //YEAR, last 2 digits (15, etc.)
-        "y": date.getFullYear().toString().slice(2),
-
-        //YEAR, all 4 digits (2015, etc.)
-        "Y": date.getFullYear().toString()
-    };
-    var out = [];
-    for (var i=0; i<formatString.length; i++) {
-        var c = formatString.charAt(i);
-        if (options[c]) { out.push(options[c]); }
-        else            { out.push(c); }
-    }
-    return out.join("");
-}
-
-filters.if_then_else = function(input,thenCase,elseCase) {
-    return input ? thenCase : elseCase;
-}
-
-/*
-NUMBER FILTERS
-(these filters return numbers)
-*/
 
 filters.length = function(input) {
     if (__.isString(input) || __.isArray(input)) {
         return input.length;
     }
-    throw Error("`length` filter can only be applied to Strings and Arrays");
-}
-
-/*
-BOOLEAN FILTERS
-(these filters return booleans)
-*/
-
-filters.defined = function(input) {
-    return typeof input !== "undefined";
-}
-filters.undefined = function(input) {
-    return typeof input === "undefined";
-}
-
-filters.notexists = function(input) {
-    return input == false;
-}
-filters.exists = function(input) {
-    console.log("checking if "+input+" is not falsy and getting "+(input == true));
-    return !(input == false);
-}
-
-filters.empty = function(input) {
-    if (__.isString(input)) {
-        return input === "";
-    }
-    if (__.isArray(input)) {
-        return input.length === 0;
-    }
-    if (__.isObject(input)) {
-        return Object.keys(input).length === 0;
-    }
-    throw Error("`empty` filter can only be applied to Strings, Arrays, or Objects.");
-}
-
-filters.lt = filters.less_than = filters["<"] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) < parseInt(other);
-    }
-    return input < other;
-}
-
-filters.gt = filters.greater_than = filters[">"] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) > parseInt(other);
-    }
-    return input > other;
-}
-
-filters.leq = filters.less_than_equals = filters["<="] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) <= parseInt(other);
-    }
-    return input <= other;
-}
-
-filters.geq = filters.greater_than_equals = filters[">="] = function(input, other) {
-    if (!isNaN(input) && !isNaN(input)) {
-        return parseInt(input) >= parseInt(other);
-    }
-    return input >= other;
-}
-
-filters.eq = filters.equals = filters["=="] = function(input, other) {
-    if (!isNaN(input) && !isNaN(other)) {
-        return parseInt(input) === parseInt(other);
-    }
-    return input === other;
+    return 1;
 }
 
 filters.starts_with = function(input, needle) {
-    return input.indexOf(needle) === 0;
+    if (__.isString(input) || __.isArray(input)) {
+        return input.indexOf(needle) === 0;
+    } else {
+        return false;
+    }
 }
 
 filters.ends_with = function(input, needle) {
-    return input.indexOf(needle) === (input.length - needle.length);
-}
-
-filters.starts_with_vowel = function(input) {
-    return /[aeiouAEIOU]/.test(input.charAt(0));
+    if (__.isString(input) || __.isArray(input)) {
+        return input.indexOf(needle) === (input.length - needle.length);
+    } else {
+        return false;
+    }
 }
 
 filters.contains = function(input, other) {
     if (__.isArray(input) || __.isString(input)) {
         return input.indexOf(other) !== -1;
-    } else {
-        throw Error("`contains` filter can only be applied to a String or an Array");
     }
+    return false;
 }
 
-//added 4/24...
-
 filters.split = function(input, separator) {
-    return input.split(separator);
+    if (__.isString(input)) {
+        return input.split(separator);
+    } else {
+        return [input];
+    }
 }
 
 filters.join = function(input, separator) {
@@ -2393,6 +2287,85 @@ filters.join = function(input, separator) {
         input = [input];
     }
     return input.join(separator);
+}
+
+/*
+ * Given a filter name, a source language, and a target language, attempt
+ * to translate the filter name into the corresponding filter name in the
+ * target language. If one can't be found, just return the original name.
+ * The names of the filters supported by Omelet/Dust/Liquid are as follows:
+ *      OMELET                      DUST            LIQUID
+ *      length                                      size
+ *      upper                                       upcase
+ *      lower                                       downcase
+ *      split (char)                                split
+ *      join (char)                                 join
+ *      escape                      h               escape/escape_once
+ *      trim                                        strip
+ *      rtrim                                       rstrip
+ *      ltrim                                       lstrip
+ *      truncate (number)                           truncate
+ *      truncate_words (number)                     truncatewords
+ *      default (value)                             default
+ *      first                                       first
+ *      last                                        last
+ *      safe                        s
+ *      url                         u               ->url_encode
+ *                                  uc              url_encode
+ *                                  j
+ *                                  js
+ *                                  jp
+ *                                                  capitalize
+ *                                                  reverse/slice/sort
+ *                                                  strip_html/strip_newlines
+ *                                                  append/prepend
+ *                                                  abs/ceil/floor/divided_by/minus/modulo/plus/round/times
+ *                                                  date
+ *                                                  map
+ *                                                  newline_to_br
+ *                                                  remove/remove_first
+ *                                                  replace/replace_first
+ */
+ var lang_filter_lang = {
+     omelet: {
+         length: {liquid: "size"},
+         upper: {liquid: "upcase"},
+         lower: {liquid: "downcase"},
+         escape: {liquid: "escape_once", dust: "h"},
+         trim: {liquid: "strip"},
+         rtrim: {liquid: "rstrip"},
+         ltrim: {liquid: "lstrip"},
+         truncate_words: {liquid: "truncatewords"},
+         safe: {dust: "s"},
+         url: {dust: "u", liquid: "url_encode"}
+     },
+     liquid: {
+         size: {omelet: "length"},
+         upcase: {omelet: "upper"},
+         downcase: {omelet: "lower"},
+         escape_once: {omelet: "escape", dust: "h"},
+         strip: {omelet: "trim"},
+         rstrip: {omelet: "rtrim"},
+         lstrip: {omelet: "ltrim"},
+         truncatewords: {omelet: "truncate_words"},
+         url_encode: {omelet: "url", dust: "u"}
+     },
+     dust: {
+         h: {omelet: "escape", liquid: "escape_once"},
+         s: {omelet: "safe"},
+         u: {omelet: "url", liquid: "url_encode"},
+         uc: {omelet: "url", liquid: "url_encode"}
+     }
+ }
+filters.$translate = function(filterName, sourceLanguage, targetLanguage) {
+    if (sourceLanguage === targetLanguage) return filterName;
+    if (lang_filter_lang[sourceLanguage] &&
+        lang_filter_lang[sourceLanguage][filterName] &&
+        lang_filter_lang[sourceLanguage][filterName][targetLanguage]) {
+        return lang_filter_lang[sourceLanguage][filterName][targetLanguage];
+    } else {
+        return filterName;
+    }
 }
 
 module.exports = filters;
@@ -14889,14 +14862,6 @@ module.exports = (function() {
                         case "MacroDefinition": defs.push(top[i]); break;
                     }
                 }
-                //TODO: this would be neater:
-                /*return {
-                    kind: "Document",
-                    imports: imps,
-                    extend: exts.length === 0 ? undefined : exts,
-                    definitions: defs,
-                    contents: coms.concat(contents)
-                }*/
                 return {
                     kind: "Document",
                     imports: imps,
@@ -15333,8 +15298,8 @@ module.exports = (function() {
                 }
             },
         peg$c159 = { type: "other", description: "plain text" },
-        peg$c160 = /^[^\u21D0\u21D2%@{}[\]#\\]/,
-        peg$c161 = { type: "class", value: "[^\u21D0\u21D2%@{}\\[\\]#\\\\]", description: "[^\u21D0\u21D2%@{}\\[\\]#\\\\]" },
+        peg$c160 = /^[^\u21D0\u21D2@{}\\]/,
+        peg$c161 = { type: "class", value: "[^\u21D0\u21D2@{}\\\\]", description: "[^\u21D0\u21D2@{}\\\\]" },
         peg$c162 = function(text) {
                 return {
                     kind: "String",
@@ -15343,27 +15308,33 @@ module.exports = (function() {
             },
         peg$c163 = "\\",
         peg$c164 = { type: "literal", value: "\\", description: "\"\\\\\"" },
-        peg$c165 = /^[{}|@\\]/,
-        peg$c166 = { type: "class", value: "[\\{\\}\\|\\@\\\\]", description: "[\\{\\}\\|\\@\\\\]" },
+        peg$c165 = /^[{}@\\]/,
+        peg$c166 = { type: "class", value: "[{}@\\\\]", description: "[{}@\\\\]" },
         peg$c167 = function(char) {
                 return {
                     kind: "String",
                     value: char ? char : "\\"
                 }
             },
-        peg$c168 = { type: "other", description: "an indent" },
-        peg$c169 = "\u21D2",
-        peg$c170 = { type: "literal", value: "\u21D2", description: "\"\\u21D2\"" },
-        peg$c171 = { type: "other", description: "a dedent" },
-        peg$c172 = "\u21D0",
-        peg$c173 = { type: "literal", value: "\u21D0", description: "\"\\u21D0\"" },
-        peg$c174 = ">",
-        peg$c175 = { type: "literal", value: ">", description: "\">\"" },
-        peg$c176 = { type: "other", description: "whitespace" },
-        peg$c177 = /^[ \t\n\r]/,
-        peg$c178 = { type: "class", value: "[ \\t\\n\\r]", description: "[ \\t\\n\\r]" },
-        peg$c179 = /^[ ]/,
-        peg$c180 = { type: "class", value: "[ ]", description: "[ ]" },
+        peg$c168 = function() {
+            	return {
+                	kind: "String",
+                    value: "#"
+                }
+            },
+        peg$c169 = { type: "other", description: "an indent" },
+        peg$c170 = "\u21D2",
+        peg$c171 = { type: "literal", value: "\u21D2", description: "\"\\u21D2\"" },
+        peg$c172 = { type: "other", description: "a dedent" },
+        peg$c173 = "\u21D0",
+        peg$c174 = { type: "literal", value: "\u21D0", description: "\"\\u21D0\"" },
+        peg$c175 = ">",
+        peg$c176 = { type: "literal", value: ">", description: "\">\"" },
+        peg$c177 = { type: "other", description: "whitespace" },
+        peg$c178 = /^[ \t\n\r]/,
+        peg$c179 = { type: "class", value: "[ \\t\\n\\r]", description: "[ \\t\\n\\r]" },
+        peg$c180 = /^[ ]/,
+        peg$c181 = { type: "class", value: "[ ]", description: "[ ]" },
 
         peg$currPos          = 0,
         peg$savedPos         = 0,
@@ -17562,7 +17533,7 @@ module.exports = (function() {
       if (s1 !== peg$FAILED) {
         s2 = peg$parse__();
         if (s2 !== peg$FAILED) {
-          s3 = peg$parseIdentifierString();
+          s3 = peg$parseIdentifier();
           if (s3 !== peg$FAILED) {
             s4 = [];
             s5 = peg$parseFilterArgument();
@@ -17615,7 +17586,10 @@ module.exports = (function() {
         if (s0 === peg$FAILED) {
           s0 = peg$parseBoolean();
           if (s0 === peg$FAILED) {
-            s0 = peg$parseIdentifier();
+            s0 = peg$parseIdentifierComplex();
+            if (s0 === peg$FAILED) {
+              s0 = peg$parseIdentifier();
+            }
           }
         }
       }
@@ -18837,7 +18811,7 @@ module.exports = (function() {
     }
 
     function peg$parseEscapedCharacter() {
-      var s0, s1, s2;
+      var s0, s1, s2, s3;
 
       s0 = peg$currPos;
       if (input.charCodeAt(peg$currPos) === 92) {
@@ -18870,6 +18844,45 @@ module.exports = (function() {
         peg$currPos = s0;
         s0 = peg$FAILED;
       }
+      if (s0 === peg$FAILED) {
+        s0 = peg$currPos;
+        if (input.charCodeAt(peg$currPos) === 35) {
+          s1 = peg$c117;
+          peg$currPos++;
+        } else {
+          s1 = peg$FAILED;
+          if (peg$silentFails === 0) { peg$fail(peg$c118); }
+        }
+        if (s1 !== peg$FAILED) {
+          s2 = peg$currPos;
+          peg$silentFails++;
+          if (input.charCodeAt(peg$currPos) === 35) {
+            s3 = peg$c117;
+            peg$currPos++;
+          } else {
+            s3 = peg$FAILED;
+            if (peg$silentFails === 0) { peg$fail(peg$c118); }
+          }
+          peg$silentFails--;
+          if (s3 === peg$FAILED) {
+            s2 = void 0;
+          } else {
+            peg$currPos = s2;
+            s2 = peg$FAILED;
+          }
+          if (s2 !== peg$FAILED) {
+            peg$savedPos = s0;
+            s1 = peg$c168();
+            s0 = s1;
+          } else {
+            peg$currPos = s0;
+            s0 = peg$FAILED;
+          }
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      }
 
       return s0;
     }
@@ -18882,11 +18895,11 @@ module.exports = (function() {
       s1 = peg$parse_();
       if (s1 !== peg$FAILED) {
         if (input.charCodeAt(peg$currPos) === 8658) {
-          s2 = peg$c169;
+          s2 = peg$c170;
           peg$currPos++;
         } else {
           s2 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c170); }
+          if (peg$silentFails === 0) { peg$fail(peg$c171); }
         }
         if (s2 !== peg$FAILED) {
           s3 = peg$parse_();
@@ -18908,7 +18921,7 @@ module.exports = (function() {
       peg$silentFails--;
       if (s0 === peg$FAILED) {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c168); }
+        if (peg$silentFails === 0) { peg$fail(peg$c169); }
       }
 
       return s0;
@@ -18922,11 +18935,11 @@ module.exports = (function() {
       s1 = peg$parse_();
       if (s1 !== peg$FAILED) {
         if (input.charCodeAt(peg$currPos) === 8656) {
-          s2 = peg$c172;
+          s2 = peg$c173;
           peg$currPos++;
         } else {
           s2 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c173); }
+          if (peg$silentFails === 0) { peg$fail(peg$c174); }
         }
         if (s2 !== peg$FAILED) {
           s3 = peg$parse_();
@@ -18948,7 +18961,7 @@ module.exports = (function() {
       peg$silentFails--;
       if (s0 === peg$FAILED) {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c171); }
+        if (peg$silentFails === 0) { peg$fail(peg$c172); }
       }
 
       return s0;
@@ -18958,11 +18971,11 @@ module.exports = (function() {
       var s0;
 
       if (input.charCodeAt(peg$currPos) === 62) {
-        s0 = peg$c174;
+        s0 = peg$c175;
         peg$currPos++;
       } else {
         s0 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c175); }
+        if (peg$silentFails === 0) { peg$fail(peg$c176); }
       }
 
       return s0;
@@ -18973,27 +18986,27 @@ module.exports = (function() {
 
       peg$silentFails++;
       s0 = [];
-      if (peg$c177.test(input.charAt(peg$currPos))) {
+      if (peg$c178.test(input.charAt(peg$currPos))) {
         s1 = input.charAt(peg$currPos);
         peg$currPos++;
       } else {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c178); }
+        if (peg$silentFails === 0) { peg$fail(peg$c179); }
       }
       while (s1 !== peg$FAILED) {
         s0.push(s1);
-        if (peg$c177.test(input.charAt(peg$currPos))) {
+        if (peg$c178.test(input.charAt(peg$currPos))) {
           s1 = input.charAt(peg$currPos);
           peg$currPos++;
         } else {
           s1 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c178); }
+          if (peg$silentFails === 0) { peg$fail(peg$c179); }
         }
       }
       peg$silentFails--;
       if (s0 === peg$FAILED) {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c176); }
+        if (peg$silentFails === 0) { peg$fail(peg$c177); }
       }
 
       return s0;
@@ -19003,21 +19016,21 @@ module.exports = (function() {
       var s0, s1;
 
       s0 = [];
-      if (peg$c179.test(input.charAt(peg$currPos))) {
+      if (peg$c180.test(input.charAt(peg$currPos))) {
         s1 = input.charAt(peg$currPos);
         peg$currPos++;
       } else {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c180); }
+        if (peg$silentFails === 0) { peg$fail(peg$c181); }
       }
       while (s1 !== peg$FAILED) {
         s0.push(s1);
-        if (peg$c179.test(input.charAt(peg$currPos))) {
+        if (peg$c180.test(input.charAt(peg$currPos))) {
           s1 = input.charAt(peg$currPos);
           peg$currPos++;
         } else {
           s1 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c180); }
+          if (peg$silentFails === 0) { peg$fail(peg$c181); }
         }
       }
 

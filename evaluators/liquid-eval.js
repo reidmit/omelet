@@ -12,6 +12,7 @@ var fs = require('fs');
 var parsers = require('../parsers.js');
 var err = require('../errors.js');
 var filters = require('../filters.js');
+var evaluators = require('../evaluators.js');
 
 var html_elements = {
     void: __.toMap("area,base,br,col,embed,hr,img,input,keygen,link,meta,param,source,track,wbr"),
@@ -98,6 +99,7 @@ module.exports = function(ast, originalCode, context, config) {
         var tagName = evalExpr(node.name);
         s = "<"+tagName;
 
+        var attributes = evaluators.mergeAttributes(node.attributes,"class");
         for (var i=0; i<attributes.length; i++) {
             s += " "+evalExpr(attributes[i]);
         }
@@ -120,14 +122,18 @@ module.exports = function(ast, originalCode, context, config) {
 
             var inner = "";
             for (var i=0; i<node.inner.length; i++) {
-                inner += evalExpr(node.inner[i]);
+                var tmp = evalExpr(node.inner[i]);
+                if (node.inner[i].kind==="String") {
+                    tmp = evaluators.escapeHTML(tmp);
+                }
+                inner += tmp;
             }
 
-            s += inner;
+            s += inner.trim();
             s += "</"+tagName+">";
         }
 
-        return s+"\n";
+        return s;
     }
     function evalParenthetical(node) {
         return "{{ '"+node.inner.map(evalExpr).join("")+"' }}";
@@ -179,7 +185,10 @@ module.exports = function(ast, originalCode, context, config) {
         for (var i=0; i<node.filters.length; i++) {
             //TODO: translate filter names when possible, e.g. uppercase <-> upper
             //      something like getFilterName(evaledName, inputLanguage, outputLanguage)
-            out += " | "+evalExpr(node.filters[i].name);
+            var rawFilterName = evalExpr(node.filters[i].name);
+            var translatedFilterName = filters.$translate(rawFilterName, config.sourceLanguage, "liquid");
+
+            out += " | "+translatedFilterName;
             if (node.filters[i].arguments.length > 0) {
                 out += ": ";
                 for (var j=0; j<node.filters[i].arguments.length; j++) {
