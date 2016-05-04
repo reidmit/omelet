@@ -1,0 +1,16 @@
+{
+    "pages": [
+        "tags",
+        "attributes",
+        "interpolations",
+        "filters",
+        "macros",
+        "conditionals",
+        "iteration",
+        "includes",
+        "imports",
+        "extends",
+        "raw tags",
+        "comments"
+    ]
+}

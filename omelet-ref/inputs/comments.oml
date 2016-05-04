@@ -1,0 +1,46 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Comments
+
+>def page_contents():
+    @p
+        Omelet supports single-line comments preceded by {@code #\#}.
+        When the parser encounters two consecutive {@code #} characters,
+        it considers the rest of the line a comment.
+
+    @p
+        Here is some sample Omelet code containing comments, followed
+        by the HTML that it is rendered into.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+This is one line
+This is another line ## with a partial-line comment at the end
+## This is a third line that is fully commented-out
+    ```
+
+    {ex_html()}
+
+    @pre.example|code
+        This is one line
+        This is another line ## with a partial-line comment at the end
+        ## This is a third line that is fully commented-out
+
+    @p
+        If you want to include two consecutive {@code #} characters in
+        a template and have them not be recognized as the beginning
+        of a comment, escape the second one with a {@code \\} character,
+        as shown below.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+This text contains the characters #\#, escaped.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code
+        This text contains the characters #\#, escaped.

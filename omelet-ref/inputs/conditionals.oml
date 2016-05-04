@@ -1,0 +1,52 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Conditionals
+
+>def page_contents():
+    @p
+        Omelet allows for simple conditionals in the form of {@code if},
+        {@code elif}, and {@code else} statements. A conditional statement
+        can have zero or more {@code elif} branches, and zero or one {@code
+        else} branches. These look much like they
+        do in other languages, but Omelet has one major restriction: the
+        predicate of {@code if} and {@code elif} statements can only be
+        the name of a variable.
+
+    @p
+        A predicate is considered {@code false} if the variable referenced
+        is any of the following: a boolean with the value {@code false},
+        {@code null}, or {@code undefined} (using JavaScript's definition
+        of {@code undefined}). The predicate holds in all other cases.
+
+    @p
+        Complex boolean expressions are not allowed in Omelet, but you can
+        negate the predicate variable by prepending it with a {@code !}
+        character. In this case, the "then" case of the conditional statement
+        gets executed when the predicate is considered {@code false}.
+
+    @p
+        In the examples below, assume we have in our context a variable
+        {@code b} with the value {@code true}, a variable {@code n} with
+        the value {@code 47}, and no defined variable called {@code unDef}.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+>if b:
+    This will be printed.
+>else:
+    This will not be printed.
+
+>if !n:
+    This also will not be printed.
+>elif !unDef:
+    This will also be printed.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+This will be printed.
+This will also be printed.
+    ```

@@ -45,16 +45,17 @@
               name="output"
               readonly disabled></textarea>
     <script src="toast-ide.js"></script>
-    <script src="toast-web.js"></script>
+    <script src="toast-web.min.js"></script>
     <script>
         var sourceLanguage = "omelet";
         var targetLanguage = "omelet";
 
         var context = {
-            items: ["reid","caroline","scott","luke"],
             name: "Reid Mitchell",
             age: 22,
             favoriteNumber: 47,
+            isOmeletCool: true,
+            isOmeletNotCool: false,
             people: [
                 {name: "Alice", age: 22},
                 {name: "Bob", age: 30},
@@ -65,7 +66,7 @@
         var T = new module.exports.ToastInstance({
             sourceLanguage: sourceLanguage,
             targetLanguage: targetLanguage,
-            prettyPrint: false,
+            prettyPrint: true,
             isWeb: true
         });
         function render(input) {
@@ -76,7 +77,7 @@
                 output.style.color = "red";
                 // return e.toString();
                 return e.toString().replace("\"\\u21D2\"","an indent")
-                                   .replace("\"\\u21D0\"","an outdent")+"\n\n"+JSON.stringify(e);
+                                   .replace("\"\\u21D0\"","an outdent");
             }
         }
     </script>

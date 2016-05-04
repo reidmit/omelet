@@ -1,0 +1,25 @@
+>def stylesheet(path):
+    @link[rel='stylesheet' type='text/css' href={path}]
+
+>def js(path):
+    @script[src={path}]
+
+>def image(path):
+    @img[src={path}]
+
+>def hamburger():
+    &#9776;
+
+>def link_to(url,text):
+    @a[href={url}] {text}
+
+>def link_new(url,text):
+    @a[href={url} target="_blank"] {text}
+
+>def ex_html():
+    @div.example-label
+        Rendered HTML:
+
+>def ex_omelet():
+    @div.example-label
+        Omelet template:

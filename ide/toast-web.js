@@ -322,9 +322,7 @@ function mergeAttributes(attrList,attrName) {
 * character codes.
 */
 function escapeHTML(input) {
-    return input.replace(/\'/g, "&apos;")
-                .replace(/\"/g, "&quot;")
-                .replace(/\&/g, "&amp;")
+    return input.replace(/\&/g, "&amp;")
                 .replace(/\</g, "&lt;")
                 .replace(/\>/g, "&gt;");
 }
@@ -1479,7 +1477,7 @@ module.exports = function(ast, originalCode, context, config) {
             scope.close();
         }
 
-        return output.join("\n");
+        return output.join("");
     }
     function evalInterpolation(node) {
         var val = scope.find(node.name.value);
@@ -2003,15 +2001,13 @@ module.exports = function(ast, originalCode, context, config) {
         var params = node.params.map(function(n){ return n.value });
         out += params.join(", ");
         out += "):\n";
-        indentLevel++;
 
-        // out += indentation.of(indentLevel);
-        var body = node.body.map(function(e){
-            return indentation.of(indentLevel)+evalExpr(e);
-        });
-        out += body.join("");
+        out += "\n"+indentation.indent_token+"\n";
 
-        indentLevel--;
+        out += node.body.map(evalExpr).join("");
+
+        out += "\n"+indentation.dedent_token+"\n";
+
         return out;
     }
     function evalParenthetical(node) {
@@ -2024,7 +2020,7 @@ module.exports = function(ast, originalCode, context, config) {
         return node.value+"";
     }
     function evalString(node) {
-        return node.value;
+        return node.value.replace(/\n[ ]*/g,"\n");
     }
     function evalIdentifier(node) {
         var out = node.value;
@@ -2047,53 +2043,93 @@ module.exports = function(ast, originalCode, context, config) {
         var out = "";
         if (node.interpolated) {
             out += "{";
-        }
-
-        var tagName = evalExpr(node.name)
-        out += "@"+tagName;
-        //possible TODO: pull out #special.attrs like this
-
-        if (node.attributes.length > 0) {
-            var attributes = node.attributes.map(evalExpr);
-            out += "["+attributes.join(" ")+"]";
-        }
-
-        if (node.inner.length > 0 && !node.interpolated) {
-            out += "\n";
-        }
-
-        if (!node.interpolated) {
-            console.log("incrementing indent in "+tagName)
-            indentLevel++;
-        }
-
-        var inner = node.inner.map(evalExpr).join("");
-
-        console.log(inner.split("\n").map(function(line){
-            return indentation.of(indentLevel)+(line);
-        }).join("\n"))
-
-        if (!node.interpolated) {
-            out += inner.split("\n").map(function(line){
-                return indentation.of(indentLevel)+(line);
-            }).join("\n");
-        } else {
-            out += " "+inner;
-        }
-
-        if (!node.interpolated) {
-            console.log("decrementing indent in "+tagName)
-            indentLevel--;
-        }
-
-        if (node.interpolated) {
+            var tagName = evalExpr(node.name)
+            out += "@"+tagName;
+            if (node.attributes.length > 0) {
+                var attributes = node.attributes.map(evalExpr);
+                out += "["+attributes.join(" ")+"]";
+            }
+            out += " ";
+            var inner = node.inner.map(evalExpr).join("");
+            out += inner;
             out += "}";
+
+        } else {
+            var tagName = evalExpr(node.name)
+            out += "@"+tagName;
+
+            //possible TODO: pull out #special.attrs like this
+
+            if (node.attributes.length > 0) {
+                var attributes = node.attributes.map(evalExpr);
+                out += "["+attributes.join(" ")+"]";
+            }
+
+            if (node.inner.length > 0) {
+                out += "\n";
+            }
+
+            out += "\n"+indentation.indent_token+"\n";
+
+            var inner = node.inner.map(evalExpr).join("")
+
+            out += inner + "\n";
+
+            out += "\n"+indentation.dedent_token+"\n";
+
         }
         return out;
     }
     function evalIfStatement(node) {
+        var out = ">if ";
+        if (node.negated) {
+            out += "!";
+        }
+        out += evalExpr(node.predicate);
+        out += ":\n";
+
+        out += "\n"+indentation.indent_token+"\n";
+        out += node.thenCase.map(evalExpr).join("");
+        out += "\n"+indentation.dedent_token+"\n";
+
+        if (node.elifCases) {
+            for (var i=0; i<node.elifCases.length; i++) {
+                var elif = node.elifCases[i];
+                out += ">elif ";
+                if (elif.negated) {
+                    out += "!";
+                }
+                out += evalExpr(elif.predicate);
+                out += ":\n";
+                out += "\n"+indentation.indent_token+"\n";
+                out += elif.thenCase.map(evalExpr).join("");
+                out += "\n"+indentation.dedent_token+"\n";
+            }
+        }
+
+        if (node.elseCase) {
+            out += ">else:\n";
+            out += "\n"+indentation.indent_token+"\n";
+            out += node.elseCase.map(evalExpr).join("");
+            out += "\n"+indentation.dedent_token+"\n";
+        }
+
+        return out;
     }
     function evalForEach(node) {
+        var out = ">for ";
+        out += evalExpr(node.iterator);
+        out += " in ";
+        out += evalExpr(node.data);
+        out += ":\n";
+
+        out += "\n"+indentation.indent_token+"\n";
+
+        out += node.body.map(evalExpr).join("");
+
+        out += "\n"+indentation.dedent_token+"\n";
+        return out;
+
     }
     function evalInterpolation(node) {
         var out = "{"+evalExpr(node.name);
@@ -2186,6 +2222,26 @@ module.exports = function(ast, originalCode, context, config) {
         o += ast.imports.map(evalExpr);
     }
     o += ast.contents.map(evalExpr).join("");
+
+    //post-processing step
+
+    o = o.replace(/\n[\n]+/g,"\n");
+
+    var olines = o.split("\n");
+    var nlines = [];
+
+    for (var i=0; i<olines.length; i++) {
+        if (olines[i] === indentation.indent_token) {
+            indentLevel++;
+        } else if (olines[i] === indentation.dedent_token) {
+            indentLevel--;
+        } else {
+            nlines.push(indentation.of(indentLevel)+olines[i]);
+        }
+    }
+
+    o = nlines.join("\n");
+
     return o;
 }
 
@@ -2279,6 +2335,7 @@ filters.rtrim = function(input) {
 }
 
 filters.replace = function(input, pattern, replacement) {
+    var input = ""+input;
     var re = new RegExp(pattern, "g");
     return input.replace(re, replacement);
 }
@@ -14925,6 +14982,29 @@ module.exports = (function() {
         peg$c87 = "{",
         peg$c88 = { type: "literal", value: "{", description: "\"{\"" },
         peg$c89 = function(openTag, contents) {
+                if (isArray(openTag)) {
+                    var o = {
+                        kind: "Tag",
+                        name: openTag[0].value,
+                        attributes: mergeAttributes(openTag[0].attributes,"class"),
+                        interpolated: true
+                    };
+                    var curr = o;
+
+                    for (var i=1; i<openTag.length; i++) {
+                        curr.inner = [{
+                            kind: "Tag",
+                            name: openTag[i].value,
+                            attributes: mergeAttributes(openTag[i].attributes,"class"),
+                            interpolated: true
+                        }]
+                        curr = curr.inner[0];
+                    }
+                    curr.inner = contents;
+
+                    return o;
+                }
+
                 return {
                     kind: "Tag",
                     name: openTag.value,

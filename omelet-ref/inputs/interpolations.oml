@@ -1,0 +1,78 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Interpolations
+
+>def page_contents():
+    @p
+        When you want to include in your template the value of a variable
+        from the context, you refer to the variable in an interpolation.
+        Interpolations are simply the variable's name surrounded by
+        {@code \{ \}} characters.
+
+    @p
+        Assuming that our current evaluation context contains a variable
+        {@code language} with the value {@code "Omelet"}, we could write
+        the following.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+I am writing in {language}.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+I am writing in Omelet.
+    ```
+
+    @p
+        As shown, variable values are simply dropped in to fill the placeholders
+        in the template. If you have arrays or complex objects in your context,
+        you can refer to individual elements or properties as you would expect.
+        Arrays are zero-indexed, just like in JavaScript.
+
+    @p
+        Assuming we have in the context an array called {@code people} with
+        the value {@code ["Alice","Bob","Carol"]}, and an object called
+        {@code dog} with the value {@code \{name: "Fido", age: 3\}}, we can
+        include these values as shown:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+The second person is {people[1]}.
+The dog called {dog.name} is {dog.age} years old.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+The second person is Bob.
+The dog called Fido is 3 years old.
+    ```
+
+    @p
+        Interpolations are also how you call macros defined elsewhere in your
+        templates. In this case, interpolations take the form
+        {@code \{macroName(arg1,arg2,...)\}}. If the macro takes no parameters,
+        you must still include the empty parentheses: {@code \{macroName()\}}.
+        Here are some examples.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+>def displayInfo(name,age):
+    {name} is {age} years old.
+
+{displayInfo("Reid",22)}
+{displayInfo("Luke",8)}
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+Reid is 22 years old.
+Luke is 8 years old.
+    ```

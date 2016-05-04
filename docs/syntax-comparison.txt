@@ -1,0 +1,292 @@
+SYNTAX COMPARISON ACROSS SUPPORTED LANGUAGES
+
+These are examples of how each Toast node looks in the actual syntax of
+each supported language (Omelet, Dust, Liquid). In the cases where the
+syntax is very simple and the same across all languages, examples have
+been omitted. We omit examples for Boolean, Number, Attribute, String,
+Identifier, Modifier, and CommentHTML.
+
+The Document node is also omitted, since this is strictly a top-level
+root node that contains no real syntactic information; it merely holds
+all the nodes/expressions that appear in a given file. It does not
+correspond to any syntactic construct in any of the languages.
+
+Note that the examples shown here for each language represent the ONLY
+ways code in that language could be parsed into the given AST node. For
+Dust and Liquid, we are working within a restricted subset of the language.
+This means that Toast does not parse some syntactic constructs that are
+valid in the full versions of these languages.
+
+For example, the only way to iterate over a variable (ForEach node) in
+the Toast subset of Liquid is like this:
+
+    {% for data in variable %}
+        ...
+    {% endfor %}
+
+In fully-featured Liquid, you can also iterate over ranges and arrays,
+as in {% for i in range(1..10) %} or {% for n in [3,47,42,28] %}. This
+is not allowed in Toast, so it is not listed in the examples below.
+
+The bottom line is that if there is a way to do something in one of
+these languages that is not listed here, Toast will not parse it and
+does not support it.
+
+===============================================================================
+
+NODE: Comment
+    properties
+        kind: "Comment"
+        value: a string literal
+
+
+===============================================================================
+
+NODE: Doctype
+    properties
+        kind: "Doctype"
+        value: a string literal
+    examples
+        Liquid
+            <!DOCTYPE somestring>
+        Dust
+            <!DOCTYPE somestring>
+        Omelet
+            @doctype somestring
+
+===============================================================================
+
+NODE: Extend
+    properties
+        kind: "Extend"
+        file: a String node
+    examples
+        Liquid
+            {% extend 'fileName.liquid' %}
+        Dust
+            {>fileName/}
+        Omelet
+            >extend fileName.oml
+
+===============================================================================
+
+NODE: Filter
+    properties
+        kind: "Filter"
+        name: Identifier node
+        arguments: [String | Number | Boolean | Identifier]
+    examples
+        Liquid
+            {{key|filterName}}
+            {{key|filter1|filter2}}
+            {{key|filterName: arg1, arg2}}
+        Dust
+            ** NOTE: Dust filters do not take arguments **
+
+            {key|filterName}
+            {key|filter1|filter2}
+        Omelet
+            {key|filterName}
+            {key|filter1|filter2}
+            {key|filterName arg1 arg2}
+
+===============================================================================
+
+NODE: ForEach
+    properties
+        kind: "ForEach"
+        iterator: Identifier node
+        data: Identifier node
+        body: [any node]
+    examples
+        Liquid
+            {% for item in items %}
+                ...
+            {% endfor %}
+        Dust
+            {#items}
+                ...
+            {/items}
+        Omelet
+            >for item in items:
+                ...
+
+===============================================================================
+
+NODE: IfStatement
+    properties
+        kind: "IfStatement"
+        predicate: Identifier node
+        negated: true | false
+        thenCase: [any node]
+        elifCases: [IfStatement]
+        elseCase: undefined | [any node]
+    examples:
+        Liquid
+            {% if identifier %}
+                ...
+            {% else %}
+                ...
+            {% endif %}
+            {% unless negatedIdentifier %}
+                ...
+            {% elsif identifier2 %}
+                ...
+            {% endunless %}
+        Dust
+            ** NOTE: Dust does not have else-if blocks. When translating
+               an else-if block into Dust, we translate it as nested if
+               statements. **
+
+            {?identifier}
+                ...
+            {/identifier}
+            {^negatedIdentifier}
+                ...
+            {/negatedIdentifier}
+        Omelet
+            >if identifier:
+                ...
+            >elif identifier2:
+                ...
+            >else:
+                ...
+            >if !negatedIdentifier:
+                ...
+            >elif identifier2:
+                ...
+
+===============================================================================
+
+NODE: Import
+    properties
+        kind: "Import"
+        file: String node
+    examples
+        Liquid
+            {% import 'fileName.liquid' %}
+        Dust
+            ** NOTE: the Dust {>fileName/} construct is actually akin
+            to a combination of "import", "include", and "extend" in
+            Liquid and Omelet. When translating from any of these three
+            nodes into Dust, we give it this form. When parsing the
+            {>fileName/} into an AST, we always make it an Include node. **
+
+            {>fileName/}
+        Omelet
+            >import fileName.oml
+
+===============================================================================
+
+NODE: Include
+    properties
+        kind: "Include"
+        file: String node
+    examples
+        Liquid
+            {% include 'fileName.liquid' %}
+        Dust
+            ** NOTE: the Dust {>fileName/} construct is actually akin
+            to a combination of "import", "include", and "extend" in
+            Liquid and Omelet. When translating from any of these three
+            nodes into Dust, we give it this form. When parsing the
+            {>fileName/} into an AST, we always make it an Include node. **
+
+            {>fileName/}
+        Omelet
+            {>include fileName.oml}
+
+===============================================================================
+
+NODE: Interpolation
+    properties
+        kind: "Interpolation"
+        name: Identifier node
+        isMacroCall: undefined | true | false
+        arguments: [String node | Boolean node | Number node | Identifier node]
+        filters: [Filter node]
+    examples
+        Liquid
+            {{variableName}}
+        Dust
+            {variableName}
+        Omelet
+            {variableName}
+
+===============================================================================
+
+NODE: MacroDefinition
+    properties
+        kind: "MacroDefinition"
+        name: Identifier node
+        params: [String node | Boolean node | Number node | Identifier node]
+        body: [any node]
+    examples
+        Liquid
+            ** NOTE: Liquid macros cannot take parameters. If trying
+            to translate an AST node for a definition with parameters into
+            Liquid, the parameters will be ignored. **
+
+            {% capture macroName %}
+                ...
+            {% endcapture %}
+        Dust
+            ** NOTE: Dust macros (partials) cannot take parameters. If trying
+            to translate an AST node for a definition with parameters into
+            Dust, the parameters will be ignored. **
+
+            {<macroName}
+                ...
+            {/macroName}
+        Omelet
+            >def macroName():
+                ...
+            >def macroName2(param1,param2):
+                ...
+
+===============================================================================
+
+NODE: Raw
+    properties
+        kind: "Raw"
+        value: a string literal
+    examples
+        Liquid
+            {% raw %}
+                ...
+            {% endraw %}
+        Dust
+            ** NOTE: Dust does not support raw text tags. Its syntax is
+            restricted enough that it should not need it: there should not
+            be ambiguity between, say, inline JavaScript and a Dust {key}. **
+        Omelet
+            ** NOTE: Omelet only allows raw text within a tag. The tag
+            can be anything, but a script tag is used here for clarity. **
+
+            @script[type="text/javascript"] ```
+                ...
+            ```
+
+===============================================================================
+
+NODE: Tag
+    properties
+        kind: "Tag"
+        name: String node
+        attributes: [Attribute node]
+        inner: [any node]
+    examples
+        Liquid/Dust
+            <h1>This is a simple tag.</h1>
+            <div>
+                This is a block tag.
+            </div>
+            <div class="className" id="anchor">
+                This tag has attributes.
+            </div>
+        Omelet
+            @h1 This is a simple tag.
+            @div
+                This is a block tag.
+            @div.className#anchor
+                This tag has attributes.

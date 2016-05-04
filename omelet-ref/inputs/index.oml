@@ -1,0 +1,15 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Omelet Language Reference
+
+>def page_contents():
+    @p
+        Welcome to the Omelet language reference pages! These pages
+        serve as documentation for the Omelet template language, as
+        well as the first real-world application of Omelet.
+
+    @p
+        Use the links on the left to explore the features of Omelet,
+        or view the Omelet templates that generated these pages
+        on GitHub for more examples of Omelet in action!

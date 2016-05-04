@@ -462,7 +462,7 @@ module.exports = function(ast, originalCode, context, config) {
             scope.close();
         }
 
-        return output.join("\n");
+        return output.join("");
     }
     function evalInterpolation(node) {
         var val = scope.find(node.name.value);

@@ -1,0 +1,126 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Tags
+
+>def page_contents():
+    @p
+        Tags in Omelet render into HTML tags. Tag names always start
+        with a {@code \@} character. There are three types of tags in
+        Omelet. They all look similar, but are used in slightly different
+        ways.
+
+    @p
+        The first is the {@b block tag}. These tag names are written on
+        their own line, and everything that goes inside the tag is written
+        as an indented block beneath the tag name.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+@div
+    This is a block tag. They can span multiple
+    lines. Everything inside this indented block
+    is part of the the same tag.
+@div
+    Block tags can be nested, like this.
+    @div
+        This is a nested block tag.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;div>
+    This is a block tag. They can span multiple
+    lines. Everything inside this indented block
+    is part of the the same tag.
+&lt;/div>
+&lt;div>
+    Block tags can be nested, like this.
+    &lt;div>
+        This is a nested block tag.
+    &lt;/div>
+&lt;/div>
+    ```
+
+    @p
+        The second type of tag is the {@b line tag}. For these, the tag
+        name is written at the start of a line, and everything after the
+        tag name ends up on the inside of the tag. These are helpful when
+        the contents of a tag will only span one line, so you don't need
+        to have a whole indented block to contain them.
+
+    @p
+        A single space after a tag name is necessary to separate the
+        tag name from the content of the tag. Any more spaces after the first
+        will be captured as part of the contents of the tag.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+@h1 This is a headline
+@b This is some bold text
+@ul
+    @li This is a list item, as a line tag, within a ul block tag.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;h1>This is a headline&lt;/h1>
+&lt;b>This is some bold text&lt;/b>
+&lt;ul>
+    &lt;li>This is a list item, as a line tag, within a ul block tag.&lt;/li>
+&lt;/ul>
+    ```
+
+    @p
+        The third type of tag is the {@b inline tag}. These can be written
+        in the middle of a block of text, surrounded by {@code \{ \}} characters.
+        These are useful when you want to include a tag around some text
+        without breaking up the text into multiple lines. They are often
+        used with tags like {@code \@a}, {@code \@b}, and {@code \@span}.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+This is some text with {@b bold words} in it.
+This text has a {@[href="example.com"] link} in it.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+This is some text with &lt;b>bold words&lt;/b> in it.
+This text has a &lt;a href="example.com">link&lt;/a> in it.
+    ```
+
+    @p
+        In all three types of tag, Omelet supports a special shorthand syntax
+        for combining tags, called a {@b multitag}. Multitags are useful when
+        you want to surround a piece of text with several tags at once.
+
+    @p
+        To write a multitag, you combine tag names back to back, separated by
+        a {@code |} character. The leftmost tag name will render into the
+        outermost HTML tag, as shown below.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+@b|i|u This text is bold, italicized, and underlined.
+@ul
+    @li|a[href="example1.com"] This is a list item and a link.
+    @li|a[href="example2.com"] This is a list item and a link.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;b>&lt;i>&lt;u>This text is bold, italicized, and underlined.&lt;/b>&lt;/i>&lt;/u>
+&lt;ul>
+    &lt;li>&lt;a href="example1.com">This is a list item and a link.&lt;/a>&lt;/li>
+    &lt;li>&lt;a href="example2.com">This is a list item and a link.&lt;/a>&lt;/li>
+&lt;/ul>
+    ```

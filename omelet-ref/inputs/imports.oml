@@ -1,0 +1,60 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Imports
+
+>def page_contents():
+    @p
+        Imports are another way to modularize your template development
+        in Omelet. When you import a file with the statement
+        {@code >import filename.oml} (which must occur at the top level
+        of a file, before any code that will be rendered into HTML output),
+        you gain access to all macros defined in {@code filename.oml}.
+
+    @p
+        This encourages the separation of macro definitions into separate
+        files. Often, you will want to reuse the same macros multiple
+        times across a single project, or across multiple projects. Imports
+        allow you to keep all these macros in one place, so there is only
+        a single point of change if updates need to be made.
+
+    @p
+        As an example, let's call this file {@code macros.oml}:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+## macros.oml
+
+>def site_title():
+    This is the name of my website
+
+>def btn(text):
+    @button.specialButton[alt="Click here"] {text}
+    ```
+
+    @p
+        Then we can import {@code macros.oml} from our current template,
+        assuming the two files are located in the same directory, like this:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+>import macros.oml
+
+And I can refer to externally defined macros:
+
+{site_title()}
+
+{btn("Hello, world!")}
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+And I can refer to externally defined macros:
+
+This is the name of my website
+
+&lt;button class="specialButton" alt="Click here">Hello, world!&lt;/button>
+    ```

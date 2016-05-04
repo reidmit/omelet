@@ -1,0 +1,69 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Includes
+
+>def page_contents():
+    @p
+        Omelet allows you to include the contents of other template files
+        in your templates. This is most useful for splitting templates into
+        small, reusable pieces.
+
+    @p
+        To include the contents of another template, you use the expression
+        {@code \{>include fileName.oml\}}. This is evaluated exactly the
+        same as if you had copy/pasted the contents of {@code fileName.oml}
+        into your current template file. The included file is evaluated
+        within the context of the template that is including it.
+
+    @p
+        Let's call this file {@code sidebar.oml}:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+## sidebar.oml
+
+@ul.side-bar
+    @li|a[href="link1.html"] Navigation link 1
+    @li|a[href="link2.html"] Navigation link 2
+    @li|a[href="link3.html"] Navigation link 3
+    ```
+
+    @p
+        Now, assuming we are writing a template that will be located in
+        the same directory as {@code sidebar.oml} (so that we do not need to
+        worry about a complex relative path name), we can drop the contents
+        of {@code sidebar.oml} into our template like this:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+@html
+    @head
+        @title My website
+    @body
+        {>include sidebar.oml}
+        @div.contents
+            These are some other contents of the page!
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;html>
+    &lt;head>
+        &lt;title>My website&lt;/title>
+    &lt;/head>
+    &lt;body>
+        &lt;ul class="side-bar">
+            &lt;li>&lt;a href="link1.html">Navigation link 1&lt;/a>&lt;/li>
+            &lt;li>&lt;a href="link2.html">Navigation link 2&lt;/a>&lt;/li>
+            &lt;li>&lt;a href="link3.html">Navigation link 3&lt;/a>&lt;/li>
+        &lt;/ul>
+        &lt;div class="contents">
+            These are some other contents of the page!
+        &lt;/div>
+    &lt;/body>
+&lt;/html>
+    ```

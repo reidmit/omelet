@@ -1,0 +1,98 @@
+USING TOAST FROM THE WEB IDE
+
+The Toast web IDE is available here:
+    http://reidmitchell.net/toast/ide/
+
+This web IDE is designed to make the process of running Toast easier,
+which is useful for testing, writing simple templates, or if you do not
+have Node.js installed.
+
+The interface of the web IDE is straightforward. You write code in the
+box on the left, and the translated code is automatically output in the
+box on the right.
+
+You choose the source and target languages from the two select elements
+at the top of the window.
+
+You can write/edit/store multiple files in the IDE and reference the
+files from one another. To see your list of files, click the folder icon
+in the top left corner. To add a new file, click "new file" in the
+top right corner.
+
+FILE STORAGE
+
+The browser does not have access to your computer's actual filesystem,
+so file storage is done through your browser's HTML5 localStorage object.
+This is only available in more modern browsers. You can do a search on
+the internet to see if localStorage is available in your browser, but
+it probably is. (Side note: This is the same technology used to store
+files in the browser by the Grace Web IDE, which can be found here:
+http://web.cecs.pdx.edu/~grace/minigrace/exp/).
+
+Files are saved instantly, as soon as you edit them. They will remain
+saved in your browser indefinitely (until you clear your saved browser
+data). This means that the files will be saved, waiting for you, next time
+you load the web IDE on that same computer.
+
+Because browser file storage is done through localStorage, there are
+no directories. Every file is located in the same, single directory.
+So, if you are writing an Omelet template that includes the line...
+
+    >import someFile.oml
+
+...then Toast will look into the other files saved in localStorage for
+one named "someFile.oml". If you included the line...
+
+    >import path/to/someFile.oml
+
+...then Toast will always fail to find the file, since there are no
+directories.
+
+EVALUATION CONTEXTS
+
+At this time, there is no way to pass in a custom evaluation context to
+the web IDE. This is a limitation that will be lifted soon. However, for
+the time being, you can still refer to variables from the following,
+hard-coded context object that is available to all files in the web IDE:
+
+    {
+        name: "Reid Mitchell",
+        age: 22,
+        favoriteNumber: 47,
+        isOmeletCool: true,
+        isOmeletNotCool: false,
+        people: [
+            {name: "Alice", age: 22},
+            {name: "Bob", age: 30},
+            {name: "Carol", age: 47}
+        ],
+        pages: ["first","second","third"]
+    }
+
+This is meant to give enough variety for you to be able to test Omelet's
+features on these values, but is clearly not enough for practical use.
+
+You can use these values in Omelet like this:
+
+    >for person in people:
+        {person.name} is {person.age} years old.
+
+...which would render:
+
+    Alice is 22 years old.
+    Bob is 30 years old.
+    Carol is 47 years old.
+
+However, you cannot include any variables that are not listed in that
+hard-coded context, or you will get an error. Note that this is only
+a limitation when trying to go from one of the template languages into
+HTML; when you are using Toast to translate between template languages,
+the evaluation context is ignored.
+
+CONCLUSION
+
+Other than those details, the browser-based version of Toast is mostly
+fully featured. It works best, as does all of Toast, when going from
+Omelet to HTML. This is the recommended use case. Going from Omelet to
+Dust or Liquid should also work quite well, modulo a few strange differences
+in whitespace between the input and output files.

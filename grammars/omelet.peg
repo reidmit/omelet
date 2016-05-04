@@ -216,7 +216,7 @@ RawTag
             }
             curr.inner = [{
                 kind: "Raw",
-                value: r.join("").replace(/[⇐⇒]\n/g,"")
+                value: r.join("").replace(/[⇐⇒]/g,"")
             }];
 
             return o;
@@ -227,7 +227,7 @@ RawTag
                 attributes: mergeAttributes(openTag.attributes,"class"),
                 inner: [{
                     kind: "Raw",
-                    value: r.join("").replace(/[⇐⇒]\n/g,"")
+                    value: r.join("").replace(/[⇐⇒]/g,"")
                 }]
             }
         }
@@ -306,6 +306,29 @@ Interpolation
     }
     / "{" openTag:OpenTag contents:(Text / Interpolation)* "}"
     {
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class"),
+                interpolated: true
+            };
+            var curr = o;
+
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = [{
+                    kind: "Tag",
+                    name: openTag[i].value,
+                    attributes: mergeAttributes(openTag[i].attributes,"class"),
+                    interpolated: true
+                }]
+                curr = curr.inner[0];
+            }
+            curr.inner = contents;
+
+            return o;
+        }
+
         return {
             kind: "Tag",
             name: openTag.value,
@@ -567,7 +590,7 @@ Text "plain text"
     / EscapedCharacter
 
 EscapedCharacter
-    = "\\" char:([{}@\\#`])?
+    = "\\" char:([{}@\\#])?
     {
         return {
             kind: "String",
@@ -596,5 +619,6 @@ _ "whitespace"
 
 __
     = [ ]*
+
 
 

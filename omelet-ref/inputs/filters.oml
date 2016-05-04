@@ -1,0 +1,155 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Filters
+
+>def page_contents():
+    @p
+        Omelet allows for a handful of filters to be applied
+        to interpolations. These filters perform simple transformations on the
+        included data before it is rendered into HTML.
+
+    @p
+        Filters are applied at the end of an interpolation, like so:
+        {@code \{variableName|filterName\}}. Some filters take arguments:
+        {@code \{variableName|filterName arg1 arg2\}}. Multiple filters
+        can be applied to the same interpolation, in which case they are
+        applied in order from left to right: {@code \{variableName|filter1|filter2\}}.
+
+    @p
+        Here are some examples. Assume that we have in the context a
+        variable {@code name} with the value {@code "Reid Mitchell"}.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+{name}
+{name|upper}
+{name|length}
+{name|prepend "mr. "}
+{name|lower|replace " " "_"}
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+Reid Mitchell
+REID MITCHELL
+13
+Mr. Reid Mitchell
+reid_mitchell
+    ```
+
+    @p
+        An important note is that Omelet will never raise a type error when
+        applying a filter. There are some filters that seem to make an assumption
+        about the type of their input (such as {@code length}, which seems to
+        want either a string or an array). These filters will just return a
+        less-than-helpful result when given input of an unexpected type. For example,
+        the filter {@code length} returns 1 whenever it is applied to something
+        other than a string or an array.
+    @p
+        Here is the full list of filters supported by Omelet, along with their
+        behavior.
+
+    @dl
+
+        @dt|b {@code escape}
+        @dd
+            HTML-escapes its input text. This means replacing
+            ampersands with {@code &amp;} and angle brackets with {@code &lt;}
+            and {@code &gt;}.
+
+        @dt|b {@code upper}
+        @dd
+            Makes all characters in the input text uppercase, when they are
+            letters, and leaves them unchanged otherwise.
+
+        @dt|b {@code lower}
+        @dd
+            Makes all characters in the input text lowercase, when they are
+            letters, and leaves them unchanged otherwise.
+
+        @dt|b {@code trim}
+        @dd
+            Removes all whitespace from the beginning and end of the
+            input text.
+
+        @dt|b {@code ltrim}
+        @dd
+            Removes all whitespace from the beginning of the input text.
+
+        @dt|b {@code rtrim}
+        @dd
+            Removes all whitespace frmo the end of the input text.
+
+        @dt|b {@code replace ptrn val}
+        @dd
+            Converts the input text to a string, if necessary, and then
+            replaces all instances of {@code ptrn} with {@code val} in the input
+            string.
+
+        @dt|b {@code default val}
+        @dd
+            If the input text is an empty string, an undefined value, or
+            {@code null}, {@code val} is inserted in its place.
+
+        @dt|b {@code truncate n}
+        @dd
+            Cuts off all but the first {@code n} characters of the input text,
+            and appends a {@code ...} to the end of the truncated string.
+
+        @dt|b {@code truncate_words n}
+        @dd
+            Splits the input into words (based on spaces), then cuts off
+            all but the first {@code n} words of the input
+            and appends a {@code ...} to the end of the truncated string.
+
+        @dt|b {@code prepend s}
+        @dd
+            Converts the input to a string, then adds {@code s} to the
+            beginning of the input string.
+
+        @dt|b {@code append s}
+        @dd
+            Converts the input to a string, then adds {@code s} to the
+            end of the input string.
+
+        @dt|b {@code length}
+        @dd
+            If the input is a string, returns the number of characters.
+            If the input is an array, returns the number of elements.
+            Otherwise, returns 1.
+
+        @dt|b {@code starts_with s}
+        @dd
+            If the input is a string, returns {@code true} if it starts
+            with the substring {@code s} and {@code false} otherwise.
+            If the input is not a string, it returns {@code false}.
+
+        @dt|b {@code ends_with s}
+        @dd
+            If the input is a string, returns {@code true} if it ends
+            with the substring {@code s} and {@code false} otherwise.
+            If the input is not a string, it returns {@code false}.
+
+        @dt|b {@code contains s}
+        @dd
+            If the input is a string, returns {@code true} if it contains
+            the substring {@code s} and {@code false} otherwise. If the
+            input is an array, returns {@code true} if the it contains the
+            element {@code s}, and {@code false} otherwise. In all other
+            cases, it returns {@code false}.
+
+        @dt|b {@code split sep}
+        @dd
+            If the input is a string, splits the string into an array,
+            with elements separated by instances of {@code sep}. If the
+            input is not a string, returns an array with only one element,
+            the original input.
+
+        @dt|b {@code join sep}
+        @dd
+            If the input is an array, concatenates all elements together
+            as strings, separated by {@code sep}. If the input is not an
+            array, it returns the original input.

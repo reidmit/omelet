@@ -1,0 +1,236 @@
+* {
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Roboto', 'Helvetica', Arial, sans-serif;
+    background-color: #fff;
+    margin: 0;
+    padding: 0;
+    line-height: 1.4em;
+    min-height: 100%;
+}
+
+code {
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    padding: 2px 3px;
+    border-radius: 3px;
+    background: rgb(220,235,235);
+}
+
+pre code {
+    padding: 0px;
+}
+
+.example-label {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: -10px;
+}
+
+/* BEGIN doc-header.oml */
+
+.doc-header {
+    background-color: rgb(90,160,170);
+    height: 87px;
+    border-bottom: 10px solid rgb(250,250,220);
+}
+
+.doc-header img {
+    position: absolute;
+    top: 17px;
+    left: 30px;
+    width: 45px;
+}
+
+.doc-title {
+    text-transform: lowercase;
+    font-family: 'Waiting for the Sunrise', Helvetica, cursive;
+    font-size: 45px;
+    /*color: #fccc2f;*/
+    position: absolute;
+    top: 27px;
+    left: 90px;
+    color: #fff;
+    letter-spacing: 0.2em;
+}
+
+.doc-header nav {
+    position: absolute;
+    display: block;
+    right: 30px;
+    top: 4px;
+    font-size: 18px;
+}
+
+.doc-header nav a {
+    padding: 10px 20px;
+    border-radius: 30px;
+    height: 70px;
+    line-height: 70px;
+    text-decoration: none;
+    color: #fff;
+    /*color: rgb(250,250,220);*/
+    font-weight: 100;
+}
+
+.doc-header nav a+a {
+    margin-left: 20px;
+}
+
+.doc-header nav a:hover {
+    color: rgb(90,160,170);
+    background: #fff;
+    /*background: rgb(250,250,220);*/
+}
+
+/* END doc-header.oml */
+
+/* BEGIN page.oml */
+
+.wrapper {
+    /*max-width: 1060px;*/
+    overflow: auto;
+    padding: 5px 20px;
+    margin: 0 auto;
+    background: #fff;
+    clear: both;
+}
+
+.contents {
+    width: calc(100% - 160px);
+    float: right;
+}
+
+.example {
+    display: block;
+    border-radius: 10px;
+    white-space: pre-wrap;
+    /*border: 3px solid rgb(90,160,170);*/
+    padding: 10px 15px;
+    margin: 10px 0;
+    font-size: 16px;
+    background: rgb(220,235,235);
+}
+.example.half {
+    width: 50%;
+    float: left;
+}
+
+/* END page.oml */
+
+/* BEGIN doc-sidebar.oml */
+
+.sidebar {
+    width: 140px;
+    padding-top: 20px;
+    float: left;
+    text-align: right;
+    margin-bottom: 80px;
+}
+
+.sidebar ul {
+    margin: 0;
+    padding: 0;
+}
+.sidebar li {
+    list-style-type: none;
+    display: block;
+}
+.sidebar li+li {
+    margin-top: 20px;
+}
+
+.sidebar a {
+    border-radius: 30px;
+    text-decoration: none;
+    color: rgb(20,90,100);
+    padding: 9px 13px;
+}
+
+.sidebar a:hover {
+    color: #fff;
+    background: rgb(90,160,170);
+}
+
+.sidebar a.active {
+    color: #fff;
+    background: rgb(90,160,170);
+}
+
+/* END doc-sidebar.oml */
+
+/* BEGIN doc-footer.oml */
+
+.doc-footer {
+    border-top: 10px solid rgb(250,250,220);
+    background-color: rgb(90,160,170);
+    padding: 20px 50px;
+    color: rgb(150,200,200);
+    letter-spacing: 0.05em;
+    font-size: 12px;
+    overflow: auto;
+}
+
+.doc-footer a {
+    color: rgb(150,200,200);
+}
+
+.float-left {
+    float: left;
+}
+.float-right {
+    float: right;
+}
+/* END doc-footer.oml */
+
+.mobile-nav {
+    display: none;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    color: rgb(90,160,170);
+    background-color: #fff;
+    font-size: 24px;
+    line-height: 45px;
+    text-align: center;
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    cursor: pointer;
+}
+
+@media screen and (max-width: 720px) {
+    .mobile-nav {
+        display: block;
+    }
+    .doc-header {
+        height: 86px;
+    }
+    .doc-header nav {
+        display: none;
+        right: 0px;
+        top: 10px;
+        margin-top: 60px;
+        width: 100%;
+    }
+    .doc-header nav a {
+        text-align: right;
+        padding: 10px 20px;
+        height: 50px;
+        line-height: 34px;
+        width: 100%;
+        border-radius: 0;
+        display: block;
+        float: right;
+    }
+    .sidebar {
+        padding-top: 0;
+        width: 100%;
+    }
+    .sidebar li {
+        display: inline-block;
+    }
+    .contents {
+        width: 100%;
+    }
+}

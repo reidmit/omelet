@@ -1,0 +1,56 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Attributes
+
+>def page_contents():
+    @p
+        HTML attributes can be included on tags immediately following
+        the tag name, between {@code [ ]} characters. Within the
+        {@code [ ]} characters, attributes look the same as they
+        do in HTML, separated by spaces. Note that Omelet does support
+        boolean attributes, like {@code checked} below.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+@a[href="example.com"] This is a link
+@h1[class="big"] This is a headline.
+@button[id="cool" onclick="doSomething();"] Click me.
+@input[type="checkbox" checked]
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;a href="example.com">This is a link.&lt;/a>
+&lt;h1 class="big">This is a headline.&lt;/h1>
+&lt;button id="cool" onclick="doSomething();">Click me.&lt;/button>
+&lt;input type="checkbox" checked="checked"/>
+    ```
+
+    @p
+        Since {@code class} and {@code id} attributes are used so often,
+        Omelet supports a special shorthand syntax for these, similar to
+        Jade and Haml. {@code class} attributes can be written as
+        {@code .className} and {@code id} attributes can be written as
+        {@code #idName}, immediately following the tag name and preceding
+        the {@code [ ]} characters for the other attributes. You can
+        include multiple {@code .className}s and {@code #idName}s by
+        placing them back-to-back.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+@h1.big This is a headline.
+@button#cool[onclick="doSomething();"] Click me.
+@a#anchor.class1.class2[href="example.com"] A classy link
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;h1 class="big">This is a headline.&lt;/h1>
+&lt;button id="cool" onclick="doSomething();">Click me.&lt;/button>
+&lt;a id="anchor" class="class1 class2" href="example.com">A classy link&lt;/a>
+    ```

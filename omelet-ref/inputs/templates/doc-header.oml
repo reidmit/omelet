@@ -1,0 +1,11 @@
+>import doc-macros.oml
+
+@header.doc-header#doc-header
+    {image("assets/logo1.png")}
+    @div.doc-title Omelet
+    @div.mobile-nav#top-nav-toggle {hamburger}
+    @nav#top-nav
+        @a[href="index.html"]
+            language reference
+        @a[href="https://github.com/reid47/toast/tree/gh-pages/omelet-ref"]
+            view on github

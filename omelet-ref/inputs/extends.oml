@@ -1,0 +1,110 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Extends
+
+>def page_contents():
+    @p
+        Omelet does template inheritance through the {@code extends}
+        keyword. Template inheritance allows you to build up complex
+        parent-child relationships between templates. When used correctly,
+        they can save the template designer a lot of time by allowing
+        her to reuse the same parent templates over and over again.
+
+    @p
+        To see how template inheritance words, consider the following
+        template, which we will call {@code parent.oml}:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+## parent.oml
+
+@html
+    @head
+        @title {site_title()}
+    @body
+        {site_content()}
+    ```
+
+    @p
+        Note that this template calls two macros which are not defined
+        anywhere: {@code site_title} and {@code page_content}. Indeed,
+        if this template were rendered on its own, Omelet would raise an
+        exception because it cannot find those templates.
+
+    @p
+        However, this template is designed to be {@b extended} by child
+        templates. Consider this template, which we will call {@code child.oml}:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+>extend parent.oml
+
+>def site_title():
+    My Website : {page_title()}
+
+>def site_content():
+    @h1 Hello, everybody! Welcome to my website!
+    {page_content()}
+    ```
+
+    @p
+        Okay, now we see the definitions of {@code site_title} and {@code
+        site_content}. {@code extend} works by evaluating the macros defined
+        in the current file, and passing these macro definitions over to
+        the context of the extended file. The extended file gets evaluated
+        with access to these macros.
+
+    @p
+        However, we have two macros that are called in {@code child.oml}
+        that are still not defined anywhere: {@code page_title} and {@code
+        page_content}. This is because {@code child.oml} was written to
+        be extended one level further. Here's {@code grandchild.oml}:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+>extend child.oml
+
+>def page_title():
+    Page one!
+
+>def page_content():
+    This is the very first page! The rest will look a lot like this,
+    but with a different title and different contents.
+    ```
+
+    @p
+        Finally, we reach the end of the parent-child chain. We define
+        {@code page_title} and {@code page_content} here, which fill in
+        the blanks left in {@code child.oml}, and then {@code child.oml}
+        in turn fills in the blanks left in {@code parent.oml}. This is how
+        template inheritance works. When {@code grandchild.oml} is rendered,
+        we get the following:
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;html>
+    &lt;head>
+        &lt;title>My Website : Page one!&lt;/title>
+    &lt;/head>
+    &lt;body>
+        &lt;h1>Hello, everybody! Welcome to my website!&lt;/h1>
+        This is the very first page! The rest will look a lot like this,
+        but with a different title and different contents.
+    &lt;/body>
+&lt;/html>
+    ```
+
+    @p
+        We can see that the rendered version of {@code grandchild.oml} contains
+        pieces of code from all three templates described above. The advantage
+        of structuring your templates this way is that when you want to
+        add a new page to your site, you simply need to extend {@code child.oml}
+        and supply a new {@code page_title} and {@code page_content}. Likewise,
+        if you want to change the header text on every page in your site and
+        they all extend {@code child.oml}, you only need to change that one
+        file. All of that file's children will be updated automatically.

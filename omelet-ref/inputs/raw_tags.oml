@@ -1,0 +1,52 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Raw Tags
+
+>def page_contents():
+    @p
+        Sometimes, you'll want to include text in a template that you don't want
+        parsed by the Omelet parser. For example, you may want to include inline
+        CSS in a {@code style} tag or inline JavaScript in a {@code script} tag.
+        Without raw tags, the use of the {@code \{} character in each of these
+        languages would confuse the Omelet parser.
+
+    @p
+        In these cases, you can use {@b raw tags}. Raw tags can have names and
+        attributes the same way normal tags do. However, after the tag names
+        and attributes, the character sequence {@code ``\`} marks the beginning
+        of the raw text. Everything up until the next {@code ``\`} sequence
+        will be parsed as a raw string and passed verbatim to the rendered HTML.
+
+    @p
+        Although indentation is mostly ignored within raw tags, Omelet does
+        require that the closing {@code ``\`} sequence is at the same level
+        of indentation as the opening {@code \@} character for the raw tag.
+
+    @p
+        In fact, all of the Omelet examples in these language reference pages
+        are written using raw tags. Without raw tags, there would be no way to
+        output actual Omelet code in templates. However, at the moment, there
+        is still no way to include the character sequence {@code ``\`} within
+        a raw tag, so the example below uses {@code ``}. Just know that when
+        actually writing Omelet, you must use {@code ``\`}.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+@script[type="text/javascript"] ``
+    function hello(x) {
+        console.log("hello, "+x);
+    }
+``
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+&lt;script type="text/javascript"&gt;
+    function hello(x) {
+        console.log("hello, "+x);
+    }
+&lt;/script&gt;
+    ```

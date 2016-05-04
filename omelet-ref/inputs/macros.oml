@@ -1,0 +1,60 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Macros
+
+>def page_contents():
+    @p
+        Omelet lets you define reusable blocks of template code, called
+        macros, to encourage a more modular, DRY approach to building
+        templates. Macros can take zero or more parameters and are
+        dynamically-scoped (they are always evaluated in the context
+        in which they are called, and have access to all of the variables
+        in that context).
+
+    @p
+        Macro definitions look like this:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+>def info(name,age):
+    {name} is {age} years old.
+
+>def headline(text):
+    @h1.bigHeadline {text}
+
+>def link_to(url,text):
+    @a[href={url}] {text}
+
+>def page_title():
+    Welcome to my web page!
+    ```
+
+    @p
+        On their own, macro definitions do not contribute any output to
+        the rendered HTML pages. If you want to use a macro, you can call
+        it within an interpolation, as shown below. These interpolated
+        macro calls do contribute output to the rendered HTML.
+
+    @p
+        Assuming the macros above are still in scope, we can refer to
+        them in these examples:
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+{info("Reid",22)}
+{headline("Hello, world!")}
+{link_to("example.com","click here")}
+{page_title()}
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+Reid is 22 years old.
+&lt;h1 class="bigHeadline">Hello, world!&lt;h1>
+&lt;a href="example.com">click here&lt;/a>
+Welcome to my web page!
+    ```

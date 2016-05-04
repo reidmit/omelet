@@ -1,0 +1,45 @@
+>extend templates/doc-base.oml
+
+>import templates/doc-macros.oml
+
+>def title():
+    Omelet Language Reference: {page_title()}
+
+>def head():
+    @meta[charset="utf-8"]
+    {stylesheet("assets/main.css")}
+    {stylesheet("assets/prism.css")}
+    {stylesheet("https://fonts.googleapis.com/css?family=Shadows+Into+Light|Waiting+for+the+Sunrise")}
+
+>def body():
+    {>include templates/doc-header.oml}
+
+    @div.wrapper
+
+        @div.sidebar
+            {>include templates/doc-sidebar.oml}
+
+        @div.contents
+
+            @h1 {page_title()}
+
+            {page_contents()}
+
+    {>include templates/doc-footer.oml}
+
+    {js("assets/prism.js")}
+
+    @script ```
+        var topNavShown = false;
+        document.getElementById("top-nav-toggle").addEventListener("click", function() {
+            if (!topNavShown) {
+                document.getElementById("top-nav").style.display = "block";
+                document.getElementById("doc-header").style.height = "230px";
+                topNavShown = true;
+            } else {
+                document.getElementById("top-nav").style.display = "none";
+                document.getElementById("doc-header").style.height = "86px";
+                topNavShown = false;
+            }
+        })
+    ```

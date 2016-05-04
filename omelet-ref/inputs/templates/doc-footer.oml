@@ -1,0 +1,5 @@
+@div.doc-footer
+    @div.float-left
+        Omelet is a template language developed by {@a[href="http://reidmitchell.net"] Reid Mitchell}.
+    @div.float-right
+        Last updated May 2016

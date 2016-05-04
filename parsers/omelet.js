@@ -224,7 +224,7 @@ module.exports = (function() {
                     }
                     curr.inner = [{
                         kind: "Raw",
-                        value: r.join("").replace(/[⇐⇒]\n/g,"")
+                        value: r.join("").replace(/[⇐⇒]/g,"")
                     }];
 
                     return o;
@@ -235,7 +235,7 @@ module.exports = (function() {
                         attributes: mergeAttributes(openTag.attributes,"class"),
                         inner: [{
                             kind: "Raw",
-                            value: r.join("").replace(/[⇐⇒]\n/g,"")
+                            value: r.join("").replace(/[⇐⇒]/g,"")
                         }]
                     }
                 }
@@ -319,6 +319,29 @@ module.exports = (function() {
         peg$c87 = "{",
         peg$c88 = { type: "literal", value: "{", description: "\"{\"" },
         peg$c89 = function(openTag, contents) {
+                if (isArray(openTag)) {
+                    var o = {
+                        kind: "Tag",
+                        name: openTag[0].value,
+                        attributes: mergeAttributes(openTag[0].attributes,"class"),
+                        interpolated: true
+                    };
+                    var curr = o;
+
+                    for (var i=1; i<openTag.length; i++) {
+                        curr.inner = [{
+                            kind: "Tag",
+                            name: openTag[i].value,
+                            attributes: mergeAttributes(openTag[i].attributes,"class"),
+                            interpolated: true
+                        }]
+                        curr = curr.inner[0];
+                    }
+                    curr.inner = contents;
+
+                    return o;
+                }
+
                 return {
                     kind: "Tag",
                     name: openTag.value,
@@ -520,8 +543,8 @@ module.exports = (function() {
             },
         peg$c163 = "\\",
         peg$c164 = { type: "literal", value: "\\", description: "\"\\\\\"" },
-        peg$c165 = /^[{}@\\#`]/,
-        peg$c166 = { type: "class", value: "[{}@\\\\#`]", description: "[{}@\\\\#`]" },
+        peg$c165 = /^[{}@\\#]/,
+        peg$c166 = { type: "class", value: "[{}@\\\\#]", description: "[{}@\\\\#]" },
         peg$c167 = function(char) {
                 return {
                     kind: "String",

@@ -1,0 +1,45 @@
+>extend templates/doc-page.oml
+
+>def page_title():
+    Iteration
+
+>def page_contents():
+    @p
+        Omelet allows you to iterate over variables in your context with
+        {@code for...in} loops. This is most useful when you have an array
+        in your context, and you want to display its contents in your
+        template somehow. You can iterate over it, printing a block of
+        template code once per element in the array.
+
+    @p
+        Note that since Omelet (by design) never raises type errors, if
+        you try to iterate over an object that is not an array, it will
+        be treated as if it were an array of length one, with itself as
+        its only element. In the example below, we try to iterate over
+        the number {@code 47}. The loop is executed once, with the iterator
+        set to {@code 47} for that single iteration.
+
+    @p
+        For these examples, assume we have in our context an array called
+        {@code people} with the value {@code ["Alice","Bob","Carol"]}, and
+        a number called {@code number} with the value {@code 47}.
+
+    {ex_omelet()}
+
+    @pre.example|code ```
+>for person in people:
+    The current person is {person}.
+
+>for n in number:
+    The current number is {n}.
+    ```
+
+    {ex_html()}
+
+    @pre.example|code ```
+The current person is Alice.
+The current person is Bob.
+The current person is Carol.
+
+The current number is 47.
+    ```

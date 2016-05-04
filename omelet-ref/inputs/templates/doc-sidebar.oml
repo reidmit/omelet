@@ -1,0 +1,4 @@
+@ul
+  >for page in pages:
+    @li
+      @a[href={page | append ".html" | replace " " "_"}] {page}
