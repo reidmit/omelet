@@ -63,6 +63,12 @@ filters.rtrim = function(input) {
     }
 }
 
+filters.replace = function(input, pattern, replacement) {
+    var input = ""+input;
+    var re = new RegExp(pattern, "g");
+    return input.replace(re, replacement);
+}
+
 filters.default = function(input, defaultValue) {
     return (input === "" || typeof input === "undefined" ||
             input === null) ? defaultValue : input;
@@ -87,6 +93,14 @@ filters.truncate_words = function(input, n) {
     } else {
         return input;
     }
+}
+
+filters.append = function(input, str) {
+    return ""+input+str;
+}
+
+filters.prepend = function(input, str) {
+    return ""+str+input;
 }
 
 filters.length = function(input) {

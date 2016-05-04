@@ -25,6 +25,8 @@ Document = contents:Content
     {
         return {
             kind: "Document",
+            imports: [],
+            extend: undefined,
             contents: contents
         }
     }
@@ -35,7 +37,7 @@ Content
 DustExpression
     = DustComment / Key / Section / SpecialCharacter / Indentation
 
-DustComment
+DustComment "a Dust comment"
     = "{!" c:(!"!}" c:. {return c})* "!}"
     {
         return {
@@ -53,7 +55,7 @@ Indentation
         }
     }
 
-SpecialCharacter
+SpecialCharacter "a special character (n, r, s, lb, or rb)"
     = "{~" char:("n"/"r"/"s"/"lb"/"rb") "}"
     {
         var output;
@@ -70,7 +72,7 @@ SpecialCharacter
         }
     }
 
-Identifier
+Identifier "an identifier"
     = id:([a-zA-Z] [a-zA-Z0-9_-]*)
     {
         return {
@@ -79,7 +81,7 @@ Identifier
         }
     }
 
-Filter
+Filter "a filter"
     = "|" id:Identifier
     {
         return {
@@ -89,7 +91,7 @@ Filter
         }
     }
 
-Dot
+Dot "a dot"
     = "."
     {
         return {
@@ -98,7 +100,7 @@ Dot
         }
     }
 
-Key
+Key "a variable key"
     = "{" id:(Identifier / Dot) filters:Filter* "}"
     {
         return {
@@ -129,7 +131,7 @@ InterpolatedStringLiteralInterpolation
         ]
     }
 
-InterpolatedStringLiteral
+InterpolatedStringLiteral "an interpolated string"
     = "\"" str0:[^{\"]*  interps:InterpolatedStringLiteralInterpolation+ "\""
     {
         interps = interps.reduce(function(a,b) {
@@ -146,96 +148,63 @@ InterpolatedStringLiteral
         }
     }
 
-InlineParameter
-    = _ name:Identifier "=" value:InlineParameterValue
-    {
-        return {
-            kind: "Assignment",
-            leftSide: name,
-            rightSide: value
-        }
-    }
-
 Section
-    = SectionWithoutElse / SectionWithElse / SpecialSection
+    = SectionWithoutElse / SpecialSection
 
 SpecialSection
     = ExistsSection / NoExistsSection / Block / Partial / InlinePartial
 
-Partial
+Partial "a reference to a partial"
     = "{>" name:(Identifier / InterpolatedStringLiteral / QuotedAttributeValue) "/}"
     {
+        name.kind = "String"
         return {
-            kind: "InternalConditional",
-            saved: undefined,
-            predicate: function() {
-                var defs = collectDefinitions(ast);
-                for (var i=0; i<defs.length; i++) {
-                    if (defs[i].override === true) {
-                        return false;
-                    }
-                }
-                return true;
-            },
-            thenCase: {
-                kind: "Include",
-                file: name
-            },
-            elseCase: {
-                kind: "Extend",
-                file: name
-            }
+            kind: "Include",
+            file: name
         }
     }
 
-InlinePartial
+InlinePartial "an inline partial definition"
     = "{<" openName:Identifier "}" _ content:Content "{/" closeName:Identifier "}"
     {
         if (openName.value !== closeName.value) {
             throw SyntaxError("Missing closing tag for block "+openName.value);
         }
         return {
-            kind: "Assignment",
-            leftSide: openName,
-            rightSide: {
-                kind: "Parenthetical",
-                inner: content,
-                filters: []
-            },
-            override: true
+            kind: "MacroDefinition",
+            name: openName,
+            params: [],
+            body: content
         }
     }
 
-Block
+Block "a block"
     = "{+" openName:Identifier "}" _ content:Content "{/" closeName:Identifier "}"
     {
         if (openName.value !== closeName.value) {
             throw SyntaxError("Missing closing tag for block "+openName.value);
         }
         return {
-            kind: "Parenthetical",
-            inner: [
-                {
-                    kind: "Assignment",
-                    leftSide: openName,
-                    rightSide: {
-                        kind: "Parenthetical",
-                        inner: content,
-                        filters: []
-                    }
-                },
-                {
-                    kind: "Interpolation",
-                    name: openName,
-                    arguments: [],
-                    filters: []
-                }
-            ],
-            filters: []
+            kind: "IfStatement",
+            predicate: openName,
+            thenCase: [{
+                kind: "Interpolation",
+                name: openName,
+                isMacroCall: true
+            }],
+            elseCase: content
+        }
+    }
+    / "{+" openName:Identifier "/}"
+    {
+        return {
+            kind: "Interpolation",
+            name: openName,
+            isMacroCall: true
         }
     }
 
-ExistsSection
+ExistsSection "an exists section"
     = "{?" openName:Identifier "}" _ contents:Content elseSection:("{:else}" Content)? "{/" closeName:Identifier "}"
     {
         if (openName.value !== closeName.value) {
@@ -243,26 +212,13 @@ ExistsSection
         }
         return {
             kind: "IfStatement",
-            predicate: {
-                kind: "Interpolation",
-                name: openName,
-                filters: [
-                    {
-                        kind: "Filter",
-                        name: {
-                            kind: "Identifier",
-                            value: "exists"
-                        },
-                        arguments: []
-                    }
-                ]
-            },
+            predicate: openName,
             thenCase: contents,
             elseCase: elseSection === null ? undefined : elseSection[1]
         }
     }
 
-NoExistsSection
+NoExistsSection "a notexists section"
     = "{^" openName:Identifier "}" _ contents:Content elseSection:("{:else}" Content)? "{/" closeName:Identifier "}"
     {
         if (openName.value !== closeName.value) {
@@ -270,126 +226,27 @@ NoExistsSection
         }
         return {
             kind: "IfStatement",
-            predicate: {
-                kind: "Interpolation",
-                name: openName,
-                filters: [
-                    {
-                        kind: "Filter",
-                        name: {
-                            kind: "Identifier",
-                            value: "notexists"
-                        },
-                        arguments: []
-                    }
-                ]
-            },
+            predicate: openName,
+            negated: true,
             thenCase: contents,
             elseCase: elseSection === null ? undefined : elseSection[1]
         }
     }
 
-SectionWithElse
-    = "{#" openName:Identifier inlineParams:InlineParameter* "}" _ contents0:Content "{:else}" forElse:Content "{/" closeName:Identifier "}"
+SectionWithoutElse "a section"
+    = "{#" openName:Identifier "}" _ contents:Content "{/" closeName:Identifier "}"
     {
         if (openName.value !== closeName.value) {
             throw SyntaxError("Missing closing tag for section "+openName.value);
         }
-        var contents = inlineParams.concat(contents0);
         return {
-            kind: "InternalConditional",
-            saved: {openName: openName},
-            predicate: function() { return __.typeOf(evalExpr(node.saved.openName),true) === "Array" },
-            thenCase: {
-                kind: "IfStatement",
-                predicate: {
-                    kind: "Interpolation",
-                    name: openName,
-                    arguments: [],
-                    filters: [
-                        {
-                            kind: "Filter",
-                            name: {
-                                kind: "Identifier",
-                                value: "defined"
-                            },
-                            arguments: []
-                        }
-                    ]
-                },
-                thenCase: [
-                    {
-                        kind: "ForEach",
-                        iterator: {
-                            kind: "Identifier",
-                            value: "self__"
-                        },
-                        data: openName,
-                        body: contents,
-                        elseCase: forElse
-                    }
-                ],
-                elseCase: forElse
-           },
-            elseCase: {
-                kind: "IfStatement",
-                predicate: {
-                    kind: "Interpolation",
-                    name: openName,
-                    arguments: [],
-                    filters: [
-                        {
-                            kind: "Filter",
-                            name: {
-                                kind: "Identifier",
-                                value: "defined"
-                            },
-                            arguments: []
-                        }
-                    ]
-                },
-                thenCase: contents,
-                elseCase: forElse === null ? undefined : forElse
-            }
-        }
-    }
-
-SectionWithoutElse
-    = "{#" openName:Identifier inlineParams:InlineParameter* "}" _ contents0:Content "{/" closeName:Identifier "}"
-    {
-        if (openName.value !== closeName.value) {
-            throw SyntaxError("Missing closing tag for section "+openName.value);
-        }
-        var contents = inlineParams.concat(contents0);
-        return {
-            kind: "InternalConditional",
-            saved: {openName: openName},
-            predicate: function() { return __.typeOf(evalExpr(node.saved.openName),true) === "Array" },
-            thenCase: {
-                kind: "ForEach",
-                iterator: {
-                    kind: "Identifier",
-                    value: "self__"
-                },
-                data: openName,
-                body: contents
-           },
-            elseCase: {
-                kind: "IfStatement",
-                predicate: {
-                    kind: "Interpolation",
-                    name: openName,
-                    arguments: [],
-                    filters: [
-                        {
-                            kind: "Filter",
-                            name: "defined",
-                            arguments: []
-                        }
-                    ]
-                },
-                thenCase: contents
-            }
+            kind: "ForEach",
+            iterator: {
+                kind: "Identifier",
+                value: "self__"
+            },
+            data: openName,
+            body: contents
         }
     }
 
@@ -566,3 +423,4 @@ Comment
 
 _ "whitespace"
     = [ \t\n\r]*
+

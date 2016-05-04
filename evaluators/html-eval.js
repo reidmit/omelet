@@ -33,13 +33,8 @@ module.exports = function(ast, originalCode, context, config) {
     var extendsChain = [];
     var includesChain = [];
 
-    function evalInternalConditional(node) {
-        var pred = eval("("+node.predicate.toString()+")()");
-        if (pred) {
-            return evalExpr(node.thenCase);
-        } else {
-            return evalExpr(node.elseCase);
-        }
+    function evalParenthetical(node) {
+        return node.inner.map(evalExpr).join("");
     }
 
     function evalInclude(node) {
@@ -48,12 +43,10 @@ module.exports = function(ast, originalCode, context, config) {
         var input;
 
         if (!config.isWeb) {
-            if (includesChain.indexOf(config.directory+"/"+file) > -1) {
-                throw EvalError({
-                    msg: "Template inclusion loop detected. File '"+config.directory+"/"+file
-                         +"' has already been included earlier in the includes chain."
-                }, originalCode)
-            }
+            // if (includesChain.indexOf(config.directory+"/"+file) > -1) {
+            //     throw EvalError("Template inclusion loop detected. File '"+config.directory+"/"+file
+            //              +"' has already been included earlier in the includes chain. "+JSON.stringify(includesChain))
+            // }
 
             try {
                 var stats = fs.lstatSync(config.directory+"/"+file);
@@ -633,8 +626,8 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalExtend(node);
             case "Doctype":
                 return evalDoctype(node);
-            case "InternalConditional":
-                return evalInternalConditional(node);
+            case "Parenthetical":
+                return evalParenthetical(node);
             default:
                 return node;
                 // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));

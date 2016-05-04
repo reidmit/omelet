@@ -53,7 +53,10 @@ module.exports = (function() {
         peg$c9 = function(attrs, s) {
                 return {
                     kind: "Tag",
-                    name: "script",
+                    name: {
+                        kind: "String",
+                        value: "script"
+                    },
                     attributes: attrs.map(function(a) { return a[0] }),
                     inner: {
                         kind: "Raw",
@@ -68,7 +71,10 @@ module.exports = (function() {
         peg$c14 = function(attrs, s) {
                 return {
                     kind: "Tag",
-                    name: "style",
+                    name: {
+                        kind: "String",
+                        value: "style"
+                    },
                     attributes: attrs.map(function(a) { return a[0] }),
                     inner: {
                         kind: "Raw",
@@ -93,7 +99,10 @@ module.exports = (function() {
         peg$c24 = function(tagName, attrs) {
                 return {
                     kind: "Tag",
-                    name: tagName,
+                    name: {
+                        kind: "String",
+                        value: tagName
+                    },
                     attributes: attrs.map(function(a) { return a[0] }),
                     inner: []
                 }
@@ -104,7 +113,10 @@ module.exports = (function() {
                 }
                 return {
                     kind: "Tag",
-                    name: openTag.value,
+                    name: {
+                        kind: "String",
+                        value: openTag.value
+                    },
                     attributes: openTag.attributes,
                     inner: inner
                 }

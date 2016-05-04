@@ -71,7 +71,10 @@ Import "an import statement"
     {
         return {
             kind: "Import",
-            file: file
+            file: {
+                kind: "String",
+                value: file
+            }
         }
     }
 
@@ -82,7 +85,7 @@ ParameterList "a list of parameters"
     }
 
 Definition "a macro definition"
-    = CommandPrefix "def" " " name:Identifier "(" params:ParameterList? ")" ":" __ body:(Indent Content Dedent)?
+    = CommandPrefix "def" " " name:Identifier "(" params:ParameterList? ")" ":" _ body:(Indent Content Dedent)?
     {
         return {
             kind: "MacroDefinition",
@@ -93,13 +96,13 @@ Definition "a macro definition"
     }
 
 Content
-    = (Comment / If / For / Doctype / RawTag / Tag / Interpolation / Text)*
+    = (Comment / If / For / Doctype / Tag / Interpolation / Text)*
 
 Doctype "a doctype"
-	= "@doctype" __ val:[^⇐⇒@%{}\[\]# \t\n\r]+
+    = "@doctype" __ val:[^⇐⇒@%{}\[\]# \t\n\r]+
     {
-    	return {
-        	kind: "Doctype",
+        return {
+            kind: "Doctype",
             value: val.join("")
         }
     }
@@ -158,7 +161,7 @@ For "a for-in loop"
     }
 
 Tag "a tag"
-    = LineTag / BlockTag
+    = RawTag / LineTag / BlockTag
 
 BlockTag
     = openTag:OpenTag inner:(Indent Content Dedent)?
@@ -193,30 +196,54 @@ BlockTag
     }
 
 RawTag
-	= "@" tag:SingleTag __ "`" r:(!"`" r:. {return r})* "`"
+    = openTag:OpenTag __ "```" r:(!"```" r:. {return r})* "```"
     {
-    	return {
-        	kind: "Tag",
-            name: tag.value,
-            attributes: tag.attributes,
-            inner: [{
-            	kind: "Raw",
-                value: r.join("").replace(/[⇐⇒]/g,"")
-            }]
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class")
+            };
+            var curr = o;
+
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = [{
+                    kind: "Tag",
+                    name: openTag[i].value,
+                    attributes: mergeAttributes(openTag[i].attributes,"class")
+                }]
+                curr = curr.inner[0];
+            }
+            curr.inner = [{
+                kind: "Raw",
+                value: r.join("").replace(/[⇐⇒]\n/g,"")
+            }];
+
+            return o;
+        } else {
+            return {
+                kind: "Tag",
+                name: openTag.value,
+                attributes: mergeAttributes(openTag.attributes,"class"),
+                inner: [{
+                    kind: "Raw",
+                    value: r.join("").replace(/[⇐⇒]\n/g,"")
+                }]
+            }
         }
     }
 
 LineOfText
     = text:[^\n⇐⇒{}]* other:(Interpolation [^\n⇐⇒{}]*)*
     {
-    	var line = [{
-        	kind: "String",
+        var line = [{
+            kind: "String",
             value: text.join("")
         }];
         for (var i=0; i<other.length; i++) {
-        	line.push(other[i][0]);
+            line.push(other[i][0]);
             line.push({
-            	kind: "String",
+                kind: "String",
                 value: other[i][1].join("")
             });
         }
@@ -279,11 +306,12 @@ Interpolation
     }
     / "{" openTag:OpenTag contents:(Text / Interpolation)* "}"
     {
-    	return {
-        	kind: "Tag",
+        return {
+            kind: "Tag",
             name: openTag.value,
             attributes: mergeAttributes(openTag.attributes,"class"),
-            inner: contents
+            inner: contents,
+            interpolated: true
         }
     }
     / "{" " "? id:(IdentifierComplex / Identifier) parens:("(" ArgumentList? ")")? " "? __ filters:Filter* "}"
@@ -479,8 +507,21 @@ QuotedAttribute
         }
     }
 
+InterpolatedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:Interpolation
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue
+        }
+    }
+
 Attribute "an attribute"
-    = QuotedAttribute / UnquotedAttribute / EmptyAttribute
+    = InterpolatedAttribute
+    / QuotedAttribute
+    / UnquotedAttribute
+    / EmptyAttribute
 
 //TODO: colons here...
 TagName "a tag name"
@@ -498,7 +539,7 @@ Number "a number"
         second = second === null ? [] : "."+second[1].join("");
         var value = parseInt(first.join("")+second);
         if (minus !== null) {
-        	value = 0-value;
+            value = 0-value;
         }
         return {
             kind: "Number",
@@ -516,7 +557,7 @@ Boolean "a boolean value"
     }
 
 Text "plain text"
-    = text:[^⇐⇒@{}\\]+
+    = text:[^⇐⇒@{}\\#]+
     {
         return {
             kind: "String",
@@ -526,7 +567,7 @@ Text "plain text"
     / EscapedCharacter
 
 EscapedCharacter
-    = "\\" char:([{}@\\])?
+    = "\\" char:([{}@\\#`])?
     {
         return {
             kind: "String",
@@ -535,8 +576,8 @@ EscapedCharacter
     }
     / "#" !"#"
     {
-    	return {
-        	kind: "String",
+        return {
+            kind: "String",
             value: "#"
         }
     }
@@ -552,6 +593,8 @@ CommandPrefix
 
 _ "whitespace"
     = [ \t\n\r]*
-    
+
 __
     = [ ]*
+
+

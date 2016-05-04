@@ -17,7 +17,10 @@ ScriptTag
     {
         return {
             kind: "Tag",
-            name: "script",
+            name: {
+                kind: "String",
+                value: "script"
+            },
             attributes: attrs.map(function(a) { return a[0] }),
             inner: {
                 kind: "Raw",
@@ -31,7 +34,10 @@ StyleTag
     {
         return {
             kind: "Tag",
-            name: "style",
+            name: {
+                kind: "String",
+                value: "style"
+            },
             attributes: attrs.map(function(a) { return a[0] }),
             inner: {
                 kind: "Raw",
@@ -54,7 +60,10 @@ VoidTag
     {
         return {
             kind: "Tag",
-            name: tagName,
+            name: {
+                kind: "String",
+                value: tagName
+            },
             attributes: attrs.map(function(a) { return a[0] }),
             inner: []
         }
@@ -69,7 +78,10 @@ Tag
         }
         return {
             kind: "Tag",
-            name: openTag.value,
+            name: {
+                kind: "String",
+                value: openTag.value
+            },
             attributes: openTag.attributes,
             inner: inner
         }
@@ -180,3 +192,4 @@ Comment
 
 _ "whitespace"
     = [ \t\n\r]*
+

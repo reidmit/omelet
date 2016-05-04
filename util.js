@@ -35,6 +35,10 @@ util.mergeAttributes = function(attrList,attrName) {
     return attrList;
 }
 
+util.ltrim = function(string) {
+    return string.replace(/^[ \t\n]*/,"");
+}
+
 util.inheritsFrom = function(child,parent) {
     child.prototype = new parent;
     child.prototype.constructor = parent;

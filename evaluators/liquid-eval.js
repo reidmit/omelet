@@ -29,12 +29,10 @@ module.exports = function(ast, originalCode, context, config) {
         return "{% include '"+evalExpr(node.file)+"' %}\n";
     }
     function evalImport(node) {
-        console.warn("Liquid does not support import statements.");
-        return "";
+        return "{% import '"+evalExpr(node.file)+"' %}\n";
     }
     function evalExtend(node) {
         return "{% extends \""+evalExpr(node.file)+"\" %}\n";
-        return "";
     }
     function evalMacroDefinition(node) {
         var name = evalExpr(node.name);
@@ -63,6 +61,9 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalString(node) {
         return node.value;
+    }
+    function evalParenthetical(node) {
+        return node.inner.map(evalExpr).join("");
     }
     function evalIdentifier(node) {
         var out = node.value;
@@ -167,8 +168,6 @@ module.exports = function(ast, originalCode, context, config) {
     function evalInterpolation(node) {
         var out = "{{ "+evalExpr(node.name);
         for (var i=0; i<node.filters.length; i++) {
-            //TODO: translate filter names when possible, e.g. uppercase <-> upper
-            //      something like getFilterName(evaledName, inputLanguage, outputLanguage)
             var rawFilterName = evalExpr(node.filters[i].name);
             var translatedFilterName = filters.$translate(rawFilterName, config.sourceLanguage, "liquid");
 
@@ -178,9 +177,9 @@ module.exports = function(ast, originalCode, context, config) {
                 for (var j=0; j<node.filters[i].arguments.length; j++) {
                     var isString = node.filters[i].arguments[j].kind === "String";
                     if (isString) {
-                        out += "\""+evalExpr(node.filters[i].arguments[i])+"\"";
+                        out += "\""+evalExpr(node.filters[i].arguments[j])+"\"";
                     } else {
-                        out += evalExpr(node.filters[i].arguments[i]);
+                        out += evalExpr(node.filters[i].arguments[j]);
                     }
                     if (j < node.filters[i].arguments.length-1) {
                         out += ", "
@@ -238,6 +237,8 @@ module.exports = function(ast, originalCode, context, config) {
         return "{% raw %}"+node.value+"{% endraw %}";
     }
     function evalExpr(node) {
+            console.log("node is "+JSON.stringify(node))
+            console.trace()
         switch (node.kind) {
             case "Number":
                 return evalNumber(node);
@@ -245,6 +246,8 @@ module.exports = function(ast, originalCode, context, config) {
                 return evalBoolean(node);
             case "String":
                 return evalString(node);
+            case "Parenthetical":
+                return evalParenthetical(node);
             case "Identifier":
                 return evalIdentifier(node);
             case "Attribute":
@@ -274,7 +277,8 @@ module.exports = function(ast, originalCode, context, config) {
             case "Doctype":
                 return evalDoctype(node);
             default:
-                throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
+                return node;
+                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }
     }
 
@@ -282,7 +286,9 @@ module.exports = function(ast, originalCode, context, config) {
     if (ast.extend) {
         o += evalExtend(ast.extend);
     }
-    o += ast.imports.map(evalExpr);
+    if (ast.imports) {
+        o += ast.imports.map(evalExpr);
+    }
     o += ast.contents.map(evalExpr).join("");
     return o;
 }

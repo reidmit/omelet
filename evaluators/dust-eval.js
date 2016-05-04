@@ -306,7 +306,8 @@ module.exports = function(ast, originalCode, context, config) {
             case "InternalConditional":
                 return evalInternalConditional(node);
             default:
-                throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
+                return node;
+                // throw EvalError("No case for kind "+node.kind+" "+JSON.stringify(node));
         }
     }
 
@@ -314,7 +315,9 @@ module.exports = function(ast, originalCode, context, config) {
     if (ast.extend) {
         o += evalExtend(ast.extend);
     }
-    o += ast.imports.map(evalExpr);
+    if (ast.imports) {
+        o += ast.imports.map(evalExpr);
+    }
     o += ast.contents.map(evalExpr).join("");
     return o;
 }

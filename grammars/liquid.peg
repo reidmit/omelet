@@ -13,9 +13,9 @@ Content
     = (LiquidExpression / Doctype / Comment / RawTag / Tag / Text)*
 
 LiquidExpression
-    = Include / Capture / LiquidComment / Raw / IfTag / For / Assign / Interpolation
+    = Include / Capture / LiquidComment / Raw / IfTag / For / Interpolation
 
-For
+For "a for-in block"
     = "{%" _s "for" _s iter:Identifier _s "in" _s data:Identifier _s "%}" inner:Content "{%" _s "endfor" _s "%}"
     {
         return {
@@ -30,7 +30,7 @@ FilterArgs
     = ":" _s arg0:(Literal / Identifier) args:("," _s (Literal / Identifier))*
     { return [arg0].concat(args.map(function(e){return e[2]})) }
 
-Filter
+Filter "a filter"
     = "|" _s name:Identifier args:FilterArgs?
     {
         return {
@@ -40,7 +40,7 @@ Filter
         }
     }
 
-Interpolation
+Interpolation "an interpolation"
     = "{{" _s id:(IdentifierComplex / Identifier) _s filters:(Filter _s)* "}}"
     {
         return {
@@ -51,7 +51,7 @@ Interpolation
         }
     }
 
-IfTag
+IfTag "an if tag"
     = "{%" _s "if" _s pred:BooleanExpression _s "%}" inner:Content elsifs:(ElsifTag*) elseCase:(ElseTag?) _s "{%" _s "endif" _s "%}"
     {
         return {
@@ -63,7 +63,7 @@ IfTag
         }
     }
 
-ElsifTag
+ElsifTag "an elsif tag"
     = "{%" _s "elsif" _s pred:BooleanExpression _s "%}" inner:Content
     {
         return {
@@ -73,7 +73,7 @@ ElsifTag
         }
     }
 
-ElseTag
+ElseTag "an else tag"
     = "{%" _s "else" _s "%}" inner:Content
     { return inner }
 
@@ -81,7 +81,7 @@ BooleanExpression
     = Boolean / Identifier
 
 //TODO: optional spaces inside tags
-Raw
+Raw "a raw block"
     = ("{% raw %}" / "{%raw%}") c:(!"{% endraw %}" c:. {return c})* "{% endraw %}"
     {
         return {
@@ -90,7 +90,7 @@ Raw
         }
     }
 
-Include
+Include "an include statement"
     = "{%" _s "include" _s file:QuotedString _s "%}"
     {
         return {
@@ -99,17 +99,18 @@ Include
         }
     }
 
-Capture
+Capture "a capture block"
     = "{%" _s "capture" id:Identifier _s "%}" val:Content "{%" _s "endcapture" _s "%}"
     {
         return {
-            kind: "Assignment",
-            leftSide: id,
-            rightSide: val
+            kind: "MacroDefinition",
+            name: id,
+            params: [],
+            body: val
         }
     }
 
-Identifier
+Identifier "an identifier"
     = id:([a-zA-Z] [a-zA-Z0-9_-]*)
     {
         return {
@@ -174,18 +175,8 @@ Number
         }
     }
 
-Assign
-    = "{%" _s "assign" _s id:Identifier _s "=" _s val:Literal _s "%}"
-    {
-        return {
-            kind: "Assignment",
-            leftSide: id,
-            rightSide: val
-        }
-    }
-
 //TODO: optional spaces inside tags
-LiquidComment
+LiquidComment "a comment"
     = "{% comment %}" c:(!"{% endcomment %}" c:. {return c})* "{% endcomment %}"
     {
         return {
@@ -248,7 +239,7 @@ VoidTag
         }
     }
 
-Tag
+Tag "an HTML tag"
     = VoidTag
     / openTag:OpenTag inner:Content closeTag:CloseTag
     {
@@ -348,7 +339,7 @@ TagName
         return tagName.join("")
     }
 
-Text
+Text "text"
     = text:[^\<\>{]+
     {
         return {

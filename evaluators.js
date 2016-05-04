@@ -93,9 +93,7 @@ function mergeAttributes(attrList,attrName) {
 * character codes.
 */
 function escapeHTML(input) {
-    return input.replace(/\'/g, "&apos;")
-                .replace(/\"/g, "&quot;")
-                .replace(/\&/g, "&amp;")
+    return input.replace(/\&/g, "&amp;")
                 .replace(/\</g, "&lt;")
                 .replace(/\>/g, "&gt;");
 }
@@ -178,7 +176,7 @@ var evaluators = {};
 /*
 * Translate AST into Omelet.
 */
-evaluators.omelet = function(ast, originalCode, context, config) {
+evaluators.omelet2 = function(ast, originalCode, context, config) {
     if (!ast) {
         return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
     }
@@ -451,6 +449,7 @@ evaluators.omelet = function(ast, originalCode, context, config) {
 module.exports.dust = require('./evaluators/dust-eval.js');
 module.exports.liquid = require('./evaluators/liquid-eval.js');
 module.exports.html = require('./evaluators/html-eval.js');
+module.exports.omelet = require('./evaluators/omelet-eval.js');
 
 module.exports.Scope = Scope;
 module.exports.applyFilter = applyFilter;

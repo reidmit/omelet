@@ -126,7 +126,7 @@ function updateToastSettings() {
     var targetLangSelect = document.getElementById("targetLanguage");
     sourceLanguage = sourceLangSelect.value;
     targetLanguage = targetLangSelect.value;
-    T = new module.exports.Toast({
+    T = new module.exports.ToastInstance({
         sourceLanguage: sourceLanguage,
         targetLanguage: targetLanguage,
         prettyPrint: false,

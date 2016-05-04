@@ -6,6 +6,14 @@ function isIndentedLanguage(language) {
     return indentedLanguages.indexOf(language) > -1;
 }
 
+function level(n) {
+    var s = [];
+    for (var i=0; i<n; i++) {
+        s.push("    ");
+    }
+    return s.join("");
+}
+
 function preprocessIndentation(text) {
     // var lines = text.split("\n").filter(function(s) {
     //     return !s.split("").every(function(c) {
@@ -69,3 +77,4 @@ module.exports.indent_token = indent_token;
 module.exports.dedent_token = dedent_token;
 module.exports.preprocess = preprocessIndentation;
 module.exports.isIndentedLanguage = isIndentedLanguage;
+module.exports.of = level;

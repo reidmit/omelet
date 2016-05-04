@@ -1,197 +1,134 @@
 var fs = require('fs');
-var open = require('open');
-var chokidar = require('chokidar');
-var program = require('commander');
 var parsers = require('./parsers.js');
 var evaluators = require('./evaluators.js');
-var errors = require('./errors.js');
 var indentation = require('./indentation');
 var extensions = require('./extensions.js');
 var beautify = require('js-beautify').html;
 var __ = require('./util.js');
-var visitor = require('./visitor.js');
 
-program
-    .version("0.0.1")
-    .option("-i, --input <path>", "Input file or directory")
-    .option("-o, --output <path>", "Output directory")
-    .option("-s, --source <language>", "Source language")
-    .option("-t, --target <language>", "Target language")
-    .option("-d, --direct <string>", "Compile an input string directly")
-    .option("-w, --watch", "Watch the input file/directory for changes")
-    .option("--ast", "Print the AST without evaluating")
-    .parse(process.argv);
+var fileStoragePrefix = "__TOAST__IDE__file__:";
+var fileStorageCurrent = "__TOAST__IDE__latest__";
 
-var noEval = false;
+var Toast = function(options) {
+    var self = this;
+    var sourceLanguage = options.sourceLanguage;
+    var targetLanguage = options.targetLanguage;
+    var prettyPrint = options.prettyPrint;
+    var outputDirectory = options.outputDirectory || ".";
+    var isWeb = !!options.isWeb;
+    var whitespaceSensitive = indentation.isIndentedLanguage(sourceLanguage);
 
-if (process.argv.length <= 2) {
-    program.help();
-    return;
-}
+    var parser = parsers[sourceLanguage];
+    var evaluate = evaluators[targetLanguage];
 
-if (!program.source) {
-    console.error("\nYou must specify a source language.");
-    program.help();
-    return;
-}
-
-if (!program.target) {
-    console.error("\nYou must specify a target language.");
-    program.help();
-    return;
-}
-
-var prettyPrint = true;
-
-var inputPath = program.input;
-var inputString = program.direct;
-var outputPath = program.output;
-var sourceLanguage = program.source;
-var targetLanguage = program.target;
-
-var context = {
-    name: "Reid",
-    count: 47,
-    friends: [
-        { name: "Moe", age: 37 },
-        { name: "Larry", age: 39 },
-        { name: "Curly", age: 35 }
-    ],
-    "tags": [],
-    "likes": ["moe", "larry", "curly", "shemp"]
-};
-
-if (inputString) {
-    var ast = parsers[sourceLanguage].parse(inputString);
-    if (ast.status === false) throw errors.ParseError(ast,text);
-    __.printAST(ast);
-
-    var output = evaluators[targetLanguage](ast.value, inputString, context, {
-        directory: "command line",
-        file: "command line"
-    });
-    if (prettyPrint) {
-        output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});
-    }
-    console.log(output);
-    return;
-}
-
-var watcher;
-
-if (program.watch) {
-    watcher = chokidar.watch(inputPath,{});
-    var log = console.log.bind(console);
-    watcher.on('all', parseFiles);
-}
-
-function parseFiles() {
-
-    if (fs.lstatSync(inputPath).isDirectory()) {
-
-        fs.readdir(inputPath, function(err, fileNames) {
-            if (err) {
-                console.error(err);
-                return;
-            };
-
-            fileNames = fileNames.filter(function(name) {
-                return name.charAt(0) !== ".";
-            })
-
-            fileNames.forEach(function(fileName) {
-
-                var inFilePath = inputPath+"/"+fileName;
-
-                if (fs.lstatSync(inFilePath).isFile()) {
-
-                    fs.readFile(inFilePath, function(err, contents) {
-                        if (err) throw err;
-
-                        var text = contents.toString();
-                        var input = text;
-
-                        var ast = parsers[sourceLanguage].parse(input);
-
-                        console.log(JSON.stringify(ast,null,4));
-
-                        if (ast.status === false) throw errors.ParseError(ast,text);
-                        __.printAST(ast);
-
-                        if (noEval) {
-                            return;
-                        }
-
-                        //NOTE: sort out ast vs. ast.value, etc (different parsers...)
-
-                        var output = evaluators[targetLanguage](ast, input, context, {
-                            directory: inputPath,
-                            file: fileName,
-                            sourceLanguage: sourceLanguage,
-                            targetLanguage: targetLanguage
-                        });
-                        if (prettyPrint && targetLanguage==="html") {
-                            output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});
-                        }
-
-                        var outFilePath = outputPath+"/"
-                                            +fileName.substring(0,fileName.lastIndexOf("."))
-                                            +"."+extensions.for(targetLanguage);
-                        fs.writeFile(outFilePath, output, function(err) {
-                            if (err) return console.log(err);
-                            //TODO: shouldn't say this if we had a SyntaxError
-                            console.log("File '"+outFilePath+"' written successfully.");
-                            console.log(output);
-                            console.log("------------------");
-                        });
-
-                    });
-                }
-            })
-        });
-
-    } else if (fs.lstatSync(inputPath).isFile()) {
-        fs.readFile(inputPath, function(err, contents) {
-            if (err) throw err;
-
-            var input = contents.toString();
-
-            try {
-                var ast = parsers[sourceLanguage].parse(input);
-            } catch (e) {
-                throw errors.ParseError(inputPath, e);
+    this.readFileContents = function(filePath) {
+        var contents = "";
+        if (!isWeb) {
+            if (fs.lstatSync(filePath).isFile()) {
+                contents = fs.readFileSync(filePath).toString();
             }
+        } else {
+            throw Error("Web IDE cannot read from filesystem.");
+        }
+        return contents;
+    }
 
-            __.printAST(ast);
+    this.getOutputFilePath = function(inputFilePath) {
+        if (!isWeb) {
+            return outputDirectory+"/"+
+                    inputFilePath.substring(
+                    inputFilePath.lastIndexOf("/")+1,
+                    inputFilePath.lastIndexOf("."))+
+                    "."+extensions.for(targetLanguage);
+        } else {
+            throw Error("Web IDE not yet supported.");
+        }
+    }
 
-            // visitor.visit(ast);
-
-            var output = evaluators[targetLanguage](ast, input, context, {
-                directory: inputPath.substring(0,inputPath.lastIndexOf("/")),
-                file: inputPath,
-                sourceLanguage: sourceLanguage,
-                targetLanguage: targetLanguage
-            });
-
-            // if (prettyPrint) {
-            //     output = beautify(output, {indent_size: 4, indent_inner_html: true, extra_liners: []});
-            // }
-
-            var outFilePath = outputPath+"/"
-                                        +inputPath.substring(
-                                            inputPath.lastIndexOf("/")+1,inputPath.lastIndexOf("."))
-                                        +"."+extensions.for(targetLanguage);
-
-            fs.writeFile(outFilePath, output, function(err) {
+    this.writeFile = function(outputFilePath, output) {
+        if (!isWeb) {
+            fs.writeFile(outputFilePath, output, function(err) {
                 if (err) return console.log(err);
-                //TODO: shouldn't say this if we had a SyntaxError
-                console.log("File '"+outFilePath+"' written successfully.");
-                console.log("----------------");
-                console.log(output);
+                console.log("File '"+outputFilePath+"' written successfully.");
             });
+        } else {
+            throw Error("Web IDE cannot write to filesystem.");
+        }
+    }
 
-        });
+    this.renderString = function(input, context, inputFilePath) {
+        context = context || {};
+
+        if (whitespaceSensitive) {
+            input = indentation.preprocess(input);
+        }
+
+        var ast = parsers[sourceLanguage].parse(input);
+        // var astString = __.printAST(ast);
+        var output = "";
+        if (!isWeb) {
+            output = evaluate(ast, input, context, {
+                directory: inputFilePath.substring(0,inputFilePath.lastIndexOf("/")),
+                file: inputFilePath,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage,
+                isWeb: false
+            });
+        } else {
+            output = evaluate(ast, input, context, {
+                directory: "/",
+                file: inputFilePath,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage,
+                isWeb: true
+            });
+        }
+
+        if (prettyPrint && targetLanguage==="html") {
+            output = beautify(output, {
+                indent_size: 2,
+                indent_inner_html: true,
+                extra_liners: [],
+                preserve_newlines: true
+            });
+        }
+
+        if (!isWeb)
+            self.writeFile(self.getOutputFilePath(inputFilePath), output);
+        return output;
+    }
+
+    this.renderFile = function(inputFilePath, context) {
+        context = context || {};
+        var input = self.readFileContents(inputFilePath);
+        return self.renderString(input, context, inputFilePath);
+    }
+
+    this.renderDirectory = function(pathToDirectory, context) {
+        if (fs.lstatSync(pathToDirectory).isDirectory()) {
+            fs.readdir(pathToDirectory, function(err, fileNames) {
+                if (err) {
+                    console.error(err);
+                    return;
+                };
+
+                fileNames = fileNames.filter(function(name) {
+                    return name.charAt(0) !== ".";
+                })
+
+                fileNames.forEach(function(fileName) {
+
+                    var inFilePath = pathToDirectory+"/"+fileName;
+
+                    if (fs.lstatSync(inFilePath).isFile()) {
+                        self.renderFile(inFilePath, context);
+                    }
+                })
+            });
+        } else {
+            throw Error(pathToDirectory+" is not a directory!")
+        }
     }
 }
 
-parseFiles();
+module.exports.ToastInstance = Toast;
