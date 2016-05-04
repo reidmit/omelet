@@ -33,3 +33,43 @@ into the web IDE and will work as expected.
       @ul
         >for page in pages:
           @li|b|a[href={page | append ".html"}] {page}
+
+===============================================================================
+
+@html
+  @head
+    @title A more complicated web page
+    @style[type=text/css] ```
+      .content {
+        color: blue;
+      }
+    ```
+  @body
+    @h1 Hello, world!
+    @div.content
+      This website has a lot going on!
+
+===============================================================================
+
+## parent.oml
+## this should be extended by child.oml, shown below
+
+@html
+  @head
+      @title Site Title: {child_title()}
+  @body
+      {child_content()}
+
+===============================================================================
+
+>extend parent.oml
+
+>def child_title():
+  This is a single page's title!
+
+>def child_content():
+  @h1
+    Hello world!
+  @p
+    We can have {@b any content we want} in here.
+
