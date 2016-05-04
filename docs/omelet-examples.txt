@@ -1,0 +1,35 @@
+OMELET EXAMPLES
+
+These are a handful of examples Omelet code that you can copy/paste into
+their own template files or into the web IDE and play around with. Node
+that this file as a whole is not valid Omelet - you should copy/paste these
+code snippets into their own files rather than trying to render this one.
+
+These examples intentionally refer to the variables that are hard-coded into
+the evaluation context of the web IDE. Thus, they can be copy/pasted as-is
+into the web IDE and will work as expected.
+
+===============================================================================
+
+>if isOmeletCool:
+  Omelet is a cool language! :)
+>else:
+  Omelet is not cool :(
+
+===============================================================================
+
+>for person in people:
+  {person.name} is {person.age} years old.
+
+===============================================================================
+
+@html
+  @head
+    @title Hello, world!
+  @body
+    @div.content
+      This is the page content. It
+      has a list of pages, here:
+      @ul
+        >for page in pages:
+          @li|b|a[href={page | append ".html"}] {page}

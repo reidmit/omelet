@@ -129,7 +129,7 @@ function updateToastSettings() {
     T = new module.exports.ToastInstance({
         sourceLanguage: sourceLanguage,
         targetLanguage: targetLanguage,
-        prettyPrint: false,
+        prettyPrint: true,
         isWeb: true
     });
     update();

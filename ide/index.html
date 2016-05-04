@@ -21,10 +21,10 @@
       </select>
       <i id="languageArrow" class="fa fa-arrow-circle-right"></i>
       <select id="targetLanguage" name="targetLanguage" onchange="updateToastSettings();">
-          <option value="omelet" selected>Omelet</option>
+          <option value="omelet">Omelet</option>
           <option value="dust">Dust</option>
           <option value="liquid">Liquid</option>
-          <option value="html">HTML</option>
+          <option value="html" selected>HTML</option>
       </select>
 
       <button id="newfile-btn" onclick="newFile();"><i class="fa fa-file"></i> new</button>
@@ -48,7 +48,7 @@
     <script src="toast-web.min.js"></script>
     <script>
         var sourceLanguage = "omelet";
-        var targetLanguage = "omelet";
+        var targetLanguage = "html";
 
         var context = {
             name: "Reid Mitchell",

@@ -19121,8 +19121,7 @@ var Toast = function(options) {
             output = beautify(output, {
                 indent_size: 2,
                 indent_inner_html: true,
-                extra_liners: [],
-                preserve_newlines: true
+                extra_liners: []
             });
         }
 
