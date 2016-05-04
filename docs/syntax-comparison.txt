@@ -38,7 +38,18 @@ NODE: Comment
     properties
         kind: "Comment"
         value: a string literal
-
+    examples
+        Liquid
+            {% begincomment %}
+                ...
+            {% endcomment %}
+        Dust
+            {! ... !}
+            {!
+                ...
+            !}
+        Omelet
+            ## ...
 
 ===============================================================================
 
