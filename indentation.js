@@ -1,10 +1,5 @@
 var dedent_token = "\u21d0";
 var indent_token = "\u21d2";
-var indentedLanguages = ["omelet"];
-
-function isIndentedLanguage(language) {
-    return indentedLanguages.indexOf(language) > -1;
-}
 
 function level(n) {
     var s = [];
@@ -76,5 +71,4 @@ function calculateIndentation(line) {
 module.exports.indent_token = indent_token;
 module.exports.dedent_token = dedent_token;
 module.exports.preprocess = preprocessIndentation;
-module.exports.isIndentedLanguage = isIndentedLanguage;
 module.exports.of = level;

@@ -1,6 +1,6 @@
 # Omelet
 
-Omelet is a language for writing web pages and web templates that compiles
+Omelet is a language for writing web pages & templates that compiles
 into HTML.
 
 This repo is a fork of my original work on Omelet, which can be found in the

@@ -1,31 +1,20 @@
 {
-  "name": "toast",
+  "name": "omelet",
   "version": "0.0.1",
-  "description": "A template engine & template language transpiler",
-  "main": "toast-o.js",
+  "description": "A language for writing web pages & templates that compiles into HTML",
   "dependencies": {
-    "chalk": "^1.1.1",
-    "jasmine-core": "^2.4.1",
-    "js-beautify": "^1.5.10",
-    "open": "^0.0.5"
   },
   "devDependencies": {
-    "requirejs": "^2.1.22",
-    "watchify": "^3.7.0"
   },
   "scripts": {
-    "test": "jasmine",
-    "web": "browserify -s module.exports toast.js > ide/toast-web.js && uglifyjs ide/toast-web.js -o ide/toast-web.min.js",
-    "parsers": "pegjs grammars/dust.peg parsers/dust.js && pegjs grammars/liquid.peg parsers/liquid.js && pegjs grammars/omelet.peg parsers/omelet.js && pegjs grammars/html.peg parsers/html.js"
   },
   "author": "Reid Mitchell",
   "license": "MIT",
   "directories": {
-    "test": "test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/reid47/toast.git"
+    "url": "git+https://github.com/reid47/omelet-lang.git"
   },
   "keywords": [
     "parser",
@@ -35,7 +24,7 @@
     "language"
   ],
   "bugs": {
-    "url": "https://github.com/reid47/toast/issues"
+    "url": "https://github.com/reid47/omelet-lang/issues"
   },
-  "homepage": "https://github.com/reid47/toast#readme"
+  "homepage": "https://github.com/reid47/omelet-lang#readme"
 }

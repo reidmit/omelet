@@ -1,18 +1,16 @@
 /*
  * Render a Toast AST into HTML
- * Written by Reid Mitchell, Jan.-Apr. 2016
- *
- * Toast: https://github.com/reid47/toast
  */
 
-var __ = require('../util.js');
-var ast = require('../ast.js');
+var __ = require('./util.js');
+var ast = require('./ast.js');
 var fs = require('fs');
-var parsers = require('../parsers.js');
-var err = require('../errors.js');
-var filters = require('../filters.js');
-var evaluators = require('../evaluators.js');
-var indentation = require('../indentation.js');
+var parser = require('./parser.js');
+var err = require('./errors.js');
+var filters = require('./filters.js');
+var evaluate = require('./evaluate.js');
+var indentation = require('./indentation.js');
+var visitor = require('./visitor.js');
 
 var html_elements = {
     void: __.toMap("area,base,br,col,embed,hr,img,input,keygen,link,meta,param,source,track,wbr"),
@@ -20,14 +18,166 @@ var html_elements = {
     escapableraw: __.toMap("textarea,title")
 }
 
+function Scope() {
+    var env = [{}];
+    this.open = function() {
+        env.unshift({});
+    }
+    this.close = function() {
+        env.shift();
+    }
+    this.add = function(key,value,override) {
+        if (env[0][key]) {
+            if (env[0][key].override) {
+                return;
+            } else {
+                throw Error("Variable '"+key+"' is already defined in this scope. Trying to give it value: "+JSON.stringify(value)+", scope is: "+this.state());
+            }
+        }
+        env[0][key] = {value: value, override: !!override};
+    }
+    this.addAll = function(obj) {
+        var keys = Object.keys(obj);
+        for (var i=0; i<keys.length; i++) {
+            this.add(keys[i], obj[keys[i]]);
+        }
+    }
+    this.find = function(key) {
+        for (var i=0; i<env.length; i++) {
+            for (var k in env[i]) {
+                if (k==key) {
+                    return env[i][key].value;
+                }
+            }
+        }
+        return;
+    }
+    this.state = function() { return "\n"+JSON.stringify(env,null,4); }
+}
+
+/*
+* A function to merge attributes that have the same name.
+*   param: attrList (list of AST Attribute nodes)
+*   param: attrName (string name of attribute to merge)
+*/
+function mergeAttributes(attrList,attrName) {
+    if (attrList.length < 2) return attrList;
+
+    var toMerge = [];
+    var indices = [];
+
+    for (var i=0; i<attrList.length; i++) {
+        if (attrList[i].name.value === attrName) {
+            toMerge.push(attrList[i]);
+            indices.push(i);
+        }
+    }
+
+    if (toMerge.length == 0) return attrList;
+
+    var newAttrVal = "";
+    for (var i=0; i<toMerge.length; i++) {
+        newAttrVal += toMerge[i].value.value + " ";
+    }
+    newAttrVal = newAttrVal.trim();
+    toMerge[0].value.value = newAttrVal;
+
+    for (var i=1; i<toMerge.length; i++) {
+        attrList.splice(indices[i],1);
+    }
+
+    return attrList;
+}
+
+/*
+* Replace illegal HTML characters with their safe HTML
+* character codes.
+*/
+function escapeHTML(input) {
+    return input.replace(/\&/g, "&amp;")
+                .replace(/\</g, "&lt;")
+                .replace(/\>/g, "&gt;");
+}
+
+/*
+* Apply a filter to input string, with possible arguments.
+* Return error if the filter is undefined.
+*/
+function applyFilter(filterNode,input,filterArgs,originalCode) {
+    var filterName = filterNode.name.value;
+
+    if (filters[filterName]===undefined) {
+        throw EvalError("Cannot apply undefined filter '"+filterName+"'.");
+    }
+    filterArgs.unshift(input);
+    filterArgs = input===undefined ? [undefined] : filterArgs;
+    var result = filters[filterName].apply(filterNode, filterArgs);
+    return result;
+}
+
+/*
+* Collect all MacroDefinition and Assignment nodes that
+* appear in an AST in one flat list.
+*
+* Makes use of our visitor pattern, which can be used as
+* a map/fold function over the AST.
+*/
+function collectDefinitions(ast) {
+    var f = function(node,acc) {
+        if (node.kind === "Assignment" ||
+            node.kind === "MacroDefinition") {
+            acc.push(node);
+        }
+    }
+    var res = visitor.visit(ast,f,[]);
+    return res;
+}
+
+/*
+* Check to see if a node or its children contains any
+* references to a given identifier. This is used to prevent
+* recursion: in an assignment statement, the right side should
+* contain no references to the identifier on the left side.
+*/
+function checkForReferences(root, identString) {
+    var f = function(node,acc) {
+        if (node.kind === "Identifier" &&
+            node.value === identString) {
+            acc.push(true);
+        }
+    }
+    var res = visitor.visit(root,f,[]);
+    return res;
+}
+
+/*
+* Check to see if a document extends another document.
+* If so, we'll bypass the normal evaluation.
+* Again, this makes use of the visitor pattern.
+*
+* Returns false, if no Extend node found in document
+*  & otherwise, returns the first Extend node found
+*/
+function checkExtends(ast) {
+    var f = function(node,acc) {
+        if (node.kind === "Extend") {
+            acc.push(node);
+        }
+    }
+    var res = visitor.visit(ast,f,[]);
+    if (res.length > 0) {
+        return res[0];
+    } else {
+        return false;
+    }
+}
+
 module.exports = function(ast, originalCode, context, config) {
     if (!ast) {
         return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
     }
 
-    console.log("EVAL! evaluators is "+JSON.stringify(evaluators));
-
-    var scope = new evaluators.Scope();
+    var scope = new Scope();
     scope.addAll(context);
 
     var extendsChain = [];
@@ -90,7 +240,7 @@ module.exports = function(ast, originalCode, context, config) {
         }
 
         try {
-            var includedAST = parsers[config.sourceLanguage].parse(input);
+            var includedAST = parser.parse(input);
         } catch (e) {
             throw err.ParseError(config.directory+"/"+file,e);
         }
@@ -151,7 +301,7 @@ module.exports = function(ast, originalCode, context, config) {
             input = indentation.preprocess(input);
         }
 
-        var importedAST = parsers[config.sourceLanguage].parse(input);
+        var importedAST = parser.parse(input);
         console.log("importedAST is ...");
         __.printAST(importedAST);
 
@@ -255,13 +405,13 @@ module.exports = function(ast, originalCode, context, config) {
             input = indentation.preprocess(input);
         }
 
-        var extendedAST = parsers[config.sourceLanguage].parse(input);
+        var extendedAST = parser.parse(input);
 
         if (extendedAST.imports) {
             extendedAST.imports.map(evalExpr);
         }
 
-        var childExtendNode = evaluators.checkExtends(extendedAST);
+        var childExtendNode = checkExtends(extendedAST);
         if (childExtendNode !== false) {
             return evalExtend(extendedAST, childExtendNode);
         }
@@ -329,7 +479,7 @@ module.exports = function(ast, originalCode, context, config) {
         var tagName = evalExpr(node.name);
         s = "<"+tagName;
 
-        var attributes = evaluators.mergeAttributes(node.attributes,"class");
+        var attributes = mergeAttributes(node.attributes,"class");
         for (var i=0; i<attributes.length; i++) {
             s += " "+evalExpr(attributes[i]);
         }
@@ -354,7 +504,7 @@ module.exports = function(ast, originalCode, context, config) {
             for (var i=0; i<node.inner.length; i++) {
                 var tmp = evalExpr(node.inner[i]);
                 if (node.inner[i].kind==="String") {
-                    tmp = evaluators.escapeHTML(tmp);
+                    tmp = escapeHTML(tmp);
                 }
                 inner += tmp;
             }
@@ -480,7 +630,7 @@ module.exports = function(ast, originalCode, context, config) {
                 if (node.filters && node.filters.length > 0) {
                     if (node.filters[0].name.value==="undefined" ||
                         node.filters[0].name.value==="defined") {
-                        output = evaluators.applyFilter(node.filters[0],val,[],originalCode);
+                        output = applyFilter(node.filters[0],val,[],originalCode);
                         return output;
                     }
                 }
@@ -542,7 +692,7 @@ module.exports = function(ast, originalCode, context, config) {
                 for (var j=0; j<node.filters[i].arguments.length; j++) {
                     filterArgs.push( [node.filters[i].arguments[j]].map(evalExpr).join("") )
                 }
-                output = evaluators.applyFilter(node.filters[i],output,filterArgs,originalCode);
+                output = applyFilter(node.filters[i],output,filterArgs,originalCode);
             }
         }
         return output;
@@ -634,7 +784,7 @@ module.exports = function(ast, originalCode, context, config) {
         }
     }
 
-    var extendNode = evaluators.checkExtends(ast);
+    var extendNode = checkExtends(ast);
     if (extendNode !== false) {
         return evalExtend(ast, extendNode);
     }
