@@ -7,6 +7,7 @@
   "devDependencies": {
   },
   "scripts": {
+    "peg": "pegjs grammar.peg parser.js"
   },
   "author": "Reid Mitchell",
   "license": "MIT",

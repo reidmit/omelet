@@ -11,6 +11,7 @@ var filters = require('./filters.js');
 var evaluate = require('./evaluate.js');
 var indentation = require('./indentation.js');
 var visitor = require('./visitor.js');
+var renderer = require('./renderer.js');
 
 var html_elements = {
     void: __.toMap("area,base,br,col,embed,hr,img,input,keygen,link,meta,param,source,track,wbr"),
@@ -177,11 +178,19 @@ module.exports = function(ast, originalCode, context, config) {
         return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
     }
 
+    var outputDirectory = "ignored/outputs";
+
+    var rndr = new renderer.Renderer({
+        prettyPrint: true,
+        outputDirectory: outputDirectory
+    });
+
     var scope = new Scope();
     scope.addAll(context);
 
     var extendsChain = [];
     var includesChain = [];
+
 
     function evalParenthetical(node) {
         return node.inner.map(evalExpr).join("");
@@ -192,52 +201,26 @@ module.exports = function(ast, originalCode, context, config) {
 
         var input;
 
-        if (!config.isWeb) {
-            // if (includesChain.indexOf(config.directory+"/"+file) > -1) {
-            //     throw EvalError("Template inclusion loop detected. File '"+config.directory+"/"+file
-            //              +"' has already been included earlier in the includes chain. "+JSON.stringify(includesChain))
-            // }
-
-            try {
-                var stats = fs.lstatSync(config.directory+"/"+file);
-                if (stats.isDirectory()) {
-                    throw EvalError("Included file '"+config.directory+"/"+file+"' is a directory.");
-                }
-            } catch (e) {
-                throw EvalError("Included file '"+config.directory+"/"+file+"' could not be found.");
+        try {
+            var stats = fs.lstatSync(config.directory+"/"+file);
+            if (stats.isDirectory()) {
+                throw EvalError("Included file '"+config.directory+"/"+file+"' is a directory.");
             }
-
-            includesChain.push(config.directory+"/"+file);
-
-            var contents = fs.readFileSync(config.directory+"/"+file);
-
-            if (!contents) throw EvalError("Included file '"+config.directory+"/"+file+"' could not be read.");
-
-            input = contents.toString();
-
-        } else {
-            if (includesChain.indexOf(file) > -1) {
-                throw err.EvalError({
-                    msg: "Template inclusion loop detected. File '"+file
-                         +"' has already been included earlier in the includes chain."
-                }, originalCode)
-            }
-
-            includesChain.push(file);
-
-            var contents = localStorage.getItem(fileStoragePrefix+file);
-
-            if (contents === null) {
-                throw EvalError("Included file '"+file+"' could not be found.");
-            }
-
-            input = contents;
+        } catch (e) {
+            throw EvalError("Included file '"+config.directory+"/"+file+"' could not be found.");
         }
 
-        //TODO: generalize this
-        if (indentation.isIndentedLanguage(config.sourceLanguage)) {
-            input = indentation.preprocess(input);
-        }
+        includesChain.push(config.directory+"/"+file);
+
+        var contents = fs.readFileSync(config.directory+"/"+file);
+
+        if (!contents) throw EvalError("Included file '"+config.directory+"/"+file+"' could not be read.");
+
+        input = contents.toString();
+
+
+
+        input = indentation.preprocess(input);
 
         try {
             var includedAST = parser.parse(input);
@@ -260,46 +243,34 @@ module.exports = function(ast, originalCode, context, config) {
         var file = evalExpr(node.file);
         var input;
 
-        if (!config.isWeb) {
-            try {
-                var stats = fs.lstatSync(config.directory+"/"+file);
-                if (stats.isDirectory()) {
-                    throw err.EvalError({
-                        msg: "Imported file '"+config.directory+"/"+file+"' is a directory.",
-                        index: node.start
-                    }, originalCode);
-                }
-            } catch (e) {
+        try {
+            var stats = fs.lstatSync(config.directory+"/"+file);
+            if (stats.isDirectory()) {
                 throw err.EvalError({
-                    msg: "Imported file '"+config.directory+"/"+file+"' could not be found.",
+                    msg: "Imported file '"+config.directory+"/"+file+"' is a directory.",
                     index: node.start
                 }, originalCode);
             }
-
-            var contents = fs.readFileSync(config.directory+"/"+file);
-
-            if (!contents) {
-                throw err.EvalError({
-                    msg: "Imported file '"+config.directory+"/"+file+"' could not be read.",
-                    index: node.start
-                }, originalCode);
-            }
-
-            input = contents.toString();
-        } else {
-            var contents = localStorage.getItem(fileStoragePrefix+file);
-
-            if (contents === null) {
-                throw EvalError("Imported file '"+file+"' could not be found.");
-            }
-
-            input = contents;
+        } catch (e) {
+            throw err.EvalError({
+                msg: "Imported file '"+config.directory+"/"+file+"' could not be found.",
+                index: node.start
+            }, originalCode);
         }
 
-        //TODO: generalize this
-        if (indentation.isIndentedLanguage(config.sourceLanguage)) {
-            input = indentation.preprocess(input);
+        var contents = fs.readFileSync(config.directory+"/"+file);
+
+        if (!contents) {
+            throw err.EvalError({
+                msg: "Imported file '"+config.directory+"/"+file+"' could not be read.",
+                index: node.start
+            }, originalCode);
         }
+
+        input = contents.toString();
+
+
+        input = indentation.preprocess(input);
 
         var importedAST = parser.parse(input);
         console.log("importedAST is ...");
@@ -363,47 +334,36 @@ module.exports = function(ast, originalCode, context, config) {
         var file = evalExpr(node.file);
         var input;
 
-        if (!config.isWeb) {
-            try {
-                var stats = fs.lstatSync(config.directory+"/"+file);
-                if (stats.isDirectory()) {
-                    throw err.EvalError({
-                        msg: "Extended file '"+config.directory+"/"+file+"'' is a directory.",
-                        index: node.start+7
-                    }, originalCode);
-                }
-            } catch (e) {
+        try {
+            var stats = fs.lstatSync(config.directory+"/"+file);
+            if (stats.isDirectory()) {
                 throw err.EvalError({
-                    msg: "Extended file '"+config.directory+"/"+file+"' could not be found.",
+                    msg: "Extended file '"+config.directory+"/"+file+"'' is a directory.",
                     index: node.start+7
                 }, originalCode);
             }
-
-            extendsChain.push(config.directory+"/"+file);
-
-            var contents = fs.readFileSync(config.directory+"/"+file);
-
-            if (!contents) {
-                throw err.EvalError({
-                    msg: "Extended file '"+config.directory+"/"+file+"' could not be read.",
-                    index: node.start+7
-                }, originalCode);
-            }
-
-            input = contents.toString();
-        } else {
-            var contents = localStorage.getItem(fileStoragePrefix+file);
-            if (contents === null) {
-                throw EvalError("Extended file '"+file+"' could not be found.");
-            }
-            extendsChain.push(file);
-            input = contents;
+        } catch (e) {
+            throw err.EvalError({
+                msg: "Extended file '"+config.directory+"/"+file+"' could not be found.",
+                index: node.start+7
+            }, originalCode);
         }
 
-        //TODO: generalize this
-        if (indentation.isIndentedLanguage(config.sourceLanguage)) {
-            input = indentation.preprocess(input);
+        extendsChain.push(config.directory+"/"+file);
+
+        var contents = fs.readFileSync(config.directory+"/"+file);
+
+        if (!contents) {
+            throw err.EvalError({
+                msg: "Extended file '"+config.directory+"/"+file+"' could not be read.",
+                index: node.start+7
+            }, originalCode);
         }
+
+        input = contents.toString();
+
+
+        input = indentation.preprocess(input);
 
         var extendedAST = parser.parse(input);
 
@@ -559,15 +519,7 @@ module.exports = function(ast, originalCode, context, config) {
     }
     function evalForEach(node) {
         var idx;
-        var iterator;
-        if (node.iterator.value === "self__") {
-            //This applies to languages like Dust, where we iterate over an array without declaring a new
-            //variable to refer to the current item. Instead, all properties of the current item are just added
-            //to the top of the scope at the beginning of each loop.
-            iterator = false;
-        } else {
-            iterator = node.iterator.value;
-        }
+        var iterator = node.iterator.value;
         var data = evalExpr(node.data);
 
         if (data === false || typeof data ==='undefined' || data === null) {
@@ -740,6 +692,7 @@ module.exports = function(ast, originalCode, context, config) {
     function evalCommentHTML(node) {
         return "<!--"+node.value+"-->";
     }
+
     function evalExpr(node) {
         switch (node.kind) {
             case "Number":
@@ -792,4 +745,5 @@ module.exports = function(ast, originalCode, context, config) {
         ast.imports.map(evalExpr);
     }
     return ast.contents.map(evalExpr).join("");
+
 }

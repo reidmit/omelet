@@ -1,14 +1,22 @@
-var Omelet = require('./omelet.js');
-
-var Om = new Omelet.OmeletInstance({
-    outputDirectory: "ignored/outputs",
+var parse = require('./parser.js').parse;
+var evaluate = require('./evaluate.js');
+var renderer = require('./renderer.js');
+var indentation = require('./indentation.js');
+var r = new renderer.Renderer({
     prettyPrint: true,
-    isWeb: false
-})
+    outputDirectory: "ignored/outputs"
+});
 
-var ctx = {
+var dir = "ignored/inputs";
+var file = "basic.om";
 
-}
+var contents = r.readFileContents(dir+"/"+file);
 
-Om.renderDirectory("ignored/inputs", ctx);
+contents = indentation.preprocess(contents);
 
+var ast = parse(contents);
+
+evaluate(ast, contents, {}, {
+    directory: dir,
+    file: file
+});
