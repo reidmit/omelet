@@ -85,7 +85,22 @@ ParameterList "a list of parameters"
     }
 
 Definition "a macro definition"
-    = "+" name:Identifier params:("(" ParameterList? ")")? ":" _ body:(Indent Content Dedent)?
+    = "+" name:Identifier params:("(" ParameterList? ")")? ":" __ body:(LineTag / LineOfText)?
+    {
+        body = body === null ? [] : body;
+        if (!isArray(body)) {
+            body = [body];
+        }
+        return {
+            kind: "MacroDefinition",
+            name: name,
+            params: params === null ? [] :
+                        params[1] === null ? [] :
+                            params[1],
+            body: body
+        }
+    }
+    / "+" name:Identifier params:("(" ParameterList? ")")? ":" _ body:(Indent Content Dedent)?
     {
         return {
             kind: "MacroDefinition",
