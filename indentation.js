@@ -17,7 +17,6 @@ function preprocessIndentation(text) {
     // });
     var lines = text.split("\n");
     var processedLines = insertTokens(lines, []);
-    console.log(text);
     return processedLines.join("\n");
 }
 

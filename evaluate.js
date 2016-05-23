@@ -21,6 +21,7 @@ var html_elements = {
 
 function Scope() {
     var env = [{}];
+    var files = {};
     this.open = function() {
         env.unshift({});
     }
@@ -32,15 +33,24 @@ function Scope() {
             if (env[0][key].override) {
                 return;
             } else {
-                throw Error("Variable '"+key+"' is already defined in this scope. Trying to give it value: "+JSON.stringify(value)+", scope is: "+this.state());
+                throw Error("Variable '"+key+"' is already defined in this scope.");
             }
         }
         env[0][key] = {value: value, override: !!override};
     }
+    this.addFile = function(fileName,fileData) {
+        if (files[fileName]) {
+            throw Error("A file named '"+fileName+"' is already in scope.");
+        }
+        files[fileName] = fileData;
+    }
     this.addAll = function(obj) {
         var keys = Object.keys(obj);
         for (var i=0; i<keys.length; i++) {
-            this.add(keys[i], obj[keys[i]]);
+            if (keys[i].indexOf("/") === 0)
+                this.addFile(keys[i], obj[keys[i]]);
+            else
+                this.add(keys[i], obj[keys[i]]);
         }
     }
     this.find = function(key) {
@@ -53,6 +63,23 @@ function Scope() {
         }
         return;
     }
+    this.findFile = function(fileName) {
+        return files[fileName];
+    }
+    this.findFilesMatching = function(regex) {
+        var keys = Object.keys(files);
+        var pattern = new RegExp(regex);
+        var matches = [];
+        for (var i=0; i<keys.length; i++) {
+            if (pattern.test(keys[i])) {
+                matches.push(files[keys[i]])
+            }
+        }
+        return matches;
+    }
+
+    this.files = function() { return files; }
+    this.data = function() { return env; }
     this.state = function() { return "\n"+JSON.stringify(env,null,4); }
 }
 
@@ -173,6 +200,10 @@ function checkExtends(ast) {
     }
 }
 
+function getFilesMatching(regex) {
+    var keys = Object.keys(scope.data()[0]);
+}
+
 module.exports = function(ast, originalCode, context, config) {
     if (!ast) {
         return console.error("Evaluation error:","Cannot evaluate an undefined AST.");
@@ -191,7 +222,6 @@ module.exports = function(ast, originalCode, context, config) {
     var extendsChain = [];
     var includesChain = [];
 
-
     function evalParenthetical(node) {
         return node.inner.map(evalExpr).join("");
     }
@@ -201,24 +231,32 @@ module.exports = function(ast, originalCode, context, config) {
 
         var input;
 
-        try {
-            var stats = fs.lstatSync(config.directory+"/"+file);
-            if (stats.isDirectory()) {
-                throw EvalError("Included file '"+config.directory+"/"+file+"' is a directory.");
+        var inScope = scope.findFile(file);
+
+        if (inScope) {
+
+            input = inScope.contents;
+
+        } else {
+
+            try {
+                var stats = fs.lstatSync(config.directory+"/"+file);
+                if (stats.isDirectory()) {
+                    throw EvalError("Included file '"+config.directory+"/"+file+"' is a directory.");
+                }
+            } catch (e) {
+                throw EvalError("Included file '"+config.directory+"/"+file+"' could not be found.");
             }
-        } catch (e) {
-            throw EvalError("Included file '"+config.directory+"/"+file+"' could not be found.");
+
+            includesChain.push(config.directory+"/"+file);
+
+            var contents = fs.readFileSync(config.directory+"/"+file);
+
+            if (!contents) throw EvalError("Included file '"+config.directory+"/"+file+"' could not be read.");
+
+            input = contents.toString();
+
         }
-
-        includesChain.push(config.directory+"/"+file);
-
-        var contents = fs.readFileSync(config.directory+"/"+file);
-
-        if (!contents) throw EvalError("Included file '"+config.directory+"/"+file+"' could not be read.");
-
-        input = contents.toString();
-
-
 
         input = indentation.preprocess(input);
 
@@ -241,48 +279,48 @@ module.exports = function(ast, originalCode, context, config) {
 
     function evalImport(node) {
         var file = evalExpr(node.file);
+
         var input;
 
-        try {
-            var stats = fs.lstatSync(config.directory+"/"+file);
-            if (stats.isDirectory()) {
+        var inScope = scope.findFile(file);
+
+        if (inScope) {
+            // We have the file contents in scope, so just grab them from
+            // there.
+            input = inScope.contents;
+        } else {
+            // We need to look at the filesystem for the referenced file,
+            // and throw an error if we don't find it.
+            try {
+                var stats = fs.lstatSync(config.directory+"/"+file);
+                if (stats.isDirectory()) {
+                    throw err.EvalError({
+                        msg: "Imported file '"+config.directory+"/"+file+"' is a directory.",
+                        index: node.start
+                    }, originalCode);
+                }
+            } catch (e) {
                 throw err.EvalError({
-                    msg: "Imported file '"+config.directory+"/"+file+"' is a directory.",
+                    msg: "Imported file '"+config.directory+"/"+file+"' could not be found.",
                     index: node.start
                 }, originalCode);
             }
-        } catch (e) {
-            throw err.EvalError({
-                msg: "Imported file '"+config.directory+"/"+file+"' could not be found.",
-                index: node.start
-            }, originalCode);
+
+            var contents = fs.readFileSync(config.directory+"/"+file);
+
+            if (!contents) {
+                throw err.EvalError({
+                    msg: "Imported file '"+config.directory+"/"+file+"' could not be read.",
+                    index: node.start
+                }, originalCode);
+            }
+
+            input = contents.toString();
         }
-
-        var contents = fs.readFileSync(config.directory+"/"+file);
-
-        if (!contents) {
-            throw err.EvalError({
-                msg: "Imported file '"+config.directory+"/"+file+"' could not be read.",
-                index: node.start
-            }, originalCode);
-        }
-
-        input = contents.toString();
-
 
         input = indentation.preprocess(input);
 
         var importedAST = parser.parse(input);
-        console.log("importedAST is ...");
-        __.printAST(importedAST);
-
-        if (importedAST.status === false) {
-            throw err.ParseError({
-                msg: "Could not parse imported file '"+config.directory+"/"+node.file+"'.",
-                index: importedAST.furthest,
-                expected: importedAST.expected
-            }, input);
-        }
 
         for (var i=0; i<importedAST.contents.length; i++) {
             if (importedAST.contents[i].kind === "MacroDefinition"
@@ -334,34 +372,42 @@ module.exports = function(ast, originalCode, context, config) {
         var file = evalExpr(node.file);
         var input;
 
-        try {
-            var stats = fs.lstatSync(config.directory+"/"+file);
-            if (stats.isDirectory()) {
+        var inScope = scope.findFile(file);
+
+        if (inScope) {
+
+            input = inScope.contents;
+
+        } else {
+
+            try {
+                var stats = fs.lstatSync(config.directory+"/"+file);
+                if (stats.isDirectory()) {
+                    throw err.EvalError({
+                        msg: "Extended file '"+config.directory+"/"+file+"'' is a directory.",
+                        index: node.start+7
+                    }, originalCode);
+                }
+            } catch (e) {
                 throw err.EvalError({
-                    msg: "Extended file '"+config.directory+"/"+file+"'' is a directory.",
+                    msg: "Extended file '"+config.directory+"/"+file+"' could not be found.",
                     index: node.start+7
                 }, originalCode);
             }
-        } catch (e) {
-            throw err.EvalError({
-                msg: "Extended file '"+config.directory+"/"+file+"' could not be found.",
-                index: node.start+7
-            }, originalCode);
+
+            extendsChain.push(config.directory+"/"+file);
+
+            var contents = fs.readFileSync(config.directory+"/"+file);
+
+            if (!contents) {
+                throw err.EvalError({
+                    msg: "Extended file '"+config.directory+"/"+file+"' could not be read.",
+                    index: node.start+7
+                }, originalCode);
+            }
+
+            input = contents.toString();
         }
-
-        extendsChain.push(config.directory+"/"+file);
-
-        var contents = fs.readFileSync(config.directory+"/"+file);
-
-        if (!contents) {
-            throw err.EvalError({
-                msg: "Extended file '"+config.directory+"/"+file+"' could not be read.",
-                index: node.start+7
-            }, originalCode);
-        }
-
-        input = contents.toString();
-
 
         input = indentation.preprocess(input);
 
@@ -376,12 +422,10 @@ module.exports = function(ast, originalCode, context, config) {
             return evalExtend(extendedAST, childExtendNode);
         }
 
-        console.log("evalextend returning "+extendedAST.contents.map(evalExpr).join(""))
         return extendedAST.contents.map(evalExpr).join("");
     }
 
     function evalMacroDefinition(node) {
-        console.log("on macrodef, adding "+JSON.stringify(node));
         scope.add(node.name.value, {params: node.params, body: node.body});
         return "";
     }
@@ -658,7 +702,7 @@ module.exports = function(ast, originalCode, context, config) {
             case "html5":
             case "html":
             case "5":
-                return wrap("html");
+                return "<!doctype html>";
             case "4.01":
             case "transitional":
                 return wrap("HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional"+

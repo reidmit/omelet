@@ -55,7 +55,7 @@ TopLevelContent
     = (Comment / Extend / Import / Definition)*
 
 Extend "an extend statement"
-    = CommandPrefix "extend" __ file:FilePath _
+    = CommandPrefix "extend" "s"? __ file:FilePath _
     {
         return {
             kind: "Extend",
@@ -85,6 +85,9 @@ ParameterList "a list of parameters"
     }
 
 Definition "a macro definition"
+    = BlockDefinition / LineDefinition
+
+LineDefinition
     = "+" name:Identifier params:("(" ParameterList? ")")? ":" __ body:(LineTag / LineOfText)?
     {
         body = body === null ? [] : body;
@@ -100,7 +103,9 @@ Definition "a macro definition"
             body: body
         }
     }
-    / "+" name:Identifier params:("(" ParameterList? ")")? ":" _ body:(Indent Content Dedent)?
+
+BlockDefinition
+    = "+" name:Identifier params:("(" ParameterList? ")")? ":" _ body:(Indent Content Dedent)
     {
         return {
             kind: "MacroDefinition",

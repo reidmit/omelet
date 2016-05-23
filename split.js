@@ -6,11 +6,9 @@ var renderer = require('./renderer.js');
 var outputDirectory = "ignored/outputs"
 var cacheDirectory = ".omelet-cache";
 
-// var cacheDirectory = "";
-
 var fileTreeInfo = [];
 
-var filePath = "ignored/split-test.input";
+var filePath = "ignored/split-test.om";
 var input = "";
 if (fs.lstatSync(filePath).isFile()) {
     input = fs.readFileSync(filePath).toString();
@@ -132,10 +130,9 @@ function splitFiles(path, input, isHidden, parser) {
         }
     }
     if (!hasFileStart) {
-        path = (path.length === 0 ? filePath : path)
-                    + getFileExtensionFor(path);
+        path = path.length === 0 ? filePath : path;
 
-        var fullPath = (outputDirectory+"/"+cacheDirectory+path)
+        var fullPath = (outputDirectory+"/"+cacheDirectory+path+getFileExtensionFor(path))
                         .split("/")
                         .map(function(s) { return s.replace(/\*$/,"") })
                         .join("/");
@@ -174,6 +171,13 @@ function splitFiles(path, input, isHidden, parser) {
 }
 
 function writeFiles(fileInfo) {
+    var context = {};
+
+    // add the contents of each file into the context
+    for (var i=0; i<fileInfo.length; i++) {
+        context[fileInfo[i].filePath] = fileInfo[i];
+    }
+
     for (var i=0; i<fileInfo.length; i++) {
         var file = fileInfo[i];
         // only write files that aren't hidden
@@ -191,7 +195,7 @@ function writeFiles(fileInfo) {
                 if (err) return console.error(err);
             });
 
-            rd.renderString(file.contents, {}, file.filePath, fullPath);
+            rd.renderString(file.contents, context, file.filePath, fullPath);
         }
     }
 }
@@ -210,7 +214,7 @@ function doIt() {
 
     writeFiles(fileTreeInfo);
 
-    console.log(fileTreeInfo);
+    // console.log(fileTreeInfo);
     console.timeEnd("running");
 }
 

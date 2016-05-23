@@ -146,7 +146,7 @@ function visitNode(node, func, acc) {
             }
             break;
         default:
-            console.log("visitor got to default case");
+            // console.log("visitor got to default case");
             break;
     }
     return acc;

@@ -21,9 +21,15 @@ var Renderer = function(options) {
     }
 
     this.getOutputFilePath = function(inputFilePath) {
-        return outputDirectory+
-               inputFilePath.substring(0,inputFilePath.lastIndexOf("."))+
-               ".html";
+        var lastDot = inputFilePath.lastIndexOf(".");
+        if (lastDot > -1) {
+            return outputDirectory+
+                    inputFilePath.substring(0,inputFilePath.lastIndexOf("."))+
+                    ".html";
+        } else {
+            return outputDirectory+
+                    inputFilePath+".html"
+        }
     }
 
     this.writeFile = function(outputFilePath, output) {
@@ -53,14 +59,11 @@ var Renderer = function(options) {
 
         if (prettyPrint) {
             output = beautify(output, {
-                indent_size: 2,
+                indent_size: 4,
                 indent_inner_html: true,
                 extra_liners: []
             });
         }
-
-        console.log("inputFilePath is "+inputFilePath);
-        console.log("outputFilePath is "+outputFilePath);
 
         if (outputFilePath)
             self.writeFile(self.getOutputFilePath(inputFilePath), output);
@@ -73,7 +76,6 @@ var Renderer = function(options) {
     this.renderFile = function(inputFilePath, context) {
         context = context || {};
         var input = self.readFileContents(inputFilePath);
-        console.log("reading from :"+inputFilePath);
         return self.renderString(input, context, inputFilePath);
     }
 
