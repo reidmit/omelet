@@ -85,12 +85,14 @@ ParameterList "a list of parameters"
     }
 
 Definition "a macro definition"
-    = CommandPrefix "def" " " name:Identifier "(" params:ParameterList? ")" ":" _ body:(Indent Content Dedent)?
+    = "+" name:Identifier params:("(" ParameterList? ")")? ":" _ body:(Indent Content Dedent)?
     {
         return {
             kind: "MacroDefinition",
             name: name,
-            params: params === null ? [] : params,
+            params: params === null ? [] :
+                        params[1] === null ? [] :
+                            params[1],
             body: body === null ? [] : body[1]
         }
     }
@@ -619,6 +621,7 @@ _ "whitespace"
 
 __
     = [ ]*
+
 
 
 

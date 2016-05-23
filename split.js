@@ -197,15 +197,21 @@ function writeFiles(fileInfo) {
 }
 
 //remove all existing files in outputDirectory
-rmDir(outputDirectory+"/"+cacheDirectory, false);
+rmDir(outputDirectory, false);
+mkdirp(outputDirectory+"/"+cacheDirectory, function (err) {
+    if (err) return console.error(err);
+    doIt();
+});
 
-console.time("running");
-splitFiles("", input, false);
 
-writeFiles(fileTreeInfo);
+function doIt() {
+    console.time("running");
+    splitFiles("", input, false);
 
-console.log(fileTreeInfo);
-console.timeEnd("running");
+    writeFiles(fileTreeInfo);
 
+    console.log(fileTreeInfo);
+    console.timeEnd("running");
+}
 
 
