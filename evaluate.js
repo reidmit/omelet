@@ -568,6 +568,28 @@ module.exports = function(ast, originalCode, context, config) {
 
         if (data === false || typeof data ==='undefined' || data === null) {
             data = [];
+        } else if (__.isString(data) && data.indexOf("/")===0) {
+            // we're iterating over the contents of a directory
+            var files = scope.findFilesMatching(data);
+
+            data = [];
+            for (var i=0; i<files.length; i++) {
+                var input = indentation.preprocess(files[i].contents);
+                var fileAST = parser.parse(input);
+                var fileDefs = {
+                    $contents: files[i].contents,
+                    $path: files[i].filePath
+                }
+                for (var j=0; j<fileAST.contents.length; j++) {
+                    var defNode = fileAST.contents[j];
+                    if (defNode.kind === "MacroDefinition"
+                        && defNode.params.length === 0) {
+                        // we only add to scope defs with no params
+                        fileDefs[defNode.name.value] = defNode.body.map(evalExpr).join("");
+                    }
+                }
+                data.push(fileDefs);
+            }
         } else if (!__.isArray(data)) {
             data = [data];
         }
@@ -577,23 +599,7 @@ module.exports = function(ast, originalCode, context, config) {
         for (idx = 0; idx < data.length; idx++) {
             scope.open();
 
-            if (iterator) {
-                scope.add(iterator, data[idx]);
-            } else {
-                //Without an iterator object, we just add each property of
-                //the current element to the scope as its own value.
-                if (__.typeOf(data[idx]) === "Object") {
-                    var keys = Object.keys(data[idx]);
-                    for (var i=0; i<keys.length; i++) {
-                        scope.add(keys[i], {
-                            kind: "Raw",
-                            value: data[idx][keys[i]]
-                        });
-                    }
-                } else {
-                    scope.add("self__", data[idx]);
-                }
-            }
+            scope.add(iterator, data[idx]);
 
             for (var j=0; j<node.body.length; j++) {
                 output.push(evalExpr(node.body[j]));
@@ -618,24 +624,9 @@ module.exports = function(ast, originalCode, context, config) {
             if (node.arguments.length > 0) {
                 throw Error("Could not evaluate undefined macro '"+node.name.value+"'. Current scope is: "+scope.state());
             } else {
-                // TODO: figure out if this is what I want here
-                // currently, val is undefined, but we want to
-                // know if the filter "defined" or "undefined" is
-                // applied, since then we can return a boolean
-                // rather than throwing an error
-                if (node.filters && node.filters.length > 0) {
-                    if (node.filters[0].name.value==="undefined" ||
-                        node.filters[0].name.value==="defined") {
-                        output = applyFilter(node.filters[0],val,[],originalCode);
-                        return output;
-                    }
-                }
-
                 throw Error("Could not evaluate undefined variable '"+node.name.value+"' in file: "+config.file);
             }
-
         } else {
-
             //Handle modifiers
             //   i.e. for "person.name", val="person" right now, so
             //        we need to traverse through the person object

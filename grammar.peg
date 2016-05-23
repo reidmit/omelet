@@ -172,13 +172,25 @@ Else "an else case"
     }
 
 For "a for-in loop"
-    = CommandPrefix "for" " " id:Identifier " in " data:(IdentifierComplex / Identifier) ":" __ body:(Indent Content Dedent)?
+    = CommandPrefix "for" " " id:Identifier " in " data:(DirectoryPath / IdentifierComplex / Identifier) ":" __ body:(Indent Content Dedent)?
     {
         return {
             kind: "ForEach",
             iterator: id,
             data: data,
             body: body === null ? [] : body[1]
+        }
+    }
+
+DirectoryPath "a path to a directory"
+    = parts:("/" [a-zA-Z] [a-zA-Z0-9_-]*)+
+    {
+        var mergedParts = parts.map(function(p) {
+            return p[0]+p[1]+p[2].join("");
+        }).join("");
+        return {
+            kind: "String",
+            value: mergedParts
         }
     }
 
@@ -403,7 +415,7 @@ SpecialAttribute
     = ClassAttribute / IdAttribute
 
 IdentifierString
-    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
+    = id:([\$a-zA-Z] [a-zA-Z0-9_-]*)
     {
         return {
             kind: "String",
@@ -412,7 +424,7 @@ IdentifierString
     }
 
 Identifier
-    = id:([a-zA-Z] [a-zA-Z0-9_-]*)
+    = id:([\$a-zA-Z] [a-zA-Z0-9_-]*)
     {
         return {
             kind: "Identifier",
@@ -421,7 +433,7 @@ Identifier
     }
 
 IdentifierComplex
-    = ident:([a-zA-z] [a-zA-Z0-9_-]*) mods:Modifier+
+    = ident:([\$a-zA-z] [a-zA-Z0-9_-]*) mods:Modifier+
     {
         return {
             kind: "Identifier",
@@ -602,7 +614,7 @@ Boolean "a boolean value"
     }
 
 Text "plain text"
-    = text:[^⇐⇒@{}\\#]+
+    = text:[^⇐⇒@{}\\#>]+
     {
         return {
             kind: "String",
@@ -612,7 +624,7 @@ Text "plain text"
     / EscapedCharacter
 
 EscapedCharacter
-    = "\\" char:([{}@\\#])?
+    = "\\" char:([{}@\\#>])?
     {
         return {
             kind: "String",
@@ -638,10 +650,5 @@ CommandPrefix
 
 _ "whitespace"
     = [ \t\n\r]*
-
 __
     = [ ]*
-
-
-
-
