@@ -143,4 +143,8 @@ filters.join = function(input, separator) {
     return input.join(separator);
 }
 
+filters.omlink = function(input) {
+    return "."+input+".html";
+}
+
 module.exports = filters;

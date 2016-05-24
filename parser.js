@@ -2874,9 +2874,12 @@ module.exports = (function() {
               s2 = null;
             }
             if (s2 !== peg$FAILED) {
-              s3 = peg$parseIdentifierComplex();
+              s3 = peg$parseDirectoryPath();
               if (s3 === peg$FAILED) {
-                s3 = peg$parseIdentifier();
+                s3 = peg$parseIdentifierComplex();
+                if (s3 === peg$FAILED) {
+                  s3 = peg$parseIdentifier();
+                }
               }
               if (s3 !== peg$FAILED) {
                 s4 = peg$currPos;

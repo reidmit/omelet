@@ -617,8 +617,13 @@ module.exports = function(ast, originalCode, context, config) {
         return output.join("");
     }
     function evalInterpolation(node) {
-        var val = scope.find(node.name.value);
         var output;
+
+        if (node.name.value.indexOf("/") === 0) {
+            output = node.name.value;
+        } else {
+
+        var val = scope.find(node.name.value);
 
         if (!val) {
             if (node.arguments.length > 0) {
@@ -672,6 +677,8 @@ module.exports = function(ast, originalCode, context, config) {
             output = body;
         } else {
             output = evalExpr(val);
+        }
+
         }
         if (node.filters) {
             for (var i=0; i<node.filters.length; i++) {

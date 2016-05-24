@@ -371,7 +371,7 @@ Interpolation
             interpolated: true
         }
     }
-    / "{" " "? id:(IdentifierComplex / Identifier) parens:("(" ArgumentList? ")")? " "? __ filters:Filter* "}"
+    / "{" " "? id:(DirectoryPath / IdentifierComplex / Identifier) parens:("(" ArgumentList? ")")? " "? __ filters:Filter* "}"
     {
         return {
             kind: "Interpolation",
