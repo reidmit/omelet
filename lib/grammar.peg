@@ -183,11 +183,14 @@ For "a for-in loop"
     }
 
 DirectoryPath "a path to a directory"
-    = parts:("/" [a-zA-Z] [a-zA-Z0-9_-]*)+
+    = parts:("/" [a-zA-Z] [a-zA-Z0-9_-]*)+ ext:("." [a-zA-Z0-9]+)?
     {
         var mergedParts = parts.map(function(p) {
             return p[0]+p[1]+p[2].join("");
         }).join("");
+        if (ext !== null) {
+            mergedParts += "."+ext[1].join("");
+        }
         return {
             kind: "String",
             value: mergedParts

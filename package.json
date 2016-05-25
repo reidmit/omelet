@@ -1,13 +1,16 @@
 {
   "name": "omelet",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A language for writing web pages & templates that compiles into HTML",
   "dependencies": {
   },
   "devDependencies": {
   },
   "scripts": {
-    "peg": "pegjs grammar.peg parser.js"
+    "peg": "pegjs lib/grammar.peg lib/parser.js"
+  },
+  "bin": {
+    "omelet": "bin/command-line.js"
   },
   "author": "Reid Mitchell",
   "license": "MIT",
