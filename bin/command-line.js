@@ -7,6 +7,7 @@ Arguments:
     argv[2] = inputFile
     outputDirectory (optional)
     context (optional)
+    prettyPermalinks (optional)
 */
 
 function printUsage() {
@@ -17,6 +18,9 @@ function printUsage() {
         "                           (optional, default is ./omelet-output)",
         "    -c contextFile       path to a JSON file containing initial evaluation context",
         "                           (optional, default is an empty context)",
+        "    -p, --permalinks     instead of making path/to/file.html, make path/to/file/index.html,",
+        "                           so URLs look a little cleaner (can leave off index.html)",
+        "                           (optional, default is OFF)",
         "    -h, --help           print this usage information"
     ];
     console.log(lines.join("\n"))
@@ -55,10 +59,17 @@ if (c_idx > 2) {
     context = require(contextFile);
 }
 
+var prettyPermalinks = false;
+var pp_idx = process.argv.indexOf("-p");
+if (pp_idx > 2) {
+    prettyPermalinks = true;
+}
+
 var om = new Omelet({
     // cacheDirectory: ".omelet-cache",
     outputDirectory: outputDirectory,
-    context: context
+    context: context,
+    prettyPermalinks: prettyPermalinks
 });
 
 om.render(inputFile);
