@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 
-var Omelet = require("../lib/Omelet.js");
+var Omelet = require("../lib/omelet.js");
 
 /*
 Arguments:
