@@ -5,21 +5,37 @@ var fs = require("fs");
 var glob = require("glob");
 
 var configFile = process.argv[2] || "omelet-config.json";
-var config = require(process.cwd()+"/"+configFile);
+try {
+    var config = require(process.cwd()+"/"+configFile);
+} catch (e) {
+    console.error("No Omelet configuration file found!");
+    process.exit();
+}
 
-var inp = config.input;
+function detectParserFor(filePath) {
+    var ext = filePath.split(".").pop().toLowerCase();
+    switch (ext) {
+        case "om":
+        case "omelet":
+            return "omelet";
+        case "md":
+        case "markdown":
+            return "markdown";
+    }
+    return "copy";
+}
 
-var fullPaths = glob.sync(inp+"/**", {
+var fullPaths = glob.sync(config.input+"/**", {
     nodir: true
 });
 
 var omPaths = [];
 for (var i=0; i<fullPaths.length; i++) {
-    var fp = fullPaths[i].replace(new RegExp("^"+inp), "");
-    omPaths.push(fp);
+    var fp = fullPaths[i].replace(new RegExp("^"+config.input), "");
+    if (fullPaths[i] !== configFile)
+        omPaths.push(fp);
 }
 
-// applyRules -> getFileInfo -> ?
 applyRules(config.rules);
 
 function applyRules(rulesObj) {
@@ -29,9 +45,9 @@ function applyRules(rulesObj) {
     omPaths.forEach(function(path) {
         var obj = rulesObj;
         rules.forEach(function(rule) {
-            glob(inp+rule, {}, function(err, files) {
+            glob(config.input+rule, {}, function(err, files) {
                 if (err) throw err;
-                if (files.indexOf(inp+path) > -1) {
+                if (files.indexOf(config.input+path) > -1) {
                     if (matched[path])
                         console.warn("Warning: file "+path+" matched by multiple rules.\n    Overriding old rule with rule for "+rule+".");
 
@@ -45,23 +61,10 @@ function applyRules(rulesObj) {
     });
 }
 
-function detectParserFor(filePath) {
-    var ext = filePath.split(".").pop().toLowerCase();
-    switch (ext) {
-        case "om":
-        case "omelet":
-            return "omelet";
-    }
-    return "copy";
-}
-
-// now, we need to automatically build the list of paths w/options
-// for each FILE, we need to have:
-//     filePath, fullPath, isHidden, parser, contents
 function getFileInfo(omPaths, appliedRules) {
     var fileInfo = [];
     omPaths.forEach(function(path) {
-        var fullPath = inp+path;
+        var fullPath = config.input+path;
         var applied = appliedRules[path] ? appliedRules[path] : {};
 
         fs.readFile(fullPath, function(err,data) {
@@ -102,7 +105,7 @@ function writeAllFiles(fileInfo) {
     var om = new Omelet({
         outputDirectory: config.output,
         context: config.context || {},
-        prettyPermalinks: config.permalinks || false
+        permalinks: config.permalinks || false
     });
 
     om.render(fileInfo);
@@ -176,12 +179,3 @@ function writeAllFiles(fileInfo) {
 // if (w_idx > 2) {
 //     watch = true;
 // }
-
-// var om = new Omelet({
-//     // cacheDirectory: ".omelet-cache",
-//     outputDirectory: outputDirectory,
-//     context: context,
-//     prettyPermalinks: prettyPermalinks
-// });
-
-// om.render(inputFile);

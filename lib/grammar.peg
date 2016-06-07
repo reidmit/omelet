@@ -172,12 +172,16 @@ Else "an else case"
     }
 
 For "a for-in loop"
-    = CommandPrefix "for" " " id:Identifier " in " data:(DirectoryPath / IdentifierComplex / Identifier) ":" __ body:(Indent Content Dedent)?
+    = CommandPrefix "for" " " id:Identifier " in " data:(DirectoryPath / IdentifierComplex / Identifier)
+        __ sorted:(("sortby " IdentifierString / "sort") __ ("ascending"/"descending")?)? __ ":" __ body:(Indent Content Dedent)?
     {
         return {
             kind: "ForEach",
             iterator: id,
             data: data,
+            sorted: sorted !== null,
+            sortBy: sorted !== null ? (isArray(sorted[0]) ? sorted[0][1] : undefined) : undefined,
+            sortAscending: sorted !== null ? (sorted[2] === "descending" ? false : true) : true,
             body: body === null ? [] : body[1]
         }
     }
