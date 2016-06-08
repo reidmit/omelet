@@ -7,9 +7,11 @@
     "mkdirp": "^0.5.1",
     "striptags": "^2.1.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+  },
   "scripts": {
-    "peg": "pegjs lib/grammar.peg lib/parser.js"
+    "peg": "pegjs lib/grammar.peg lib/parser.js",
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- -R spec && open coverage/lcov-report/index.html"
   },
   "bin": {
     "omelet": "bin/command-line.js"
