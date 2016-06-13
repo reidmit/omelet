@@ -5,10 +5,11 @@ var fs = require("fs");
 var chokidar = require("chokidar");
 var glob = require("glob");
 
-var configFile = process.argv[2] || "omelet-config.json";
+var configFile = process.argv[2] || "omelet-config.js";
 try {
     var config = require(process.cwd()+"/"+configFile);
 } catch (e) {
+    console.log(e);
     console.error("No Omelet configuration file found!");
     process.exit();
 }
