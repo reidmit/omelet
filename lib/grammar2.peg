@@ -1,0 +1,290 @@
+{
+    function isArray(obj) {
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
+    function mergeAttributes(attrList,attrName) {
+        if (attrList.length < 2) return attrList;
+
+        var toMerge = [];
+        var indices = [];
+
+        for (var i=0; i<attrList.length; i++) {
+            if (attrList[i].name.value === attrName) {
+                toMerge.push(attrList[i]);
+                indices.push(i);
+            }
+        }
+
+        if (toMerge.length == 0) return attrList;
+
+        var newAttrVal = "";
+        for (var i=0; i<toMerge.length; i++) {
+            newAttrVal += toMerge[i].value.value + " ";
+        }
+        newAttrVal = newAttrVal.trim();
+        toMerge[0].value.value = newAttrVal;
+
+        for (var i=1; i<toMerge.length; i++) {
+            attrList.splice(indices[i],1);
+        }
+
+        return attrList;
+    }
+}
+
+Document = cm1:Comment* extend:Extend? cm2:Comment* imports:Import* content:Content
+{
+    return {
+        kind: "Document",
+        extend: extend,
+        imports: imports,
+        contents: cm1.concat(cm2.concat(content)),
+        location: location()
+    }
+}
+
+Extend "an extend statement"
+    = "@@extend" __ file:FilePath _
+    {
+        return {
+            kind: "Extend",
+            file: {
+                kind: "String",
+                value: file,
+                location: location()
+            }
+        }
+    }
+
+Import "an import statement"
+    = "@@import" __ file:FilePath __ "as" __ alias:Identifier _
+    {
+        return {
+            kind: "Import",
+            file: {
+                kind: "String",
+                alias: alias,
+                value: file,
+                location: location()
+            }
+        }
+    }
+
+Content
+    = Expression*
+
+Expression
+    = Comment / Definition / Text
+
+Definition "a definition"
+    = BlockDefinition / LineDefinition
+
+LineDefinition
+    = "+" name:Identifier ":" __ body:(Number / QuotedString / Boolean)? "\n" _
+    {
+        body = body === null ? [] : body;
+        if (!isArray(body)) {
+            body = [body];
+        }
+        return {
+            kind: "Definition",
+            name: name,
+            body: body,
+            location: location()
+        }
+    }
+
+BlockDefinition
+    = "+" name:Identifier ":" _ body:(Indent ArrayElementList Dedent)
+    {
+        return {
+            kind: "Definition",
+            name: name,
+            body: [{
+                kind: "Array",
+                value: body[1]
+            }],
+            location: location()
+        }
+    }
+    / "+" name:Identifier ":" _ body:(Indent Content Dedent)
+    {
+        for (var i=0; i<body[1].length; i++) {
+            if (!body[1][i].kind || body[1][i].kind !== "Definition")
+                if (body[1][i].kind !== "Comment")
+                    throw SyntaxError("Invalid definition for dictionary '"+name.value+"'. Dictionaries must be composed entirely of key/value pairs.")
+        }
+        return {
+            kind: "Definition",
+            name: name,
+            body: [{
+                kind: "Dictionary",
+                value: body[1]
+            }],
+            location: location()
+        }
+    }
+
+ArrayElementList
+    = (Comment / LineArrayElement / BlockArrayElement)*
+
+LineArrayElement
+    = __ "-" " "? value:(Number / QuotedString / Boolean) "\n"
+    {
+        return {
+            kind: "ArrayElement",
+            value: value,
+            location: location()
+        }
+    }
+
+BlockArrayElement
+    = __ "-" body:(Indent ArrayElementList Dedent)
+    {
+        return {
+            kind: "ArrayElement",
+            value: {
+                kind: "Array",
+                value: body[1]
+            },
+            location: location()
+        }
+     }
+     / __ "-" body:(Indent Content Dedent)
+     {
+        for (var i=0; i<body[1].length; i++) {
+            if (!body[1][i].kind || body[1][i].kind !== "Definition")
+                if (body[1][i].kind !== "Comment")
+                    throw SyntaxError("Invalid definition for dictionary '"+name.value+"'. Dictionaries must be composed entirely of key/value pairs.")
+        }
+        return {
+            kind: "ArrayElement",
+            value: {
+                kind: "Dictionary",
+                value: body[1]
+            },
+            location: location()
+        }
+     }
+
+Identifier
+    = id:([\$a-zA-Z] [a-zA-Z0-9_-]*)
+    {
+        return {
+            kind: "Identifier",
+            value: id[0].concat(id[1].join("")),
+            location: location()
+        }
+    }
+
+IdentifierComplex
+    = ident:([\$a-zA-z] [a-zA-Z0-9_-]*) mods:Modifier+
+    {
+        return {
+            kind: "Identifier",
+            value: ident[0].concat(ident[1].join("")),
+            modifiers: mods,
+            location: location()
+        }
+    }
+
+Modifier
+    = ("." mod:Identifier)
+    {
+        return {
+            kind: "Modifier",
+            value: mod,
+            location: location()
+        }
+    }
+    / ("[" mod:(Number / QuotedString / Identifier) "]")
+    {
+        return {
+            kind: "Modifier",
+            value: mod,
+            location: location()
+        }
+    }
+
+QuotedString
+    = value:( "'" [^\']* "'" / '"' [^\"]* '"')
+    {
+        return {
+            kind: "String",
+            value: value[1].join(""),
+            location: location()
+        }
+    }
+
+Number "a number"
+    = minus:"-"? integer:[0-9]+ decimal:("." [0-9]+)?
+    {
+        var value;
+        if (decimal === null) {
+            value = parseInt(integer.join(""));
+        } else {
+            value = parseFloat(integer.join("")+"."+decimal[1].join(""))
+        }
+        if (minus !== null) {
+            value = 0-value;
+        }
+        return {
+            kind: "Number",
+            value: value,
+            location: location()
+        }
+    }
+
+Boolean "a boolean value"
+    = value:("true" / "false")
+    {
+        return {
+            kind: "Boolean",
+            value: value === "true",
+            location: location()
+        }
+    }
+
+Text "plain text"
+    = text:[^⇐⇒@{}\\#]+
+    {
+        return {
+            kind: "String",
+            value: text.join("")
+        }
+    }
+
+FilePath "a relative path name"
+    = prefix:"/"? part0:([a-zA-Z0-9-_]+ / "." ".")
+      parts:("/" ([a-zA-Z0-9-_]+ / "." "."))* ext:("." [a-zA-Z0-9]+)?
+    {
+        prefix = prefix === null ? "" : prefix
+        ext = ext === null ? "" : "."+ext[1].join("");
+        return prefix + [part0.join("")]
+                    .concat(parts.map(function(a){return "/"+a[1].join("")}))
+                    .join("") + ext;
+    }
+
+Indent "an indent"
+    = _ "⇒" _
+
+Dedent "a dedent"
+    = _ "⇐" _
+
+Comment "a comment"
+    = LineComment //possible todo: block comments
+
+LineComment
+    = "##" value:[^\n]* "\n" _
+    {
+        return {
+            kind: "Comment",
+            value: value.join(""),
+            location: location()
+        }
+    }
+
+_ "whitespace"
+    = [ \t\n\r]*
+__
+    = [ ]*
