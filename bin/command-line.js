@@ -62,7 +62,7 @@ function applyRules(rulesObj) {
                 count++;
                 if (count >= omPaths.length*rules.length)
                     getFileInfo(omPaths, matched);
-            })
+            });
         });
     });
 }
@@ -90,8 +90,12 @@ function getFileInfo(omPaths, appliedRules) {
 }
 
 function rmDir(dirPath, rmSelf) {
-    try { var files = fs.readdirSync(dirPath); }
-    catch(e) { return; }
+    var files;
+    try {
+        files = fs.readdirSync(dirPath);
+    } catch(e) {
+        return;
+    }
     if (files.length > 0) {
         for (var i = 0; i < files.length; i++) {
             var filePath = dirPath + '/' + files[i];

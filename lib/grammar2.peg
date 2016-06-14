@@ -36,7 +36,7 @@ Document = cm1:Comment* extend:Extend? cm2:Comment* imports:Import* content:Cont
 {
     return {
         kind: "Document",
-        extend: extend,
+        extend: extend === null ? undefined : extend,
         imports: imports,
         contents: cm1.concat(cm2.concat(content)),
         location: location()
@@ -74,7 +74,7 @@ Content
     = Expression*
 
 Expression
-    = Comment / Definition / Text
+    = Comment / Definition / Interpolation / Text
 
 Definition "a definition"
     = BlockDefinition / LineDefinition
@@ -167,6 +167,43 @@ BlockArrayElement
         }
      }
 
+Interpolation
+    = "{" " "? id:(DirectoryPath / IdentifierComplex / Identifier) " "? __ filters:Filter* "}"
+    {
+        return {
+            kind: "Interpolation",
+            name: id,
+            isMacroCall: undefined, //TODO: do we need this?
+            filters: filters,
+            location: location()
+        }
+    }
+
+FilterArgument "a filter argument"
+    = __ arg:Argument
+    { return arg }
+
+Filter "a filter"
+    = "|" __ name:Identifier args:FilterArgument* __
+    {
+        return {
+            kind: "Filter",
+            name: name,
+            arguments: args,
+            location: location()
+        }
+    }
+
+Argument "an argument"
+    = QuotedString / Number / Boolean / IdentifierComplex / Identifier
+
+ArgumentList
+    = first:Argument __ rest:("," __ Argument)*
+    {
+        var newRest = rest.map(function(a) { return a[2] });
+        return [first].concat(newRest);
+    }
+
 Identifier
     = id:([\$a-zA-Z] [a-zA-Z0-9_-]*)
     {
@@ -251,6 +288,21 @@ Text "plain text"
         return {
             kind: "String",
             value: text.join("")
+        }
+    }
+
+DirectoryPath "a path to a directory"
+    = parts:("/" [a-zA-Z] [a-zA-Z0-9_-]*)+ ext:("." [a-zA-Z0-9]+)?
+    {
+        var mergedParts = parts.map(function(p) {
+            return p[0]+p[1]+p[2].join("");
+        }).join("");
+        if (ext !== null) {
+            mergedParts += "."+ext[1].join("");
+        }
+        return {
+            kind: "String",
+            value: mergedParts
         }
     }
 
