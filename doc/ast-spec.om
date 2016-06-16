@@ -7,7 +7,7 @@
 +ast-node node =
     @div.ast-node[id={node.kind}]
         @ul
-            >for key in node
+            >for key in node|keys
                 @li {key} - {node[key]}
 
 ##-------------------------------------------------------------------------
