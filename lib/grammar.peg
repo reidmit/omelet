@@ -237,7 +237,7 @@ BlockTag
     }
 
 RawTag
-    = openTag:OpenTag __ "```" r:(!"```" r:. {return r})* "```"
+    = openTag:OpenTag __ "<<<" r:(!">>>" r:. {return r})* ">>>"
     {
         if (isArray(openTag)) {
             var o = {

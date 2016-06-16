@@ -30,103 +30,199 @@
 
         return attrList;
     }
+
+    var reserved = {
+        "for": true,
+        "if": true,
+        "elif": true,
+        "else": true,
+        "include": true,
+        "import": true,
+        "extend": true
+    }
 }
 
-Document = cm1:Comment* extend:Extend? cm2:Comment* imports:Import* content:Content
+Document = top:(Comment / Extend / Import)* content:Content
 {
+    var comments = []
+    var extend = null
+    var imports = []
+    var importHasAppeared = false
+    for (var i=0; i<top.length; i++) {
+        if (top[i].kind === "Comment") {
+            comments.push(top[i])
+        } else if (top[i].kind === "Extend") {
+            if (extend === null) {
+                if (!importHasAppeared) {
+                    extend = top[i]
+                } else {
+                    throw SyntaxError("Extend statement must come before any import statements.")
+                }
+            } else {
+                throw SyntaxError("Only one extend statement allowed per document. This document already extends '"+ext.file.value+"'.")
+            }
+        } else if (top[i].kind === "Import") {
+            importHasAppeared = true
+            imports.push(top[i])
+        }
+    }
+
     return {
         kind: "Document",
-        extend: extend === null ? undefined : extend,
+        extend: extend,
         imports: imports,
-        contents: cm1.concat(cm2.concat(content)),
-        location: location()
+        contents: comments.concat(content),
+        //location: location()
     }
 }
-
-Extend "an extend statement"
-    = "@@extend" __ file:FilePath _
-    {
-        return {
-            kind: "Extend",
-            file: {
-                kind: "String",
-                value: file,
-                location: location()
-            }
-        }
-    }
-
-Import "an import statement"
-    = "@@import" __ file:FilePath __ "as" __ alias:Identifier _
-    {
-        return {
-            kind: "Import",
-            file: {
-                kind: "String",
-                alias: alias,
-                value: file,
-                location: location()
-            }
-        }
-    }
 
 Content
     = Expression*
 
 Expression
-    = Comment / Definition / Interpolation / Text
+    = Comment / For / Definition / Doctype / Interpolation / Text
+
+//--------------------------------------------------------------------------
+// TOP-LEVEL STATEMENTS
+// (extend, import)
+//--------------------------------------------------------------------------
+
+Extend "an extend statement"
+    = ">extend" __ file:Path __ extra:([^\n])* "\n" _
+    {
+        if (extra.length > 0) {
+            throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of extend statement. An extend statement must appear on a line by itself.")
+        }
+        return {
+            kind: "Extend",
+            file: file,
+            //location: location()
+        }
+    }
+
+Import "an import statement"
+    = ">import" __ file:Path __ "as" __ alias:Identifier __ extra:([^\n])* "\n" _
+    {
+        if (extra.length > 0) {
+            throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of import statement. An import statement must appear on a line by itself.")
+        }
+        return {
+            kind: "Import",
+            file: file,
+            alias: alias,
+            //location: location()
+        }
+    }
+
+//--------------------------------------------------------------------------
+// FOR LOOPS
+// (& related things)
+//--------------------------------------------------------------------------
+
+For "a for loop"
+    = ">for" __ iterator:Identifier __ "in" __ data:(Identifier / Path) __ extra:([^\n\|]*) filters:("|" __ Filter)* "\n" body:(Indent Block Dedent)
+    {
+        if (extra.length > 0) {
+            throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of for loop header. If you meant to add a filter, precede this text with a '|' character.")
+        }
+        return {
+            kind: "For",
+            iterator: iterator,
+            data: data,
+            filters: filters.length === 0 ? null :
+                filters.map(function(f) { return f[2] }),
+            body: body[1],
+            //location: location()
+        }
+    }
+
+Block
+    = elements:(Comment / Interpolation / For / Text)*
+    {
+        return {
+            kind: "Block",
+            contents: elements,
+            //location: location()
+        }
+    }
+
+//--------------------------------------------------------------------------
+// DEFINITIONS
+// (block defs, line defs, array element lists)
+//--------------------------------------------------------------------------
 
 Definition "a definition"
-    = BlockDefinition / LineDefinition
+    = def:(BlockDefinition / LineDefinition)
+    {
+        if (reserved[def.name.value]) {
+            throw SyntaxError("Illegal definition: Cannot assign a value to reserved word '"+def.name.value+"'.")
+        }
+        return def
+    }
 
 LineDefinition
-    = "+" name:Identifier ":" __ body:(Number / QuotedString / Boolean)? "\n" _
+    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number / QuotedString / Boolean)? __ "\n" _
     {
-        body = body === null ? [] : body;
-        if (!isArray(body)) {
-            body = [body];
+        params = params.map(function(a) { return a[0] })
+        if (params.length > 0 && body.kind !== "Block") {
+            throw SyntaxError("Invalid definition '+ "+
+                                name.value+" "+params.map(function(p){return p.value}).join(" ")+" ="+
+                                "'. Parameters are not allowed in definitions where the right side is not a Block. The given right side is a "+body.kind+".")
         }
         return {
             kind: "Definition",
             name: name,
+            parameters: params,
             body: body,
-            location: location()
+            //location: location()
         }
     }
 
 BlockDefinition
-    = "+" name:Identifier ":" _ body:(Indent ArrayElementList Dedent)
+    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Indent ArrayElementList Dedent)
     {
+        if (params.length > 0 && body.kind !== "Block") {
+            throw SyntaxError("Invalid definition '+ "+
+                                name.value+" "+params.map(function(p){return p.value}).join(" ")+" ="+
+                                "'. Parameters are not allowed in definitions where the right side is not a Block. The given right side is an Array.")
+        }
         return {
             kind: "Definition",
             name: name,
-            body: [{
+            parameters: params.map(function(a) { return a[0] }),
+            body: {
                 kind: "Array",
-                value: body[1]
-            }],
-            location: location()
+                elements: body[1]
+            },
+            //location: location()
         }
     }
-    / "+" name:Identifier ":" _ body:(Indent Content Dedent)
+    / "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Indent Content Dedent)
     {
-        for (var i=0; i<body[1].length; i++) {
-            if (!body[1][i].kind || body[1][i].kind !== "Definition")
-                if (body[1][i].kind !== "Comment")
-                    throw SyntaxError("Invalid definition for dictionary '"+name.value+"'. Dictionaries must be composed entirely of key/value pairs.")
+        if (params.length > 0 && body.kind !== "Block") {
+            throw SyntaxError("Invalid definition '+ "+
+                                name.value+" "+params.map(function(p){return p.value}).join(" ")+" ="+
+                                "'. Parameters are not allowed in definitions where the right side is not a Block. The given right side is a Dictionary.")
         }
         return {
             kind: "Definition",
             name: name,
-            body: [{
+            parameters: params.map(function(a) { return a[0] }),
+            body: {
                 kind: "Dictionary",
-                value: body[1]
-            }],
-            location: location()
+                entries: body[1]
+            },
+            //location: location()
         }
     }
 
+//--------------------------------------------------------------------------
+// ARRAYS
+// (array element lists, line elements, block elements)
+//--------------------------------------------------------------------------
+
 ArrayElementList
-    = (Comment / LineArrayElement / BlockArrayElement)*
+    = (LineArrayElement / BlockArrayElement)*
 
 LineArrayElement
     = __ "-" " "? value:(Number / QuotedString / Boolean) "\n"
@@ -134,7 +230,7 @@ LineArrayElement
         return {
             kind: "ArrayElement",
             value: value,
-            location: location()
+            //location: location()
         }
     }
 
@@ -145,52 +241,72 @@ BlockArrayElement
             kind: "ArrayElement",
             value: {
                 kind: "Array",
-                value: body[1]
+                elements: body[1]
             },
-            location: location()
+            //location: location()
         }
      }
      / __ "-" body:(Indent Content Dedent)
      {
         for (var i=0; i<body[1].length; i++) {
             if (!body[1][i].kind || body[1][i].kind !== "Definition")
-                if (body[1][i].kind !== "Comment")
-                    throw SyntaxError("Invalid definition for dictionary '"+name.value+"'. Dictionaries must be composed entirely of key/value pairs.")
+                throw SyntaxError("Invalid definition for dictionary '"+name.value+"'. Dictionaries must be composed entirely of key/value pairs.")
         }
         return {
             kind: "ArrayElement",
             value: {
                 kind: "Dictionary",
-                value: body[1]
+                entries: body[1],
+                //location: location()
             },
-            location: location()
+            //location: location()
         }
      }
 
+//--------------------------------------------------------------------------
+// INTERPOLATION & FILTERS
+// (interpolations, filters, filter arguments, arguments)
+//--------------------------------------------------------------------------
+
 Interpolation
-    = "{" " "? id:(DirectoryPath / IdentifierComplex / Identifier) " "? __ filters:Filter* "}"
+    = "{" " "? id:(Path / IdentifierComplex / Identifier) " "? __ filters:("|" __ Filter)* "}"
     {
         return {
             kind: "Interpolation",
             name: id,
-            isMacroCall: undefined, //TODO: do we need this?
-            filters: filters,
-            location: location()
+            filters: filters.length === 0 ? null : {
+                kind: "FilterSequence",
+                sequence: filters.map(function(f) { return f[2] }),
+                //location: location() //TODO: close, but not accurate
+            },
+            //location: location()
         }
     }
 
 FilterArgument "a filter argument"
-    = __ arg:Argument
-    { return arg }
+    = __ "(" filter0:Filter? filters:("|" __ Filter)* ")"
+    {
+        filter0 = filter0 === null ? [] : [filter0]
+        filters = filters.map(function(f) { return f[2] })
+        return {
+            kind: "FilterSequence",
+            sequence: filter0.concat(filters),
+            //location: location()
+        }
+    }
+    / __ arg:Argument
+    {
+        return arg
+    }
 
 Filter "a filter"
-    = "|" __ name:Identifier args:FilterArgument* __
+    = name:Identifier args:FilterArgument* __
     {
         return {
             kind: "Filter",
             name: name,
             arguments: args,
-            location: location()
+            //location: location()
         }
     }
 
@@ -204,25 +320,27 @@ ArgumentList
         return [first].concat(newRest);
     }
 
+//--------------------------------------------------------------------------
+// IDENTIFIERS
+// (identifiers, modifiers)
+//--------------------------------------------------------------------------
+
 Identifier
-    = id:([\$a-zA-Z] [a-zA-Z0-9_-]*)
+    = id:([\$_a-zA-Z] [a-zA-Z0-9_\-\$]*)
     {
         return {
             kind: "Identifier",
             value: id[0].concat(id[1].join("")),
-            location: location()
+            modifiers: [],
+            //location: location()
         }
     }
 
 IdentifierComplex
-    = ident:([\$a-zA-z] [a-zA-Z0-9_-]*) mods:Modifier+
+    = ident:Identifier mods:Modifier+
     {
-        return {
-            kind: "Identifier",
-            value: ident[0].concat(ident[1].join("")),
-            modifiers: mods,
-            location: location()
-        }
+        ident.modifiers = mods
+        return ident
     }
 
 Modifier
@@ -231,7 +349,7 @@ Modifier
         return {
             kind: "Modifier",
             value: mod,
-            location: location()
+            //location: location()
         }
     }
     / ("[" mod:(Number / QuotedString / Identifier) "]")
@@ -239,7 +357,51 @@ Modifier
         return {
             kind: "Modifier",
             value: mod,
-            location: location()
+            //location: location()
+        }
+    }
+
+//--------------------------------------------------------------------------
+// HTML
+// (tags, attributes, doctypes)
+//--------------------------------------------------------------------------
+
+Doctype
+    = "@doctype " __ name:([^\n])+ "\n" _
+    {
+        return {
+            kind: "Doctype",
+            name: {
+                kind: "String",
+                value: name.join(""),
+                //location: location()
+            },
+            //location: location()
+        }
+    }
+
+//--------------------------------------------------------------------------
+// LITERALS
+// (quoted strings, numbers, booleans, comments)
+//--------------------------------------------------------------------------
+
+Path "a path to a file or directory"
+    = prefix:"/"?
+      part0:([a-zA-Z0-9-_\.]+)
+      parts:("/" ([a-zA-Z0-9_\.]+))*
+      ext:("." [a-zA-Z0-9]+)?
+      final:"/"?
+    {
+        prefix = prefix === null ? "" : prefix
+        final = final === null ? "" : final
+        ext = ext === null ? "" : "."+ext[1].join("");
+        var path = prefix + [part0.join("")]
+                    .concat(parts.map(function(a){return "/"+a[1].join("")}))
+                    .join("") + ext + final
+        return {
+            kind: "Path",
+            value: path,
+            //location: location()
         }
     }
 
@@ -249,7 +411,7 @@ QuotedString
         return {
             kind: "String",
             value: value[1].join(""),
-            location: location()
+            //location: location()
         }
     }
 
@@ -268,7 +430,7 @@ Number "a number"
         return {
             kind: "Number",
             value: value,
-            location: location()
+            //location: location()
         }
     }
 
@@ -278,50 +440,9 @@ Boolean "a boolean value"
         return {
             kind: "Boolean",
             value: value === "true",
-            location: location()
+            //location: location()
         }
     }
-
-Text "plain text"
-    = text:[^⇐⇒@{}\\#]+
-    {
-        return {
-            kind: "String",
-            value: text.join("")
-        }
-    }
-
-DirectoryPath "a path to a directory"
-    = parts:("/" [a-zA-Z] [a-zA-Z0-9_-]*)+ ext:("." [a-zA-Z0-9]+)?
-    {
-        var mergedParts = parts.map(function(p) {
-            return p[0]+p[1]+p[2].join("");
-        }).join("");
-        if (ext !== null) {
-            mergedParts += "."+ext[1].join("");
-        }
-        return {
-            kind: "String",
-            value: mergedParts
-        }
-    }
-
-FilePath "a relative path name"
-    = prefix:"/"? part0:([a-zA-Z0-9-_]+ / "." ".")
-      parts:("/" ([a-zA-Z0-9-_]+ / "." "."))* ext:("." [a-zA-Z0-9]+)?
-    {
-        prefix = prefix === null ? "" : prefix
-        ext = ext === null ? "" : "."+ext[1].join("");
-        return prefix + [part0.join("")]
-                    .concat(parts.map(function(a){return "/"+a[1].join("")}))
-                    .join("") + ext;
-    }
-
-Indent "an indent"
-    = _ "⇒" _
-
-Dedent "a dedent"
-    = _ "⇐" _
 
 Comment "a comment"
     = LineComment //possible todo: block comments
@@ -332,11 +453,37 @@ LineComment
         return {
             kind: "Comment",
             value: value.join(""),
-            location: location()
+            //location: location()
         }
     }
+
+//--------------------------------------------------------------------------
+// MISCELLANEOUS
+// (indents, whitespace)
+//--------------------------------------------------------------------------
+
+Indent "an indent"
+    = _ "⇒" _
+
+Dedent "a dedent"
+    = _ "⇐" _
 
 _ "whitespace"
     = [ \t\n\r]*
 __
     = [ ]*
+
+//--------------------------------------------------------------------------
+// DEPRECATED?
+// (not sure about these, move elsewhere or do not use)
+//--------------------------------------------------------------------------
+
+Text "plain text"
+    = text:[^⇐⇒@{}\\#]+
+    {
+        return {
+            kind: "String",
+            value: text.join("")
+        }
+    }
+
