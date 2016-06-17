@@ -160,7 +160,11 @@ If "an if statement"
             predicate: predicate,
             negated: not !== null,
             filters: filters.length === 0 ? null :
-                filters.map(function(f) { return f[2] }),
+                {
+                    kind: "FilterSequence",
+                    sequence: filters.map(function(f) { return f[2] }),
+                    //location: location()
+                },
             thenCase: thenCase === null ? null : thenCase[1],
             elifCases: elifCases,
             elseCase: elseCase,
@@ -179,7 +183,7 @@ Elif "an elif case"
             kind: "IfStatement",
             predicate: predicate,
             negated: not !== null,
-            thenCase: body === null ? [] : body[1]
+            thenCase: body === null ? null : body[1]
         }
     }
 
@@ -189,11 +193,7 @@ Else "an else case"
         if (extra.length > 0) {
             throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of elif statement. If you meant to add a filter, precede this text with a '|' character.")
         }
-        return {
-            kind: "Block",
-            contents: body === null ? [] : body[1],
-            //location: location()
-        }
+        return body === null ? null : body[1]
     }
 
 //--------------------------------------------------------------------------
