@@ -28,7 +28,7 @@
 >ast-node with
     + node =
         + kind = "ArrayElement"
-        + value = {Block} | {Number} | {String} | {Boolean}
+        + body = {Block} | {Dictionary} | {Array} | {Number} | {String} | {Boolean}
         + location = ...
 
 ##-------------------------------------------------------------------------
@@ -210,7 +210,7 @@
         + predicate = {Identifier}
         + negated = a boolean literal
         + filters = {FilterSequence} | null
-        + thenCase = {Block}
+        + thenCase = {Block} | null
         + elifCases =
             - {If}
         + elseCase = {Block} | null
@@ -246,6 +246,8 @@
     + node =
         + kind = "Interpolation"
         + name = {Identifier} | {Path}
+        + arguments =
+            - {Identifier} | {String} | {Number} | {Boolean}
         + filters = {FilterSequence} | null
         + location = ...
 
@@ -256,7 +258,7 @@
 >ast-node with
     + node =
         + kind = "Modifier"
-        + value = {Identifier} | {String} | {Number}
+        + value = {String} | {Number}
         + location = ...
 
 ##-------------------------------------------------------------------------
@@ -296,6 +298,7 @@
 >ast-node with
     + node =
         + kind = "String"
+        + quoted = a boolean literal
         + value = a string literal
         + location = ...
 

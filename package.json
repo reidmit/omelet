@@ -26,7 +26,7 @@
   "directories": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/reid47/omelet-lang.git"
+    "url": "git+https://github.com/reid47/omelet.git"
   },
   "keywords": [
     "parser",
@@ -36,7 +36,7 @@
     "language"
   ],
   "bugs": {
-    "url": "https://github.com/reid47/omelet-lang/issues"
+    "url": "https://github.com/reid47/omelet/issues"
   },
-  "homepage": "https://github.com/reid47/omelet-lang#readme"
+  "homepage": "https://github.com/reid47/omelet#readme"
 }

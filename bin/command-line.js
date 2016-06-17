@@ -125,6 +125,5 @@ function writeAllFiles(fileInfo) {
         context: config.context || {},
         permalinks: config.permalinks || false
     })
-
     om.render(fileInfo)
 }

@@ -32,17 +32,12 @@
     }
 
     var reserved = {
-        "for": true,
-        "if": true,
-        "elif": true,
-        "else": true,
-        "include": true,
-        "import": true,
-        "extend": true
+        "for": true, "if": true, "elif": true, "else": true,
+        "include": true, "import": true, "extend": true
     }
 }
 
-Document = top:(Comment / Extend / Import)* content:Content
+Document = _ top:(Comment / Extend / Import)* content:Content
 {
     var comments = []
     var extend = null
@@ -80,7 +75,17 @@ Content
     = Expression*
 
 Expression
-    = Comment / For / Definition / Doctype / Interpolation / Text
+    = Comment / For / If / Include / Definition / Doctype / Tag / Interpolation / Text
+
+Block
+    = elements:(Comment / For / If / Include / Doctype / Tag / Interpolation / Text)*
+    {
+        return {
+            kind: "Block",
+            contents: elements,
+            //location: location()
+        }
+    }
 
 //--------------------------------------------------------------------------
 // TOP-LEVEL STATEMENTS
@@ -120,7 +125,7 @@ Import "an import statement"
 //--------------------------------------------------------------------------
 
 For "a for loop"
-    = ">for" __ iterator:Identifier __ "in" __ data:(Identifier / Path) __ extra:([^\n\|]*) filters:("|" __ Filter)* "\n" body:(Indent Block Dedent)
+    = ">for " __ iterator:Identifier __ "in" __ data:(Identifier / Path) __ extra:([^\n\|]*) filters:("|" __ Filter)* "\n" body:(Indent Block Dedent)
     {
         if (extra.length > 0) {
             throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of for loop header. If you meant to add a filter, precede this text with a '|' character.")
@@ -136,12 +141,90 @@ For "a for loop"
         }
     }
 
-Block
-    = elements:(Comment / Interpolation / For / Text)*
+//--------------------------------------------------------------------------
+// IF / ELIF / ELSE
+// (& related things)
+//--------------------------------------------------------------------------
+
+If "an if statement"
+    = ">if " __ not:"not "? __ predicate:(IdentifierComplex / Identifier) __ extra:([^\n\|]*) filters:("|" __ Filter)* "\n"
+        thenCase:(Indent Block Dedent)?
+        elifCases:Elif*
+        elseCase:Else?
     {
+        if (extra.length > 0) {
+            throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of if statement. If you meant to add a filter, precede this text with a '|' character.")
+        }
+        return {
+            kind: "If",
+            predicate: predicate,
+            negated: not !== null,
+            filters: filters.length === 0 ? null :
+                filters.map(function(f) { return f[2] }),
+            thenCase: thenCase === null ? null : thenCase[1],
+            elifCases: elifCases,
+            elseCase: elseCase,
+            //location: location()
+        }
+    }
+
+Elif "an elif case"
+    = ">elif " __ not:"not "? __ predicate:(IdentifierComplex / Identifier) __ extra:([^\n\|]*) filters:("|" __ Filter)* "\n"
+        __ body:(Indent Block Dedent)?
+    {
+        if (extra.length > 0) {
+            throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of elif statement. If you meant to add a filter, precede this text with a '|' character.")
+        }
+        return {
+            kind: "IfStatement",
+            predicate: predicate,
+            negated: not !== null,
+            thenCase: body === null ? [] : body[1]
+        }
+    }
+
+Else "an else case"
+    = ">else" __ extra:([^\n\|]*) "\n" __ body:(Indent Block Dedent)?
+    {
+        if (extra.length > 0) {
+            throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of elif statement. If you meant to add a filter, precede this text with a '|' character.")
+        }
         return {
             kind: "Block",
-            contents: elements,
+            contents: body === null ? [] : body[1],
+            //location: location()
+        }
+    }
+
+//--------------------------------------------------------------------------
+// INCLUDES & MACRO CALLS
+// (>include /file with, >macro with, etc.)
+//--------------------------------------------------------------------------
+
+Include "an include"
+    = ">include " __ path:(Path / IdentifierComplex / Identifier) __
+        context:("with" Indent Definition* Dedent)?
+    {
+        if (path.kind === "Identifier") {
+            throw SyntaxError("Invalid include statement '>include "+path.value+"'. To include a variable, use '>"+path.value+"'.")
+        }
+        return {
+            kind: "Include",
+            included: path,
+            context: context === null ? null : context[2],
+            //location: location()
+        }
+    }
+    / ">"__ id:(Path / IdentifierComplex / Identifier) __
+        context:("with" Indent Definition* Dedent)?
+    {
+        if (id.kind === "Path") {
+            throw SyntaxError("Invalid include statement '>include "+id.value+"'. To include an external file, use '>include "+id.value+"'.")
+        }
+        return {
+            kind: "Include",
+            included: id,
+            context: context === null ? null : context[2],
             //location: location()
         }
     }
@@ -161,7 +244,7 @@ Definition "a definition"
     }
 
 LineDefinition
-    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number / QuotedString / Boolean)? __ "\n" _
+    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number / QuotedString / Boolean / LineTag / LineOfText)? __ "\n" _
     {
         params = params.map(function(a) { return a[0] })
         if (params.length > 0 && body.kind !== "Block") {
@@ -181,15 +264,15 @@ LineDefinition
 BlockDefinition
     = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Indent ArrayElementList Dedent)
     {
-        if (params.length > 0 && body.kind !== "Block") {
+        if (params.length > 0) {
             throw SyntaxError("Invalid definition '+ "+
-                                name.value+" "+params.map(function(p){return p.value}).join(" ")+" ="+
+                                name.value+" "+params.map(function(p){return p[0].value}).join(" ")+" ="+
                                 "'. Parameters are not allowed in definitions where the right side is not a Block. The given right side is an Array.")
         }
         return {
             kind: "Definition",
             name: name,
-            parameters: params.map(function(a) { return a[0] }),
+            parameters: [],
             body: {
                 kind: "Array",
                 elements: body[1]
@@ -197,21 +280,31 @@ BlockDefinition
             //location: location()
         }
     }
-    / "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Indent Content Dedent)
+    / "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Indent Definition* Dedent)
     {
-        if (params.length > 0 && body.kind !== "Block") {
+        if (params.length > 0) {
             throw SyntaxError("Invalid definition '+ "+
-                                name.value+" "+params.map(function(p){return p.value}).join(" ")+" ="+
+                                name.value+" "+params.map(function(p){return p[0].value}).join(" ")+" ="+
                                 "'. Parameters are not allowed in definitions where the right side is not a Block. The given right side is a Dictionary.")
         }
         return {
             kind: "Definition",
             name: name,
-            parameters: params.map(function(a) { return a[0] }),
+            parameters: [],
             body: {
                 kind: "Dictionary",
                 entries: body[1]
             },
+            //location: location()
+        }
+    }
+    / "+" __ name:Identifier __ params:(Identifier __)* "=" body:(Indent Block Dedent)
+    {
+        return {
+            kind: "Definition",
+            name: name,
+            parameters: params.map(function(a) { return a[0] }),
+            body: body === null ? body : body[1],
             //location: location()
         }
     }
@@ -269,15 +362,63 @@ BlockArrayElement
 //--------------------------------------------------------------------------
 
 Interpolation
-    = "{" " "? id:(Path / IdentifierComplex / Identifier) " "? __ filters:("|" __ Filter)* "}"
+    = "{" openTag:OpenTag contents:(Text / Interpolation)* "}"
     {
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class"),
+                //location: location()
+            };
+            var curr = o;
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = {
+                    kind: "Block",
+                    contents: [{
+                        kind: "Tag",
+                        name: openTag[i].value,
+                        attributes: mergeAttributes(openTag[i].attributes,"class"),
+                        //location: location()
+                    }],
+                    //location: location()
+                }
+                curr = curr.inner.contents[0];
+            }
+            curr.inner = {
+                kind: "Block",
+                contents: contents,
+                //location: location()
+            }
+            return o;
+        } else {
+            return {
+                kind: "Tag",
+                name: openTag.value,
+                attributes: mergeAttributes(openTag.attributes,"class"),
+                inner: {
+                    kind: "Block",
+                    contents: contents,
+                    //location: contents.length > 0 ? contents[0].location : location()
+                },
+                //location: location()
+            }
+        }
+    }
+    / "{" " "? id:(Path / IdentifierComplex / Identifier) args:ArgumentList? __ filters:("|" __ Filter)* "}"
+    {
+        filters = filters.map(function(f) { return f[2] })
         return {
             kind: "Interpolation",
             name: id,
+            arguments: args === null ? [] : args,
             filters: filters.length === 0 ? null : {
                 kind: "FilterSequence",
-                sequence: filters.map(function(f) { return f[2] }),
-                //location: location() //TODO: close, but not accurate
+                sequence: filters,
+                //location: {
+                //  start: filters[0].location.start,
+                //    end: filters[filters.length-1].location.end
+                //}
             },
             //location: location()
         }
@@ -314,9 +455,9 @@ Argument "an argument"
     = QuotedString / Number / Boolean / IdentifierComplex / Identifier
 
 ArgumentList
-    = first:Argument __ rest:("," __ Argument)*
+    = " " first:Argument __ rest:(__ Argument)*
     {
-        var newRest = rest.map(function(a) { return a[2] });
+        var newRest = rest.map(function(a) { return a[1] });
         return [first].concat(newRest);
     }
 
@@ -346,13 +487,14 @@ IdentifierComplex
 Modifier
     = ("." mod:Identifier)
     {
+        mod.kind = "String"
         return {
             kind: "Modifier",
             value: mod,
             //location: location()
         }
     }
-    / ("[" mod:(Number / QuotedString / Identifier) "]")
+    / ("[" mod:(Number / QuotedString) "]")
     {
         return {
             kind: "Modifier",
@@ -365,6 +507,280 @@ Modifier
 // HTML
 // (tags, attributes, doctypes)
 //--------------------------------------------------------------------------
+
+Tag "a tag"
+    = RawTag / LineTag / BlockTag
+
+RawTag
+    = openTag:OpenTag __ "<<<" r:(!">>>" r:. {return r})* ">>>"
+    {
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class"),
+                //location: location()
+            }
+            var curr = o
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = {
+                    kind: "Block",
+                    contents: [{
+                        kind: "Tag",
+                        name: openTag[i].value,
+                        attributes: mergeAttributes(openTag[i].attributes,"class"),
+                        //location: location()
+                    }],
+                    //location: location()
+                }
+                curr = curr.inner.contents[0]
+            }
+            curr.inner = {
+                kind: "Raw",
+                value: r.join("").replace(/\n[⇐⇒]/g,""),
+                //location: location()
+            };
+
+            return o;
+        } else {
+            return {
+                kind: "Tag",
+                name: openTag.value,
+                attributes: mergeAttributes(openTag.attributes,"class"),
+                inner: {
+                    kind: "Raw",
+                    value: r.join("").replace(/\n[⇐⇒]/g,""),
+                    //location: location()
+                }
+            }
+        }
+    }
+
+LineTag
+    = openTag:OpenTag __ line:LineOfText "\n"? !Indent
+    {
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class")
+                //location: location()
+            }
+            var curr = o
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = {
+                    kind: "Block",
+                    contents: [{
+                        kind: "Tag",
+                        name: openTag[i].value,
+                        attributes: mergeAttributes(openTag[i].attributes,"class"),
+                        //location: location()
+                    }],
+                    //location: location()
+                }
+                curr = curr.inner.contents[0]
+            }
+            curr.inner = line
+            return o;
+        } else {
+            return {
+                kind: "Tag",
+                name: openTag.value,
+                attributes: mergeAttributes(openTag.attributes,"class"),
+                inner: line,
+                //location: location()
+            }
+        }
+    }
+
+BlockTag
+    = openTag:OpenTag inner:(Indent Block Dedent)
+    {
+        if (isArray(openTag)) {
+            var o = {
+                kind: "Tag",
+                name: openTag[0].value,
+                attributes: mergeAttributes(openTag[0].attributes,"class"),
+                //location: location()
+            }
+            var curr = o
+            for (var i=1; i<openTag.length; i++) {
+                curr.inner = {
+                    kind: "Block",
+                    contents: [{
+                        kind: "Tag",
+                        name: openTag[i].value,
+                        attributes: mergeAttributes(openTag[i].attributes,"class"),
+                        //location: location()
+                    }],
+                    //location: location()
+                }
+                curr = curr.inner.contents[0]
+            }
+            curr.inner = inner === null ? [] : inner[1]
+            return o
+        } else {
+            return {
+                kind: "Tag",
+                name: openTag.value,
+                attributes: mergeAttributes(openTag.attributes,"class"),
+                inner: inner === null ? [] : inner[1],
+                //location: location()
+            }
+        }
+    }
+
+OpenTag
+    = "@" first:SingleTag rest:("|" SingleTag)+ " "?
+    {
+        var newRest = rest.map(function(a) { return a[1]; });
+        return [first].concat(newRest)
+    }
+    / "@" single:SingleTag " "?
+    {
+        return single
+    }
+
+SingleTag
+    = tagName:TagName specialAttrs:SpecialAttribute* attrList:AttributeList?
+    {
+        var attrs = specialAttrs;
+        attrs = attrList === null ? specialAttrs : specialAttrs.concat(attrList);
+        return {
+            kind: "String",
+            value: tagName,
+            attributes: attrs,
+            //location: location()
+        }
+    }
+
+TagName "a tag name"
+    = tagName:([a-zA-Z] [a-zA-Z0-9\_\-\:]*)
+    {
+        return {
+            kind: "String",
+            value: tagName[0].concat(tagName[1].join("")),
+            //location: location()
+        }
+    }
+
+AttributeList
+    = "[" attrs:(Attribute _)+ "]"
+    { return attrs.map(function(a) { return a[0] }) }
+
+Attribute "an attribute"
+    = InterpolatedAttribute
+    / QuotedAttribute
+    / UnquotedAttribute
+    / EmptyAttribute
+
+InterpolatedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:Interpolation
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue,
+            //location: location()
+        }
+    }
+
+QuotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:QuotedString
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue,
+            //location: location()
+        }
+    }
+
+UnquotedAttribute
+    = attrName:AttributeName _ "=" _ attrValue:UnquotedAttributeValue
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrValue,
+            //location: location()
+        }
+    }
+
+EmptyAttribute
+    = attrName:AttributeName
+    {
+        return {
+            kind: "Attribute",
+            name: attrName,
+            value: attrName,
+            //location: location()
+        }
+    }
+
+/* TODO: single colons should be allowed here */
+AttributeName
+    = attrName:[^ \t\n\r\"\'\>\/\=\)\(\[\]\:]+
+    {
+        return {
+            kind: "String",
+            value: attrName.join(""),
+            //location: location()
+        }
+    }
+
+UnquotedAttributeValue
+    = attrValue:[^ \t\n\r\"\'\=\<\>\`\,\.\]]+
+    {
+        return {
+            kind: "String",
+            value: attrValue.join(""),
+            //location: location()
+        }
+    }
+
+SpecialAttribute
+    = ClassAttribute / IdAttribute
+
+ClassAttribute
+    = "." className:CSSSelectorString
+    {
+        return {
+            kind: "Attribute",
+            name: {
+                kind: "String",
+                value: "class",
+                //location: location()
+            },
+            value: className,
+            //location: location()
+        }
+    }
+
+IdAttribute
+    = "#" id:CSSSelectorString
+    {
+        return {
+            kind: "Attribute",
+            name: {
+                kind: "String",
+                value: "id",
+                //location: location()
+            },
+            value: id,
+            //location: location()
+        }
+    }
+
+CSSSelectorString
+    = id:([\$a-zA-Z] [a-zA-Z0-9_-]*)
+    {
+        return {
+            kind: "String",
+            value: id[0].concat(id[1].join("")),
+            //location: location()
+        }
+    }
 
 Doctype
     = "@doctype " __ name:([^\n])+ "\n" _
@@ -386,7 +802,7 @@ Doctype
 //--------------------------------------------------------------------------
 
 Path "a path to a file or directory"
-    = prefix:"/"?
+    = prefix:"/"
       part0:([a-zA-Z0-9-_\.]+)
       parts:("/" ([a-zA-Z0-9_\.]+))*
       ext:("." [a-zA-Z0-9]+)?
@@ -410,6 +826,7 @@ QuotedString
     {
         return {
             kind: "String",
+            quoted: true,
             value: value[1].join(""),
             //location: location()
         }
@@ -474,16 +891,64 @@ __
     = [ ]*
 
 //--------------------------------------------------------------------------
-// DEPRECATED?
-// (not sure about these, move elsewhere or do not use)
+// TEXT & SPECIAL CHARACTERS
 //--------------------------------------------------------------------------
 
+LineOfText
+    = text:[^\n⇐⇒{}]* other:(Interpolation [^\n⇐⇒{}]*)*
+    {
+        var line = [{
+            kind: "String",
+            value: text.join("")
+        }];
+        for (var i=0; i<other.length; i++) {
+            line.push(other[i][0]);
+            line.push({
+                kind: "String",
+                value: other[i][1].join("")
+            });
+        }
+        return {
+            kind: "Block",
+            contents: line,
+            //location: location()
+        };
+    }
+
 Text "plain text"
-    = text:[^⇐⇒@{}\\#]+
+    = text:[^⇐⇒@{}\\#+]+
     {
         return {
             kind: "String",
-            value: text.join("")
+            value: text.join(""),
+            //location: location()
+        }
+    }
+    / EscapedCharacter
+
+EscapedCharacter
+    = "\\" char:([{}@\\#>])?
+    {
+        return {
+            kind: "String",
+            value: char ? char : "\\",
+            //location: location()
+        }
+    }
+    / "#" !"#"
+    {
+        return {
+            kind: "String",
+            value: "#",
+            //location: location()
+        }
+    }
+    / "+" !(Identifier __ "=")
+    {
+        return {
+            kind: "String",
+            value: "+",
+            //location: location()
         }
     }
 
