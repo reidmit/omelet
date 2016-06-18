@@ -7,6 +7,11 @@ level of the Liquid templating engine - it explicitly disallows the
 embedding/execution of raw code to enforce the separation of model and
 view.
 
+    +preview title date url =
+        @li.post-preview
+          @span.post-title {post.title}
+          @span.post-date posted on {post.date}
+          @a[href={post.url}] read more...
     @html
       @head
         @title Hello, world!
@@ -14,14 +19,8 @@ view.
         @h1 Hey there...
         @p Check out my {@b|i blog posts} below:
         @ul
-          @@for post in /path/to/posts sortby date:
-            @li.post-preview
-              @span.post-title
-                {post.title}
-              @span.post-date
-                posted on {post.date}
-              @a[href={post.url}]
-                read more...
+          >for post in /path/to/posts | sortby "date":
+            {preview post.title post.date post.url}
 
 This project adheres to the [Open Code of Conduct][code-of-conduct]. By participating, you are expected to honor this code.
 [code-of-conduct]: https://github.com/reid47/omelet-lang/blob/master/CONDUCT.md
