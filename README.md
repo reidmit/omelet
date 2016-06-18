@@ -13,11 +13,16 @@ filters.
 
 Here's a simple example of what it looks like:
 
+    ## a macro called 'preview' that takes 3 parameters
+
     +preview title date url =
         @li.post-preview
           @span.post-title {post.title}
           @span.post-date posted on {post.date}
           @a[href={post.url}] read more...
+
+    ## some markup code, including a loop iterating over files in
+    ## the /path/to/posts directory and a call to 'preview' macro
 
     @html
       @head
