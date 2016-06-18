@@ -135,7 +135,11 @@ For "a for loop"
             iterator: iterator,
             data: data,
             filters: filters.length === 0 ? null :
-                filters.map(function(f) { return f[2] }),
+                {
+                    kind: "FilterSequence",
+                    sequence: filters.map(function(f) { return f[2] }),
+                    //location: location()
+                },
             body: body[1],
             //location: location()
         }
@@ -244,10 +248,14 @@ Definition "a definition"
     }
 
 LineDefinition
-    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number / QuotedString / Boolean / LineTag / LineOfText)? __ "\n" _
+   // = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number / QuotedString / Boolean / LineTag / LineOfText)? __ "\n" _
+    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number __ "\n" / QuotedString __ "\n" / Boolean __ "\n" / LineTag __ "\n" / LineOfText __ "\n")? _
     {
+        if (body === null) {
+            throw SyntaxError("Incomplete definition of " + name.value + ".")
+        }
         params = params.map(function(a) { return a[0] })
-        if (params.length > 0 && body.kind !== "Block") {
+        if (params.length > 0 && body[0].kind !== "Block") {
             throw SyntaxError("Invalid definition '+ "+
                                 name.value+" "+params.map(function(p){return p.value}).join(" ")+" ="+
                                 "'. Parameters are not allowed in definitions where the right side is not a Block. The given right side is a "+body.kind+".")
@@ -256,7 +264,7 @@ LineDefinition
             kind: "Definition",
             name: name,
             parameters: params,
-            body: body,
+            body: body[0],
             //location: location()
         }
     }
@@ -343,7 +351,7 @@ BlockArrayElement
      {
         for (var i=0; i<body[1].length; i++) {
             if (!body[1][i].kind || body[1][i].kind !== "Definition")
-                throw SyntaxError("Invalid definition for dictionary '"+name.value+"'. Dictionaries must be composed entirely of key/value pairs.")
+                throw SyntaxError("Invalid definition for dictionary. Dictionaries must be composed entirely of key/value pairs.")
         }
         return {
             kind: "ArrayElement",
@@ -557,7 +565,7 @@ RawTag
     }
 
 LineTag
-    = openTag:OpenTag __ line:LineOfText "\n"? !Indent
+    = openTag:OpenTag __ line:LineOfText "\n" __ !Indent
     {
         if (isArray(openTag)) {
             var o = {
@@ -583,6 +591,7 @@ LineTag
             curr.inner = line
             return o;
         } else {
+
             return {
                 kind: "Tag",
                 name: openTag.value,
@@ -895,17 +904,19 @@ __
 //--------------------------------------------------------------------------
 
 LineOfText
-    = text:[^\n⇐⇒{}]* other:(Interpolation [^\n⇐⇒{}]*)*
+    = text:[^\n⇐⇒@{}]* other:(Interpolation [^\n⇐⇒@{}]*)*
     {
         var line = [{
             kind: "String",
-            value: text.join("")
+            value: text.join(""),
+            //location: location()
         }];
         for (var i=0; i<other.length; i++) {
             line.push(other[i][0]);
             line.push({
                 kind: "String",
-                value: other[i][1].join("")
+                value: other[i][1].join(""),
+                //location: location()
             });
         }
         return {
