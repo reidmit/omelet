@@ -209,7 +209,7 @@ Else "an else case"
 //--------------------------------------------------------------------------
 
 Include "an include"
-    = ">include " __ path:(Path / IdentifierComplex / Identifier) __
+    = ">include " __ path:Path __
         context:("with" Indent Definition* Dedent)?
     {
         if (path.kind === "Identifier") {
@@ -222,11 +222,11 @@ Include "an include"
             //location: location()
         }
     }
-    / ">"__ id:(Path / IdentifierComplex / Identifier) __
+    / ">"__ id:(IdentifierComplex / Identifier) __
         context:("with" Indent Definition* Dedent)?
     {
-        if (id.kind === "Path") {
-            throw SyntaxError("Invalid include statement '>include "+id.value+"'. To include an external file, use '>include "+id.value+"'.")
+        if (id.value === "include") {
+            throw SyntaxError("Invalid include statement '>include'. You must give a path to the included file.")
         }
         return {
             kind: "Include",

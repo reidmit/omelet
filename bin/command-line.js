@@ -2,14 +2,16 @@
 
 var omelet = require('../lib/omelet.js')
 var fs = require('fs')
+var path = require('path')
 var chokidar = require('chokidar')
 var glob = require('glob')
 var runtime = require('../lib/runtime.js')
 
 var inputFile = process.cwd() + '/' + (process.argv[2] || 'omelet-config.om')
-var fn = omelet.compile(inputFile)
+var fn = omelet.compile(inputFile,true)
 var html = fn({})
 console.log(html)
+fs.writeFileSync('ignored/outputs/test.html', html)
 
 // var configFile = process.argv[2] || 'omelet-config.js'
 // try {
