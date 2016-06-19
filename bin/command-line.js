@@ -6,9 +6,8 @@ var chokidar = require('chokidar')
 var glob = require('glob')
 var runtime = require('../lib/runtime.js')
 
-var inputFile = process.argv[2] || 'omelet-config.om'
-var str = fs.readFileSync(inputFile, 'utf8')
-var fn = omelet.compile(str)
+var inputFile = process.cwd() + '/' + (process.argv[2] || 'omelet-config.om')
+var fn = omelet.compile(inputFile)
 var html = fn({})
 console.log(html)
 

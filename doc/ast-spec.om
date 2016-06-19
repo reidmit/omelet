@@ -245,7 +245,7 @@
 >ast-node with
     + node =
         + kind = "Interpolation"
-        + name = {Identifier} | {Path}
+        + name = {Identifier}
         + arguments =
             - {Identifier} | {String} | {Number} | {Boolean}
         + filters = {FilterSequence} | null

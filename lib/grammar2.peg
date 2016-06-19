@@ -106,15 +106,18 @@ Extend "an extend statement"
     }
 
 Import "an import statement"
-    = ">import" __ file:Path __ "as" __ alias:Identifier __ extra:([^\n])* "\n" _
+    = ">import" __ file:Path __ alias:("as" __ Identifier)? __ extra:([^\n])* "\n" _
     {
+        if (alias === null) {
+            throw SyntaxError("Invalid import statement. You must provide an alias, like this: >import " + file.value + " as someAlias")
+        }
         if (extra.length > 0) {
             throw SyntaxError("Invalid characters '"+extra.join("")+"' found at end of import statement. An import statement must appear on a line by itself.")
         }
         return {
             kind: "Import",
             file: file,
-            alias: alias,
+            alias: alias[2],
             //location: location()
         }
     }
@@ -413,7 +416,7 @@ Interpolation
             }
         }
     }
-    / "{" " "? id:(Path / IdentifierComplex / Identifier) args:ArgumentList? __ filters:("|" __ Filter)* "}"
+    / "{" " "? id:(IdentifierComplex / Identifier) args:ArgumentList? __ filters:("|" __ Filter)* "}"
     {
         filters = filters.map(function(f) { return f[2] })
         return {
@@ -811,7 +814,7 @@ Doctype
 //--------------------------------------------------------------------------
 
 Path "a path to a file or directory"
-    = prefix:"/"
+    = prefix:"/"?
       part0:([a-zA-Z0-9-_\.]+)
       parts:("/" ([a-zA-Z0-9_\.]+))*
       ext:("." [a-zA-Z0-9]+)?
