@@ -299,6 +299,7 @@
     + node =
         + kind = "String"
         + quoted = a boolean literal
+        + noEscape = a boolean literal | undefined
         + value = a string literal
         + location = ...
 

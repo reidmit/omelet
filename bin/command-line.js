@@ -4,14 +4,35 @@ var omelet = require('../lib/omelet.js')
 var fs = require('fs')
 var path = require('path')
 var chokidar = require('chokidar')
+var program = require('commander')
 var glob = require('glob')
 var runtime = require('../lib/runtime.js')
 
-var inputFile = process.cwd() + '/' + (process.argv[2] || 'omelet-config.om')
-var fn = omelet.compile(inputFile,true)
-var html = fn({})
-console.log(html)
-fs.writeFileSync('ignored/outputs/test.html', html)
+program
+    .version('0.1.0')
+    .arguments('<input>')
+    .option('-w, --watch', 'watch input file for changes', false)
+    .parse(process.argv)
+
+// set defaults, if undefined
+program.watch = program.watch || false
+
+var inputFile = process.cwd() + '/' + program.args[0]
+
+function doIt() {
+    var fn = omelet.compile(inputFile,true)
+    var html = fn({})
+    console.log("rendering: "+inputFile+"\n")
+    console.log(html)
+    console.log()
+    fs.writeFileSync('ignored/outputs/test.html', html)
+}
+
+doIt()
+
+if (program.watch) {
+    chokidar.watch(inputFile).on('all', doIt)
+}
 
 // var configFile = process.argv[2] || 'omelet-config.js'
 // try {

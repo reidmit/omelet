@@ -75,10 +75,10 @@ Content
     = Expression*
 
 Expression
-    = Comment / For / If / Include / Definition / Doctype / Tag / Interpolation / Text
+    = Comment / MultiLineString / For / If / Include / Definition / Doctype / Tag / Interpolation / Text
 
 Block
-    = elements:(Comment / For / If / Include / Doctype / Tag / Interpolation / Text)*
+    = elements:(Comment / MultiLineString / For / If / Include / Doctype / Tag / Interpolation / Text)*
     {
         return {
             kind: "Block",
@@ -252,7 +252,7 @@ Definition "a definition"
 
 LineDefinition
    // = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number / QuotedString / Boolean / LineTag / LineOfText)? __ "\n" _
-    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number __ "\n" / QuotedString __ "\n" / Boolean __ "\n" / LineTag __ "\n" / LineOfText __ "\n")? _
+    = "+" __ name:Identifier __ params:(Identifier __)* "=" __ body:(Number __ "\n" / MultiLineString __ "\n" / QuotedString __ "\n" / Boolean __ "\n" / LineTag __ "\n" / LineOfText __ "\n")? _
     {
         if (body === null) {
             throw SyntaxError("Incomplete definition of " + name.value + ".")
@@ -523,7 +523,7 @@ Tag "a tag"
     = RawTag / LineTag / BlockTag
 
 RawTag
-    = openTag:OpenTag __ "<<<" r:(!">>>" r:. {return r})* ">>>"
+    = openTag:OpenTag __ raw:MultiLineString
     {
         if (isArray(openTag)) {
             var o = {
@@ -546,11 +546,7 @@ RawTag
                 }
                 curr = curr.inner.contents[0]
             }
-            curr.inner = {
-                kind: "Raw",
-                value: r.join("").replace(/\n[⇐⇒]/g,""),
-                //location: location()
-            };
+            curr.inner = raw;
 
             return o;
         } else {
@@ -558,11 +554,7 @@ RawTag
                 kind: "Tag",
                 name: openTag.value,
                 attributes: mergeAttributes(openTag.attributes,"class"),
-                inner: {
-                    kind: "Raw",
-                    value: r.join("").replace(/\n[⇐⇒]/g,""),
-                    //location: location()
-                }
+                inner: raw
             }
         }
     }
@@ -834,12 +826,24 @@ Path "a path to a file or directory"
     }
 
 QuotedString
-    = value:( "'" [^\']* "'" / '"' [^\"]* '"')
+    = MultiLineString
+    / value:( "'" [^\']* "'" / '"' [^\"]* '"')
     {
         return {
             kind: "String",
             quoted: true,
             value: value[1].join(""),
+            //location: location()
+        }
+    }
+
+MultiLineString
+    = '"""' noEscape:"~"? r:(!'"""' r:. {return r})* '"""'
+    {
+        return {
+            kind: "String",
+            noEscape: noEscape !== null,
+            value: r.join("").replace(/\n[⇐⇒]/g,"").replace(/\"/g,"\\\""),
             //location: location()
         }
     }
@@ -907,13 +911,9 @@ __
 //--------------------------------------------------------------------------
 
 LineOfText
-    = text:[^\n⇐⇒@{}]* other:(Interpolation [^\n⇐⇒@{}]*)*
+    = things:(TextWithoutNewlines / Interpolation)*
     {
-        var line = [{
-            kind: "String",
-            value: text.join(""),
-            //location: location()
-        }];
+        /*var line = [text];
         for (var i=0; i<other.length; i++) {
             line.push(other[i][0]);
             line.push({
@@ -921,16 +921,27 @@ LineOfText
                 value: other[i][1].join(""),
                 //location: location()
             });
-        }
+        }*/
         return {
             kind: "Block",
-            contents: line,
+            contents: things,
             //location: location()
         };
     }
 
+TextWithoutNewlines "plain text"
+    = text:[^\n⇐⇒@{\\#\+]+
+    {
+        return {
+            kind: "String",
+            value: text.join(""),
+            //location: location()
+        }
+    }
+    / EscapedCharacter
+
 Text "plain text"
-    = text:[^⇐⇒@{}\\#+]+
+    = text:[^⇐⇒@{\\#\+]+
     {
         return {
             kind: "String",
@@ -941,7 +952,7 @@ Text "plain text"
     / EscapedCharacter
 
 EscapedCharacter
-    = "\\" char:([{}@\\#>])?
+    = "\\" char:([{@\\#>])
     {
         return {
             kind: "String",
