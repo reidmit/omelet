@@ -246,6 +246,8 @@
     + node =
         + kind = "Interpolation"
         + name = {Identifier}
+        + positionalArgs = a boolean literal
+        + context = {Dictionary} | null
         + arguments =
             - {Identifier} | {String} | {Number} | {Boolean}
         + filters = {FilterSequence} | null

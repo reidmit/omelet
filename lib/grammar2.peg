@@ -422,6 +422,8 @@ Interpolation
         return {
             kind: "Interpolation",
             name: id,
+            positionalArgs: true,
+            context: null,
             arguments: args === null ? [] : args,
             filters: filters.length === 0 ? null : {
                 kind: "FilterSequence",
