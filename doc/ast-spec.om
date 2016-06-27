@@ -11,29 +11,6 @@
                 @li {key} - {node[key]}
 
 ##-------------------------------------------------------------------------
-## Array
-##-------------------------------------------------------------------------
-
->ast-node with
-    + node =
-        + kind = "Array"
-        + elements =
-            - {ArrayElement}
-        + line = a number literal
-        + lineEnd = a number literal
-
-##-------------------------------------------------------------------------
-## ArrayElement
-##-------------------------------------------------------------------------
-
->ast-node with
-    + node =
-        + kind = "ArrayElement"
-        + body = {Block} | {Dictionary} | {Array} | {Number} | {String} | {Boolean}
-        + line = a number literal
-        + lineEnd = a number literal
-
-##-------------------------------------------------------------------------
 ## Attribute
 ##-------------------------------------------------------------------------
 
@@ -53,6 +30,7 @@
     + node =
         + kind = "Block"
         + contents =
+            - {Definition}
             - {Comment}
             - {Include}
             - {For}
@@ -95,7 +73,7 @@
         + name = {Identifier}
         + parameters =
             - {Identifier}
-        + body = {Block} | {Dictionary} | {Array} | {Number} | {String} | {Boolean} | null
+        + body = {Block} | {Dictionary} | {Array} | {Number} | {String} | {Boolean}
         + line = a number literal
         + lineEnd = a number literal
 
@@ -107,7 +85,7 @@
     + node =
         + kind = "Dictionary"
         + entries =
-            - {Definition}
+            - {Definition} | {Comment}
         + line = a number literal
         + lineEnd = a number literal
 
@@ -273,13 +251,48 @@
         + lineEnd = a number literal
 
 ##-------------------------------------------------------------------------
+## List
+##-------------------------------------------------------------------------
+
+>ast-node with
+    + node =
+        + kind = "List"
+        + elements =
+            - {ListElement} | {Comment}
+        + line = a number literal
+        + lineEnd = a number literal
+
+##-------------------------------------------------------------------------
+## ListElement
+##-------------------------------------------------------------------------
+
+>ast-node with
+    + node =
+        + kind = "ListElement"
+        + body = {Block} | {Dictionary} | {Array} | {Number} | {String} | {Boolean}
+        + line = a number literal
+        + lineEnd = a number literal
+
+##-------------------------------------------------------------------------
+## Mode
+##-------------------------------------------------------------------------
+
+>ast-node with
+    + node =
+        + kind = "Mode"
+        + name = a string literal
+        + value = a string literal
+        + line = a number literal
+        + lineEnd = a number literal
+
+##-------------------------------------------------------------------------
 ## Modifier
 ##-------------------------------------------------------------------------
 
 >ast-node with
     + node =
         + kind = "Modifier"
-        + value = {String} | {Number}
+        + value = {String} | {Number} | {Identifier}
         + line = a number literal
         + lineEnd = a number literal
 
