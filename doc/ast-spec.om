@@ -242,6 +242,7 @@
     + node =
         + kind = "Interpolation"
         + name = {Identifier}
+        + leaveUnescaped = a boolean literal
         + positionalArgs = a boolean literal
         + context = {Dictionary} | null
         + arguments =

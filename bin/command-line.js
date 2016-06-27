@@ -21,10 +21,10 @@ var inputFile = process.cwd() + '/' + program.args[0]
 
 function doIt() {
     var fn = omelet.compile(inputFile,true)
-    // var html = fn({})
-    // console.log("rendering: "+inputFile+"\n")
-    // console.log(html)
-    // console.log()
+    var html = fn({})
+    console.log("rendering: "+inputFile+"\n")
+    console.log(html)
+    console.log()
     // fs.writeFileSync('ignored/outputs/test.html', html)
 }
 
