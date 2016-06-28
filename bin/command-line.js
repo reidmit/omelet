@@ -20,7 +20,7 @@ program.watch = program.watch || false
 var inputFile = process.cwd() + '/' + program.args[0]
 
 function doIt() {
-    var fn = omelet.compile(inputFile,true)
+    var fn = omelet.compile(inputFile)
     var html = fn({})
     console.log("rendering: "+inputFile+"\n")
     console.log(html)
