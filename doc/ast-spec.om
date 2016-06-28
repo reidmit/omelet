@@ -73,7 +73,7 @@
         + name = {Identifier}
         + parameters =
             - {Identifier}
-        + body = {Block} | {Dictionary} | {Array} | {Number} | {String} | {Boolean}
+        + body = {Block} | {Dictionary} | {List} | {Number} | {String} | {Boolean}
         + line = a number literal
         + lineEnd = a number literal
 
@@ -174,7 +174,7 @@
     + node =
         + kind = "For"
         + iterator = {Identifier}
-        + data = {Identifier} | {Path}
+        + data = {Identifier} | {Path} | {List}
         + filters = {FilterSequence} | null
         + body = {Block}
         + line = a number literal
@@ -270,7 +270,7 @@
 >ast-node with
     + node =
         + kind = "ListElement"
-        + body = {Block} | {Dictionary} | {Array} | {Number} | {String} | {Boolean}
+        + body = {Block} | {Dictionary} | {List} | {Number} | {String} | {Boolean}
         + line = a number literal
         + lineEnd = a number literal
 
@@ -353,6 +353,7 @@
         + name = a string literal
         + attributes =
             - {Attribute}
+        + tagStyle = "block" | "inline" | "interpolated"
         + inner = {Block} | {Raw}
         + line = a number literal
         + lineEnd = a number literal
