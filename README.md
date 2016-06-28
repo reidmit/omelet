@@ -31,7 +31,7 @@ Here's a simple example of what it looks like:
         @h1 Hey there...
         @p Check out my {@b|i blog posts} below:
         @ul
-          >for post in /path/to/posts | sortby "date":
+          >for post in /path/to/posts | sortby "date"
             {preview post.title post.date post.url}
 
 This project adheres to the [Open Code of Conduct][code-of-conduct]. By participating, you are expected to honor this code.
