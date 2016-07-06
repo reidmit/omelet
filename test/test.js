@@ -19,10 +19,9 @@ describe('Tags', function() {
     var context = {},
         options = {
             prettyPrint: false
-        },
-        examples
+        }
 
-    examples = [
+    var examples = [
         {
             name: 'plain tag',
             input: '@h1 hello, world!',
@@ -39,6 +38,11 @@ describe('Tags', function() {
             output: '<a class="className" id="anchor" href="#" target="_blank">click me</a>'
         },
         {
+            name: 'tags with boolean attributes',
+            input: '@input[type=checkbox checked]',
+            output: '<input type="checkbox" checked="checked"/>'
+        },
+        {
             name: 'multitags',
             input: '@b|i.classy|u testing',
             output: '<b><i class="classy"><u>testing</u></i></b>'
@@ -48,6 +52,32 @@ describe('Tags', function() {
     examples.forEach(function(example) {
         it('translates ' + example.name, function() {
             assert.equal(omeletToHtml(example.input), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'invalid characters in attributes',
+            input: '@div[key=val <] something',
+            error: /Lexer error/
+        },
+        {
+            name: 'malformed special attributes',
+            input: '@div.#idName',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing attribute value',
+            input: '@div[key=] ok',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
         })
     })
 })
@@ -315,7 +345,23 @@ describe('Filters', function() {
 
     examples.forEach(function(example) {
         it('correctly applies filter ' + example.name, function() {
-            assert.equal(omeletToHtml(example.input, context), example.output)
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var failing_examples = [
+        {
+            name: 'to_date can\'t convert input to a Date',
+            input: '{word | to_date}',
+            error: /Filter error/
+        }
+    ]
+
+    failing_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input, context, options)
+            }, example.err)
         })
     })
 })
@@ -324,10 +370,9 @@ describe('Doctypes', function() {
     var context = {},
         options = {
             prettyPrint: false
-        },
-        examples
+        }
 
-    examples = [
+    var examples = [
         {
             name: 'html',
             input: '@doctype html',
@@ -402,12 +447,218 @@ describe('Doctypes', function() {
             name: 'something_else',
             input: '@doctype something_else',
             output: '<!doctype something_else>'
+        },
+        {
+            name: 'empty (invalid) doctype',
+            input: '@doctype',
+            output: '<doctype></doctype>'
         }
     ]
 
     examples.forEach(function(example) {
         it('translates ' + example.name, function() {
-            assert.equal(omeletToHtml(example.input), example.output)
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+})
+
+describe('Comments', function() {
+    var context = {},
+        options = {
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'full-line comment',
+            input: '## this is a full-line comment\n',
+            output: ''
+        },
+        {
+            name: 'partial-line comment',
+            input: 'something ## this is a partial-line comment\n',
+            output: 'something '
+        },
+        {
+            name: 'escaped non-comment',
+            input: '#\\# this is not a comment',
+            output: '## this is not a comment'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+})
+
+describe('Interpolations', function() {
+    var context = {
+            word: 'omelet',
+            unsafe: '<script>&\'\"</script>',
+            number: 47
+        },
+        options = {
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'simple interpolation',
+            input: '{word}',
+            output: 'omelet'
+        },
+        {
+            name: 'auto-escaped interpolation',
+            input: '{unsafe}',
+            output: '&lt;script&gt;&amp;&apos;&quot;&lt;/script&gt;'
+        },
+        {
+            name: 'non-escaped interpolation',
+            input: '{~unsafe}',
+            output: '<script>&\'\"</script>'
+        },
+        {
+            name: 'tag interpolation',
+            input: 'hello {@b world}!',
+            output: 'hello <b>world</b>!'
+        },
+        {
+            name: 'tag interpolation across lines',
+            input: 'this is some text {@b that spans\nacross lines}!',
+            output: 'this is some text <b>that spans\nacross lines</b>!'
+        },
+        {
+            name: 'escaped non-interpolation',
+            input: 'this is \\{not an interpolation}',
+            output: 'this is {not an interpolation}'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'no variable name in interpolation',
+            input: 'bad: {}',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing closing brace',
+            input: 'bad: {word',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('If statements', function() {
+    var context = {
+            valueT: true,
+            valueF: false,
+            valueF2: false,
+            word: 'omelet',
+            empty: '',
+            nullValue: null
+        },
+        options = {
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'just if (true)',
+            input: '>if valueT\n  this',
+            output: 'this'
+        },
+        {
+            name: 'just if (false)',
+            input: '>if valueF\n  this',
+            output: ''
+        },
+        {
+            name: 'if with negated predicate',
+            input: '>if not valueF\n  this',
+            output: 'this'
+        },
+        {
+            name: 'if/else (true)',
+            input: '>if valueT\n  this\n>else\n  that',
+            output: 'this'
+        },
+        {
+            name: 'if/else (true)',
+            input: '>if valueF\n  this\n>else\n  that',
+            output: 'that'
+        },
+        {
+            name: 'elifs',
+            input: '>if valueF\n  one\n>elif valueF2\n  two\n>elif valueT\n  three',
+            output: 'three'
+        },
+        {
+            name: 'elif with negated predicate',
+            input: '>if valueF\n  one\n>elif not valueF2\n  two',
+            output: 'two'
+        },
+        {
+            name: 'filters on if predicate',
+            input: '>if word | length | gt 3\n  this\n>else\n  that',
+            output: 'this'
+        },
+        {
+            name: 'filters on elif predicate',
+            input: '>if valueF\n  one\n>elif word | length | gt 3\n  two\n>else\n  three',
+            output: 'two'
+        },
+        {
+            name: 'falsy predicate (null)',
+            input: '>if nullValue\n  this\n',
+            output: ''
+        },
+        {
+            name: 'falsy predicate (empty string)',
+            input: '>if empty\n  this\n',
+            output: ''
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'missing predicate after >if',
+            input: '>if \n  ok',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing predicate after >elif',
+            input: '>if valueF\n  this\n>elif \n  that',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
         })
     })
 })
