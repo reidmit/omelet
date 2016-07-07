@@ -46,6 +46,11 @@ describe('Tags', function() {
             name: 'multitags',
             input: '@b|i.classy|u testing',
             output: '<b><i class="classy"><u>testing</u></i></b>'
+        },
+        {
+            name: 'nested block tags',
+            input: '@div\n  @div\n    @h1 hello!\n  @div\n    @h2 hello!',
+            output: '<div><div><h1>hello!</h1></div><div><h2>hello!</h2></div></div>'
         }
     ]
 
@@ -349,7 +354,17 @@ describe('Filters', function() {
         })
     })
 
-    var failing_examples = [
+    var bad_examples = [
+        {
+            name: 'missing filter name after |',
+            input: '{word |}',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing closing paren around filter sequence',
+            input: '{listOfNumbers | map (gt 10}',
+            error: /Lexer error/
+        },
         {
             name: 'to_date can\'t convert input to a Date',
             input: '{word | to_date}',
@@ -357,7 +372,7 @@ describe('Filters', function() {
         }
     ]
 
-    failing_examples.forEach(function(example) {
+    bad_examples.forEach(function(example) {
         it('fails when ' + example.name, function() {
             assert.throws(function() {
                 omeletToHtml(example.input, context, options)
@@ -449,7 +464,12 @@ describe('Doctypes', function() {
             output: '<!doctype something_else>'
         },
         {
-            name: 'empty (invalid) doctype',
+            name: 'an empty (invalid) doctype',
+            input: '@doctype ',
+            output: '<doctype></doctype>'
+        },
+        {
+            name: 'a tag called @doctype',
             input: '@doctype',
             output: '<doctype></doctype>'
         }
@@ -571,7 +591,8 @@ describe('If statements', function() {
             valueF2: false,
             word: 'omelet',
             empty: '',
-            nullValue: null
+            nullValue: null,
+            list: [1,2,3,4,5]
         },
         options = {
             prettyPrint: false
@@ -599,7 +620,7 @@ describe('If statements', function() {
             output: 'this'
         },
         {
-            name: 'if/else (true)',
+            name: 'if/else (false)',
             input: '>if valueF\n  this\n>else\n  that',
             output: 'that'
         },
@@ -616,6 +637,11 @@ describe('If statements', function() {
         {
             name: 'filters on if predicate',
             input: '>if word | length | gt 3\n  this\n>else\n  that',
+            output: 'this'
+        },
+        {
+            name: 'higher-order filters on if predicate',
+            input: '>if list | filter (gt 3) | length | gt 0\n  this\n>else\n  that',
             output: 'this'
         },
         {
@@ -650,6 +676,453 @@ describe('If statements', function() {
         {
             name: 'missing predicate after >elif',
             input: '>if valueF\n  this\n>elif \n  that',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('Indents & newlines', function() {
+    var context = {},
+        options = {
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'indented, nested tags',
+            input: '@div hello\n@ul\n  @li|a[href=#] item\n  @li|a[href=#] item\n  @li|a[href=#]\n    @h1 headline',
+            output: '<div>hello</div><ul><li><a href="#">item</a></li><li><a href="#">item</a></li><li><a href="#"><h1>headline</h1></a></li></ul>'
+        },
+        {
+            name: '\\r\\n linebreaks',
+            input: '@div\r\n  @div hello, world',
+            output: '<div><div>hello, world</div></div>'
+        },
+        {
+            name: 'consecutive blank lines',
+            input: 'hello\n\n\n  \n  \n \n   \nworld',
+            output: 'hello\nworld'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'first line of input is indented',
+            input: '   hello!',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('Definitions', function() {
+    var context = {
+            word: 'omelet'
+        },
+        options = {
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'number definition (positive integer)',
+            input: '+ number = 47\n{number}, {number | type_of}',
+            output: '47, Number'
+        },
+        {
+            name: 'number definition (negative integer)',
+            input: '+ number = -47\n{number}, {number | type_of}',
+            output: '-47, Number'
+        },
+        {
+            name: 'number definition (positive float)',
+            input: '+ number = 47.1223\n{number}, {number | type_of}',
+            output: '47.1223, Number'
+        },
+        {
+            name: 'number definition (negative float)',
+            input: '+ number = -47.1223\n{number}, {number | type_of}',
+            output: '-47.1223, Number'
+        },
+        {
+            name: 'invalid number definition',
+            input: '+ notNumber = 47 is a good number\n{notNumber}',
+            output: '47 is a good number'
+        },
+        {
+            name: 'boolean definitions',
+            input: '+ one = true\n+ two = false\n{one}, {one | type_of}\n{two}, {two | type_of}',
+            output: 'true, Boolean\nfalse, Boolean'
+        },
+        {
+            name: 'invalid boolean definitions (actually strings)',
+            input: '+ three = True\n+ four = False\n+ five = true !\n+ six = false it is\n+ seven = "false"\n{three}, {three | type_of}\n{four}, {four | type_of}\n{five}, {five | type_of}\n{six}, {six | type_of}\n{seven}, {seven | type_of}',
+            output: 'True, String\nFalse, String\ntrue !, String\nfalse it is, String\nfalse, String'
+        },
+        {
+            name: 'quoted string definitions (single-quotes)',
+            input: '+ str = "hello..."\n{str}\n+ str2 = "it\'s me"\n{str2}',
+            output: 'hello...\nit&apos;s me'
+        },
+        {
+            name: 'quoted string definitions (double-quotes)',
+            input: '+ str = \'hello...\'\n{str}\n+ str2 = \'"it is me"\'\n{str2}',
+            output: 'hello...\n&quot;it is me&quot;'
+        },
+        {
+            name: 'unquoted line of text containing quotes',
+            input: '+ line = She sang, "Hello, it\'s me." It was great.\n{line}',
+            output: 'She sang, &quot;Hello, it&apos;s me.&quot; It was great.'
+        },
+        {
+            name: 'unquoted line of text beginning with a quote',
+            input: '+ line = "Hello, it\'s me," she sang.\n{line}',
+            output: '&quot;Hello, it&apos;s me,&quot; she sang.'
+        },
+        {
+            name: 'list of simple values',
+            input: '+ list =\n  - 47\n  - true\n  \n  - "quoted"\n  - hello, world!\n\n{list[0]}, {list[0] | type_of}\n{list[1]}, {list[1] | type_of}\n{list[2]}, {list[2] | type_of}\n{list[3]}, {list[3] | type_of}',
+            output: '47, Number\ntrue, Boolean\nquoted, String\nhello, world!, String'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'missing identifier after +',
+            input: '+ 47 = thing',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing =',
+            input: '+ thing\nok',
+            error: /Lexer error/
+        },
+        {
+            name: 'newline in quoted string',
+            input: '+ str = "hello...\nit\'s me"',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing end quote for quoted string',
+            input: '+ str = "hello... it\'s me',
+            error: /Lexer error/
+        },
+        {
+            name: 'empty definition',
+            input: '+ thing =\nok',
+            error: /Parser error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('Modifiers', function() {
+    var context = {
+            object: {
+                name: 'omelet',
+                list: [4, 8, 15, 16, 23, 42],
+                person: {
+                    name: 'reid',
+                    age: 22
+                },
+                3: 'indexed by number'
+            }
+        },
+        options = {
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'object property access with .key',
+            input: '{object.name}',
+            output: 'omelet'
+        },
+        {
+            name: 'object property access with ["key"]',
+            input: '{object["name"]}',
+            output: 'omelet'
+        },
+        {
+            name: 'object property access with [number]',
+            input: '{object[3]}',
+            output: 'indexed by number'
+        },
+        {
+            name: 'combination of modifiers',
+            input: '{object.person["name"]}',
+            output: 'reid'
+        },
+        {
+            name: 'array element access with [index]',
+            input: '{object.list[2]}',
+            output: '15'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'missing identifier after .',
+            input: '{object.}',
+            error: /Lexer error/
+        },
+        {
+            name: 'invalid modifier',
+            input: '{object[&]}',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing closing bracket ]',
+            input: '{object[name}',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('For loops', function() {
+    var context = {
+            items: [
+                {
+                    name: 'book',
+                    price: 15
+                },
+                {
+                    name: 'sandwich',
+                    price: 7
+                },
+                {
+                    name: 'coffee',
+                    price: 3
+                }
+            ],
+            list: [4, 8, 15, 16, 23, 42],
+            emptyList: []
+        },
+        options = {
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'loop over array of objects',
+            input: '>for item in items\n  the {item.name} costs ${item.price}\n\nonce',
+            output: 'the book costs $15\nthe sandwich costs $7\nthe coffee costs $3\nonce'
+        },
+        {
+            name: 'loop over array of numbers with filters',
+            input: '>for num in list | filter (gt 20)\n  greater than 20: {num}',
+            output: 'greater than 20: 23\ngreater than 20: 42\n'
+        },
+        {
+            name: 'loop over empty array',
+            input: '>for element in emptyList\n  this will never print',
+            output: ''
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'missing identifier after >for',
+            input: '>for \n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing \'in\' after identifier',
+            input: '>for item\n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing identifier after \'in\'',
+            input: '>for item in \n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing loop body',
+            input: '>for num in list\n  \nhello',
+            error: /Parser error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('Modes', function() {
+    var context = {},
+        options = {
+            modes: {
+                uppercase: function(input) {
+                    return input.toUpperCase()
+                },
+                bad: "hello!"
+            },
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'default mode (raw text)',
+            input: ':modeName\n  this is raw text in a default mode{\n  and {}it will be rendered\n  >exactly as it { was written}',
+            output: '\nthis is raw text in a default mode{\nand {}it will be rendered\n>exactly as it { was written}\n',
+        },
+        {
+            name: 'custom mode',
+            input: ':uppercase\n  this is raw text that will\n  be converted to uppercase\n  by the "uppercase" mode',
+            output: '\nTHIS IS RAW TEXT THAT WILL\nBE CONVERTED TO UPPERCASE\nBY THE "UPPERCASE" MODE\n'
+        },
+        {
+            name: 'invalid mode (not a function)',
+            input: ':bad\n  this text will not be changed',
+            output: '\nthis text will not be changed\n'
+        },
+        {
+            name: 'text beginning with : (not a mode)',
+            input: ': this is something else',
+            output: ': this is something else'
+        },
+        {
+            name: 'text beginning with :letters (not a mode)',
+            input: ':this looks like a mode at first, but is not',
+            output: ':this looks like a mode at first, but is not'
+        },
+        {
+            name: 'extra spaces after mode name',
+            input: ':uppercase   \n  this is raw text',
+            output: '\nTHIS IS RAW TEXT\n'
+        },
+        {
+            name: 'text following mode',
+            input: ':uppercase\n  this is\n  raw text\nand this is regular text',
+            output: '\nTHIS IS\nRAW TEXT\nand this is regular text'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+})
+
+describe('Imports', function() {
+    var context = {},
+        options = {
+            filePath: __dirname + '/test',
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'file import',
+            input: '>import testMacros as tm\n{tm.word}',
+            output: 'omelet'
+        },
+        {
+            name: 'file import with explicit file extension',
+            input: '>import testMacros.om as tm\n{tm.word}',
+            output: 'omelet'
+        },
+        {
+            name: 'directory import',
+            input: '>import-dir testPosts as posts\n>for post in posts\n  title: {post.title}',
+            output: 'title: the first post\ntitle: the second post\ntitle: the third post\n'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'missing path after \'>import\'',
+            input: '>import \n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing \'as\' after path',
+            input: '>import testMacros\n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing alias after \'as\'',
+            input: '>import testMacros as \n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing path after \'>import-dir\'',
+            input: '>import-dir \n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing \'as\' after path in import-dir',
+            input: '>import-dir testPosts\n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing alias after \'as\' in import-dir',
+            input: '>import-dir testPosts as \n',
             error: /Lexer error/
         }
     ]

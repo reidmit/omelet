@@ -217,8 +217,9 @@
 >ast-node with
     + node =
         + kind = "Import"
-        + file = {String}
-        + alias = {Identifier}
+        + style = "file" | "directory" | "tags"
+        + path = {String}
+        + alias = {Identifier} | null
         + line = a number literal
         + lineEnd = a number literal
 
