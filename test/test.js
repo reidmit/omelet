@@ -56,7 +56,7 @@ describe('Tags', function() {
 
     examples.forEach(function(example) {
         it('translates ' + example.name, function() {
-            assert.equal(omeletToHtml(example.input), example.output)
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
         })
     })
 
@@ -592,7 +592,7 @@ describe('If statements', function() {
             word: 'omelet',
             empty: '',
             nullValue: null,
-            list: [1,2,3,4,5]
+            list: [1, 2, 3, 4, 5]
         },
         options = {
             prettyPrint: false
@@ -1013,7 +1013,7 @@ describe('Modes', function() {
                 uppercase: function(input) {
                     return input.toUpperCase()
                 },
-                bad: "hello!"
+                bad: 'hello!'
             },
             prettyPrint: false
         }
@@ -1022,7 +1022,7 @@ describe('Modes', function() {
         {
             name: 'default mode (raw text)',
             input: ':modeName\n  this is raw text in a default mode{\n  and {}it will be rendered\n  >exactly as it { was written}',
-            output: '\nthis is raw text in a default mode{\nand {}it will be rendered\n>exactly as it { was written}\n',
+            output: '\nthis is raw text in a default mode{\nand {}it will be rendered\n>exactly as it { was written}\n'
         },
         {
             name: 'custom mode',
