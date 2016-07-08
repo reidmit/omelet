@@ -71,9 +71,10 @@
     + node =
         + kind = "Definition"
         + name = {Identifier}
+        + style = "default" | "tag" | "trait"
         + parameters =
             - {Identifier}
-        + body = {Block} | {Dictionary} | {List} | {Number} | {String} | {Boolean}
+        + body = {Block} | {Tag} | {Dictionary} | {List} | {Number} | {String} | {Boolean}
         + line = a number literal
         + lineEnd = a number literal
 
@@ -321,17 +322,6 @@
         + lineEnd = a number literal
 
 ##-------------------------------------------------------------------------
-## Raw
-##-------------------------------------------------------------------------
-
->ast-node with
-    + node =
-        + kind = "Raw"
-        + value = a string literal
-        + line = a number literal
-        + lineEnd = a number literal
-
-##-------------------------------------------------------------------------
 ## String
 ##-------------------------------------------------------------------------
 
@@ -354,8 +344,8 @@
         + name = a string literal
         + attributes =
             - {Attribute}
-        + tagStyle = "block" | "inline" | "interpolated"
-        + inner = {Block} | {Raw}
+        + tagStyle = "header-only" | "block" | "inline" | "interpolated"
+        + inner = {Block}
         + line = a number literal
         + lineEnd = a number literal
 

@@ -28,6 +28,7 @@ module.exports = {
             'error',
             {'allow': ['log', 'warn', 'error', 'time', 'timeEnd']}
         ],
+        'no-irregular-whitespace': 'error',
         'no-trailing-spaces': [
             'error',
             {'skipBlankLines': true }

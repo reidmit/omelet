@@ -1,0 +1,5 @@
+>extend base
+
++ theHead = the head is {subHead}
+
++ theBody = the body is {subBody}

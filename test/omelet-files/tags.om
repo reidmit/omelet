@@ -1,0 +1,3 @@
++nonTag = hello there!
+
++@special = @span.classy|b|i|u|a[href=#]

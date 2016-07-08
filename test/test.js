@@ -783,27 +783,47 @@ describe('Definitions', function() {
         {
             name: 'quoted string definitions (single-quotes)',
             input: '+ str = "hello..."\n{str}\n+ str2 = "it\'s me"\n{str2}',
-            output: 'hello...\nit&apos;s me'
+            output: 'hello...\nit\'s me'
         },
         {
             name: 'quoted string definitions (double-quotes)',
             input: '+ str = \'hello...\'\n{str}\n+ str2 = \'"it is me"\'\n{str2}',
-            output: 'hello...\n&quot;it is me&quot;'
+            output: 'hello...\n"it is me"'
         },
         {
             name: 'unquoted line of text containing quotes',
             input: '+ line = She sang, "Hello, it\'s me." It was great.\n{line}',
-            output: 'She sang, &quot;Hello, it&apos;s me.&quot; It was great.'
+            output: 'She sang, "Hello, it\'s me." It was great.'
         },
         {
             name: 'unquoted line of text beginning with a quote',
             input: '+ line = "Hello, it\'s me," she sang.\n{line}',
-            output: '&quot;Hello, it&apos;s me,&quot; she sang.'
+            output: '"Hello, it\'s me," she sang.'
         },
         {
             name: 'list of simple values',
             input: '+ list =\n  - 47\n  - true\n  \n  - "quoted"\n  - hello, world!\n\n{list[0]}, {list[0] | type_of}\n{list[1]}, {list[1] | type_of}\n{list[2]}, {list[2] | type_of}\n{list[3]}, {list[3] | type_of}',
             output: '47, Number\ntrue, Boolean\nquoted, String\nhello, world!, String'
+        },
+        {
+            name: 'list of objects',
+            input: '+ list =\n  -\n    + name = reid\n    + age = 22\n  -\n    + name = cecil\n    + age = 47\n\n{list[0].name}, {list[1].age}',
+            output: 'reid, 47'
+        },
+        {
+            name: 'custom tag definition & usage',
+            input: '+@box = @div.box[onclick="doSomething();"]\n@box hello!',
+            output: '<div class="box" onclick="doSomething();">hello!</div>'
+        },
+        {
+            name: 'custom tag usage with additional attributes',
+            input: '+@box = @div.box\n@box.classy[onclick="doSomething();"] hello!',
+            output: '<div class="box classy" onclick="doSomething();">hello!</div>'
+        },
+        {
+            name: 'definition with parameters',
+            input: '+headline title author =\n  @h1.headline {title}\n  @h6.byline by {author}\n\n{headline "hello!" "reid"}',
+            output: '<h1 class="headline">hello!</h1><h6 class="byline">by reid</h6>'
         }
     ]
 
@@ -838,6 +858,11 @@ describe('Definitions', function() {
             name: 'empty definition',
             input: '+ thing =\nok',
             error: /Parser error/
+        },
+        {
+            name: 'invalid tag definition',
+            input: '+@tag.invalidAttribute = @div',
+            error: /Lexer error/
         }
     ]
 
@@ -1073,18 +1098,23 @@ describe('Imports', function() {
     var examples = [
         {
             name: 'file import',
-            input: '>import testMacros as tm\n{tm.word}',
+            input: '>import omelet-files/testMacros as tm\n{tm.word}',
             output: 'omelet'
         },
         {
             name: 'file import with explicit file extension',
-            input: '>import testMacros.om as tm\n{tm.word}',
+            input: '>import omelet-files/testMacros.om as tm\n{tm.word}',
             output: 'omelet'
         },
         {
             name: 'directory import',
-            input: '>import-dir testPosts as posts\n>for post in posts\n  title: {post.title}',
+            input: '>import-dir omelet-files/testPosts as posts\n>for post in posts\n  title: {post.title}',
             output: 'title: the first post\ntitle: the second post\ntitle: the third post\n'
+        },
+        {
+            name: 'tags import',
+            input: '>import-tags from omelet-files/tags\n@special hello, world!',
+            output: '<span class="classy"><b><i><u><a href="#">hello, world!</a></u></i></b></span>'
         }
     ]
 
@@ -1111,7 +1141,7 @@ describe('Imports', function() {
             error: /Lexer error/
         },
         {
-            name: 'missing path after \'>import-dir\'',
+            name: 'missing path after >import-dir',
             input: '>import-dir \n',
             error: /Lexer error/
         },
@@ -1123,6 +1153,127 @@ describe('Imports', function() {
         {
             name: 'missing alias after \'as\' in import-dir',
             input: '>import-dir testPosts as \n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing \'from\' after >import-tags',
+            input: '>import-tags path/to/file',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing path in import-tags',
+            input: '>import-tags from \n',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('Extends', function() {
+    var context = {},
+        options = {
+            filePath: __dirname + '/test',
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'simple extend statement',
+            input: '>extend omelet-files/base\n+theHead = the head!\n+theBody = the body!',
+            output: '<html><head>the head!</head><body>the body!</body></html>'
+        },
+        {
+            name: 'chain of extended files',
+            input: '>extend omelet-files/intermediate\n+subHead = OMELET!\n+subBody = so cool!',
+            output: '<html><head>the head is OMELET!</head><body>the body is so cool!</body></html>'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'missing path after >extend',
+            input: '>extend \n',
+            error: /Lexer error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+describe('Includes', function() {
+    var context = {},
+        options = {
+            filePath: __dirname + '/test',
+            prettyPrint: false
+        }
+
+    var examples = [
+        {
+            name: 'include w/ external file (no context)',
+            input: '>include omelet-files/simple',
+            output: 'a simple file with no interpolations'
+        },
+        {
+            name: 'include w/ external file (with context)',
+            input: '>include omelet-files/complex with\n  + word = omelet\n  + number = 47',
+            output: 'the word is omelet and the number is 47'
+        },
+        {
+            name: 'include w/ same external file twice',
+            input: '>include omelet-files/complex with\n  + word = omelet\n  + number = 47\n\n>include omelet-files/complex with\n  + word = reid\n  + number = 22',
+            output: 'the word is omelet and the number is 47\nthe word is reid and the number is 22'
+        },
+        {
+            name: 'include w/ two different external files',
+            input: '>include omelet-files/simple\n>include omelet-files/complex with\n  + word = omelet\n  + number = 47',
+            output: 'a simple file with no interpolations\nthe word is omelet and the number is 47'
+        },
+        {
+            name: 'include w/ a macro (no context)',
+            input: '+ macro = @h1 hello, world!!\n\n>macro',
+            output: '<h1>hello, world!!</h1>'
+        },
+        {
+            name: 'include w/ a macro (with context)',
+            input: '+ greeting name = @h1 hello, {name}!!\n\n>greeting with\n  + name = reid',
+            output: '<h1>hello, reid!!</h1>'
+        }
+    ]
+
+    examples.forEach(function(example) {
+        it('translates ' + example.name, function() {
+            assert.equal(omeletToHtml(example.input, context, options), example.output)
+        })
+    })
+
+    var bad_examples = [
+        {
+            name: 'missing path after >include',
+            input: '>include \n',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing identifier after >',
+            input: '> ???',
             error: /Lexer error/
         }
     ]
