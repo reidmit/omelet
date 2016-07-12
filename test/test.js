@@ -1164,7 +1164,7 @@ describe('Imports', function() {
         },
         {
             name: 'file import with explicit file extension',
-            input: '>import omelet-files/testMacros.om as tm\n{tm.word}',
+            input: '>import omelet-files/testMacros.omelet as tm\n{tm.word}',
             output: 'omelet'
         },
         {
