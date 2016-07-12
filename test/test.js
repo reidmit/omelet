@@ -38,6 +38,11 @@ describe('Tags', function() {
             output: '<a class="className" id="anchor" href="#" target="_blank">click me</a>'
         },
         {
+            name: 'tags with multiple class attributes',
+            input: '@h1.classOne#idName.classTwo hello, world!',
+            output: '<h1 class="classOne classTwo" id="idName">hello, world!</h1>'
+        },
+        {
             name: 'tags with boolean attributes',
             input: '@input[type=checkbox checked]',
             output: '<input type="checkbox" checked="checked"/>'
@@ -369,6 +374,11 @@ describe('Filters', function() {
             name: 'to_date can\'t convert input to a Date',
             input: '{word | to_date}',
             error: /Filter error/
+        },
+        {
+            name: 'filter is undefined',
+            input: '{word | iosjgoieqrhgoqe}',
+            error: /Compiler error/
         }
     ]
 
@@ -480,6 +490,22 @@ describe('Doctypes', function() {
             assert.equal(omeletToHtml(example.input, context, options), example.output)
         })
     })
+
+    var bad_examples = [
+        {
+            name: 'multiple doctypes in same file',
+            input: '@doctype 5\n@doctype html',
+            error: /Parser error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
 })
 
 describe('Comments', function() {
@@ -553,6 +579,11 @@ describe('Interpolations', function() {
             name: 'escaped non-interpolation',
             input: 'this is \\{not an interpolation}',
             output: 'this is {not an interpolation}'
+        },
+        {
+            name: 'interpolation taking arguments',
+            input: '+ macro num str = {num | gt 47}, {str | length | lt 10}\n{macro 47 "omelet"}',
+            output: 'false, true'
         }
     ]
 
@@ -724,6 +755,11 @@ describe('Indents & newlines', function() {
             name: 'first line of input is indented',
             input: '   hello!',
             error: /Lexer error/
+        },
+        {
+            name: 'unexpected indent',
+            input: 'hello\n  world',
+            error: /Parser error/
         }
     ]
 
@@ -801,6 +837,16 @@ describe('Definitions', function() {
             output: '"Hello, it\'s me," she sang.'
         },
         {
+            name: 'dictionary (object) definitions',
+            input: '+ dict =\n  + key1 = value1\n  + key2 = value2\n  + quoted = "value3"\n\n{dict.key1}, {dict.key2}, {dict.quoted}',
+            output: 'value1, value2, value3'
+        },
+        {
+            name: 'dictionary with blocks taking parameters',
+            input: '+ obj =\n  + greet name = hello {name}\n  + article title subtitle =\n    @div\n      @h1 {title}\n      @h2 {subtitle}\n\n{obj.greet "Reid"}\n{obj.article "Hello" "This is an article"}',
+            output: 'hello Reid\n<div><h1>Hello</h1><h2>This is an article</h2></div>'
+        },
+        {
             name: 'list of simple values',
             input: '+ list =\n  - 47\n  - true\n  \n  - "quoted"\n  - hello, world!\n\n{list[0]}, {list[0] | type_of}\n{list[1]}, {list[1] | type_of}\n{list[2]}, {list[2] | type_of}\n{list[3]}, {list[3] | type_of}',
             output: '47, Number\ntrue, Boolean\nquoted, String\nhello, world!, String'
@@ -809,6 +855,11 @@ describe('Definitions', function() {
             name: 'list of objects',
             input: '+ list =\n  -\n    + name = reid\n    + age = 22\n  -\n    + name = cecil\n    + age = 47\n\n{list[0].name}, {list[1].age}',
             output: 'reid, 47'
+        },
+        {
+            name: 'list with blocks containing defs',
+            input: '+ list =\n  -\n    + name = reid\n    hello {name}!\n\n{list[0]}',
+            output: 'hello reid!'
         },
         {
             name: 'custom tag definition & usage',
@@ -863,6 +914,16 @@ describe('Definitions', function() {
             name: 'invalid tag definition',
             input: '+@tag.invalidAttribute = @div',
             error: /Lexer error/
+        },
+        {
+            name: 'modifier on left side of definition',
+            input: '+ arr[1] = something',
+            error: /Parser error/
+        },
+        {
+            name: 'empty list item',
+            input: '+ list =\n  -\n  - hello!',
+            error: /Parser error/
         }
     ]
 
@@ -1164,6 +1225,16 @@ describe('Imports', function() {
             name: 'missing path in import-tags',
             input: '>import-tags from \n',
             error: /Lexer error/
+        },
+        {
+            name: 'import statement after non-import/extend statement',
+            input: 'hello!\n>import testMacros as tm',
+            error: /Parser error/
+        },
+        {
+            name: 'import statement in indented block',
+            input: '@div\n  >import testMacros as tm',
+            error: /Parser error/
         }
     ]
 
@@ -1207,6 +1278,21 @@ describe('Extends', function() {
             name: 'missing path after >extend',
             input: '>extend \n',
             error: /Lexer error/
+        },
+        {
+            name: 'extend not first statement in file',
+            input: 'hello!\n>extend omelet-files/base',
+            error: /Parser error/
+        },
+        {
+            name: 'extend statement in indented block',
+            input: '@div\n   >extend someFile',
+            error: /Parser error/
+        },
+        {
+            name: 'more than one extend statement',
+            input: '>extend omelet-files/base\n>extend omelet-files/intermediate',
+            error: /Parser error/
         }
     ]
 
@@ -1275,6 +1361,11 @@ describe('Includes', function() {
             name: 'missing identifier after >',
             input: '> ???',
             error: /Lexer error/
+        },
+        {
+            name: 'non-definition in \'with\' block',
+            input: '>include omelet-files/complex with\n  hello, world!',
+            error: /Parser error/
         }
     ]
 
@@ -1282,6 +1373,63 @@ describe('Includes', function() {
         it('fails when ' + example.name, function() {
             assert.throws(function() {
                 omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+})
+
+/*
+ * This test suite tests the parser in ways that are not covered
+ * by the Omelet-to-HTML tests. Each supplies the parser with a
+ * manually-constructed list of tokens.
+ */
+describe('Parser (misc.)', function() {
+
+    var bad_examples = [
+        {
+            name: 'unexpected token',
+            tokens: [{kind: 'end-interpolation', value: '}', line: 1}],
+            error: /Parser error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                parser.parse(example.tokens)
+            }, example.error)
+        })
+    })
+})
+
+/*
+ * This test suite tests the compiler in ways that are not covered
+ * by the Omelet-to-HTML tests. Each supplies the compiler with a
+ * manually-constructed linked AST.
+ */
+describe('Compiler (misc.)', function() {
+
+    var bad_examples = [
+        {
+            name: 'Include/Import/Extend/Path node seen by compiler',
+            ast: {
+                contents: [{ kind: 'Extend', file: null }]
+            },
+            error: /Compiler error/
+        },
+        {
+            name: 'node kind is unrecognized',
+            ast: {
+                contents: [{ kind: 'Raw' }]
+            },
+            error: /Compiler error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                compiler.compile(example.ast)
             }, example.error)
         })
     })
