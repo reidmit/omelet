@@ -4,6 +4,8 @@ var lexer = require('../lib/lexer.js')
 var parser = require('../lib/parser.js')
 var linker = require('../lib/linker.js')
 var compiler = require('../lib/compiler.js')
+var util = require('../lib/util.js')
+var runtime = require('../lib/runtime.js')
 
 function omeletToHtml(input, context, options) {
     context = context || {}
@@ -1403,6 +1405,57 @@ describe('Parser (misc.)', function() {
 })
 
 /*
+ * This test suite tests the linker in ways that are not covered
+ * by the Omelet-to-HTML tests.
+ */
+ describe('Linker (misc.)', function() {
+    it('fails when node kind is unrecognized', function() {
+        var ast = {
+            kind: 'Document',
+            extend: null,
+            imports: [],
+            contents: [{kind: 'Unknown'}]
+        }
+        assert.throws(function() {
+            linker.link(ast)
+        }, /Linker error/)
+    })
+
+    var context = {},
+        options = {
+            filePath: __dirname + '/test',
+            prettyPrint: false
+        }
+
+    var bad_examples = [
+        {
+            name: 'import-dir path is not a directory',
+            input: '>import-dir omelet-files/base as b\n',
+            error: /Linker error/
+        },
+        {
+            name: 'imported directory does not exist',
+            input: '>import-dir nonexistent as d\n',
+            error: /Linker error/
+        },
+        {
+            name: 'imported file does not exist',
+            input: '>import nonexistent as f\n',
+            error: /Linker error/
+        }
+    ]
+
+    bad_examples.forEach(function(example) {
+        it('fails when ' + example.name, function() {
+            assert.throws(function() {
+                omeletToHtml(example.input)
+            }, example.error)
+        })
+    })
+
+ })
+
+/*
  * This test suite tests the compiler in ways that are not covered
  * by the Omelet-to-HTML tests. Each supplies the compiler with a
  * manually-constructed linked AST.
@@ -1432,5 +1485,63 @@ describe('Compiler (misc.)', function() {
                 compiler.compile(example.ast)
             }, example.error)
         })
+    })
+})
+
+/*
+ * This test suite tests the utility functions (found in util.js)
+ * in ways that may not be covered by the Omelet-to-HTML tests.
+ */
+describe('Utility functions', function() {
+    it('util#jsEscape should work', function() {
+        assert.equal(util.jsEscape('"\'\\\n\r\u2028\u2029'),
+                                '\\"\\\'\\\\\\n\\r\\u2028\\u2029')
+    })
+
+    it('util#printAST should work', function() {
+        var input = '@h1 hello, world',
+            tokens = lexer.lex(input),
+            ast = parser.parse(tokens)
+        assert.equal(util.printAST(ast),
+            '{\n    "kind": "Document",\n    "topLevelDefinitions": {},\n    ' +
+            '"extend": null,\n    "imports": [],\n    "contents": [\n        ' +
+            '{\n            "kind": "Tag",\n            "name": "h1",\n      ' +
+            '      "attributes": [],\n            "tagStyle": "line",\n      ' +
+            '      "inner": {\n                "kind": "Block",\n            ' +
+            '    "contents": [\n                    {\n                      ' +
+            '  "kind": "String",\n                        "value": "hello, wo' +
+            'rld",\n                        "line": 1,\n                     ' +
+            '   "lineEnd": 1\n                    }\n                ],\n    ' +
+            '            "line": 1,\n                "lineEnd": 1\n          ' +
+            '  },\n            "line": 1,\n            "lineEnd": 1\n        ' +
+            '}\n    ],\n    "line": 1,\n    "lineEnd": 1\n}')
+    })
+})
+
+/*
+ * This test suite tests functions from the Omelet runtime.
+ */
+describe('Runtime', function() {
+    it('fails when a variable is re-defined in the same scope', function() {
+        assert.throws(function() {
+            var scope = new runtime.Scope()
+            scope.add('key', 'value')
+            scope.add('key', 'another value')
+        }, /Runtime error/)
+    })
+
+    it('fails when trying to find an undefined variable', function() {
+        assert.throws(function() {
+            var scope = new runtime.Scope()
+            scope.find('key')
+        }, /Runtime error/)
+    })
+
+    it('fails when accessing a non-existent property of an object in scope', function() {
+        assert.throws(function() {
+            var scope = new runtime.Scope()
+            scope.add('obj', {word: 'omelet'})
+            scope.find('obj', 'undefinedProperty')
+        }, /Runtime error/)
     })
 })

@@ -1,0 +1,3 @@
+>import-dir testMacros as posts
+
+{posts[0].title}
