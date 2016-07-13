@@ -22,7 +22,7 @@ Here's an example of what it looks like:
         @span.post-date posted on {date}
         @a[href={url}] read more...
 
-    ## some markup, including a for-loop over the 'posts' object
+    ## some markup, including a for-loop over 'posts'
 
     @html
       @head
