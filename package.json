@@ -1,6 +1,6 @@
 {
   "name": "omelet",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A language for writing web pages & templates that compiles into HTML",
   "dependencies": {
     "commander": "^2.9.0",

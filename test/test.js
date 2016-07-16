@@ -6,6 +6,7 @@ var linker = require('../lib/linker.js')
 var compiler = require('../lib/compiler.js')
 var util = require('../lib/util.js')
 var runtime = require('../lib/runtime.js')
+var omelet = require('../lib/omelet.js')
 
 function omeletToHtml(input, context, options) {
     context = context || {}
@@ -1408,7 +1409,7 @@ describe('Parser (misc.)', function() {
  * This test suite tests the linker in ways that are not covered
  * by the Omelet-to-HTML tests.
  */
- describe('Linker (misc.)', function() {
+describe('Linker (misc.)', function() {
     it('fails when node kind is unrecognized', function() {
         var ast = {
             kind: 'Document',
@@ -1452,8 +1453,7 @@ describe('Parser (misc.)', function() {
             }, example.error)
         })
     })
-
- })
+})
 
 /*
  * This test suite tests the compiler in ways that are not covered
@@ -1543,5 +1543,39 @@ describe('Runtime', function() {
             scope.add('obj', {word: 'omelet'})
             scope.find('obj', 'undefinedProperty')
         }, /Runtime error/)
+    })
+})
+
+describe('Node API', function() {
+    it('compiles Omelet from source (default options)', function() {
+        var source = '@div.content\n  hello {name}!',
+            template = omelet.compile(source)
+
+        assert(typeof template === 'function')
+    })
+
+    it('compiles Omelet from file (default options)', function() {
+        var file = __dirname + '/omelet-files/child.omelet',
+            template = omelet.compileFile(file)
+
+        assert(typeof template === 'function')
+    })
+
+    it('renders Omelet from source (default options)', function() {
+        var source = '@div.content\n  hello {name}!',
+            rendered = omelet.render(source, {
+                context: {
+                    name: 'reid'
+                }
+            })
+
+        assert(typeof rendered === 'string')
+    })
+
+    it('renders Omelet from file (default options)', function() {
+        var file = __dirname + '/omelet-files/child.omelet',
+            rendered = omelet.renderFile(file)
+
+        assert(typeof rendered === 'string')
     })
 })

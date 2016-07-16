@@ -1,160 +1,54 @@
 #! /usr/bin/env node
 
+console.time('req')
+
+var version = require('../package.json').version
 var omelet = require('../lib/omelet.js')
 var fs = require('fs')
 var path = require('path')
-var chokidar = require('chokidar')
+// var chokidar = require('chokidar')
 var program = require('commander')
-var glob = require('glob')
-var runtime = require('../lib/runtime.js')
+console.timeEnd('req')
+
+console.time('prrgam')
 
 program
-    .version('0.1.0')
-    .arguments('<input>')
-    .option('-w, --watch', 'watch input file for changes', false)
-    .parse(process.argv)
+    .version(version)
 
-// set defaults, if undefined
-program.watch = program.watch || false
+program
+    .command('render <path>', {isDefault: true})
+    .option('-o, --output-dir <path>', 'Output directory for rendered files')
+    .option('-w, --watch', 'Watch input file/directory for changes')
+    .option('-s, --strip-comments', 'Strip comment tokens before parsing')
+    .option('-p, --pretty-print', 'Pretty print rendered HTML')
+    .option('-i, --indent-size <num>', 'Number of characters in indent, when pretty printing', parseInt, 4)
+    .option('-C, --indent-char <char>', 'Character to use for indent, when pretty printing', '\' \'')
+    .option('-n, --template-name <name>', 'Name given to compiled template function', 'template')
+    .option('-m, --minify', 'Minify/uglify compiled JS function')
+    .option('-e, --extension', 'Extension to given rendered files', 'html')
+    .option('-M, --modes <path>', 'Path to JS file exporting mode functions')
+    .option('-c, --context <path>', 'Path to JSON file with context variables')
+    .action(function(path, options) {
+        console.log('rendering %s', path)
+    })
 
-var inputFile = process.cwd() + '/' + program.args[0]
+program
+    .command('compile <path>')
+    .option('-o, --output-dir <path>', 'Output directory for rendered files')
+    .option('-w, --watch', 'Watch input file/directory for changes')
+    .option('-s, --strip-comments', 'Strip comment tokens before parsing')
+    .option('-p, --pretty-print', 'Pretty print rendered HTML')
+    .option('-i, --indent-size <num>', 'Number of characters in indent, when pretty printing', parseInt, 4)
+    .option('-C, --indent-char <char>', 'Character to use for indent, when pretty printing', '\' \'')
+    .option('-n, --template-name <name>', 'Name given to compiled template function', 'template')
+    .option('-m, --minify', 'Minify/uglify compiled JS function')
+    .option('-e, --extension', 'Extension to given rendered files', 'html')
+    .option('-M, --modes <path>', 'Path to JS file exporting mode functions')
+    .option('-c, --context <path>', 'Path to JSON file with context variables')
+    .action(function(path, options) {
+        console.log('compiling %s', path)
+    })
 
-function doIt() {
-    var fn = omelet.compile(inputFile)
-    // var html = fn({
-    //     block2: '<h1>sup</h1>'
-    // })
-    // console.log('rendering: ' + inputFile + '\n')
-    // console.log(html)
-    // console.log()
-    // fs.writeFileSync('ignored/outputs/test.html', html)
-}
+program.parse(process.argv)
 
-doIt()
-
-if (program.watch) {
-    chokidar.watch(inputFile).on('all', doIt)
-}
-
-// var configFile = process.argv[2] || 'omelet-config.js'
-// try {
-//     var config = require(process.cwd() + '/' + configFile)
-// } catch (e) {
-//     console.log(e)
-//     console.error('No Omelet configuration file found!')
-//     process.exit()
-// }
-
-// function detectParserFor(filePath) {
-//     var ext = filePath.split('.').pop().toLowerCase()
-//     switch (ext) {
-//     case 'om':
-//     case 'omelet':
-//         return 'omelet'
-//     case 'md':
-//     case 'markdown':
-//         return 'markdown'
-//     }
-//     return 'copy'
-// }
-
-// var fullPaths = glob.sync(config.input + '/**', {
-//     nodir: true
-// })
-
-// var omPaths = []
-// for (var i = 0; i < fullPaths.length; i++) {
-//     var fp = fullPaths[i].replace(new RegExp('^' + config.input), '')
-//     if (fullPaths[i] !== configFile) {
-//         omPaths.push(fp)
-//     }
-// }
-
-// run()
-
-// function run() {
-//     applyRules(config.rules)
-// }
-
-// function applyRules(rulesObj) {
-//     var rules = Object.keys(rulesObj)
-//     var matched = {}
-//     var count = 0
-//     omPaths.forEach(function(path) {
-//         var obj = rulesObj
-//         rules.forEach(function(rule) {
-//             glob(config.input + rule, {}, function(err, files) {
-//                 if (err) {
-//                     throw err
-//                 }
-//                 if (files.indexOf(config.input + path) > -1) {
-//                     if (matched[path]) {
-//                         console.warn('Warning: file ' + path + ' matched by multiple rules.\n    Overriding old rule with rule for ' + rule + '.')
-//                     }
-//                     matched[path] = obj[rule]
-//                 }
-//                 count++
-//                 if (count >= omPaths.length * rules.length) {
-//                     getFileInfo(omPaths, matched)
-//                 }
-//             })
-//         })
-//     })
-// }
-
-// function getFileInfo(omPaths, appliedRules) {
-//     var fileInfo = []
-//     omPaths.forEach(function(path) {
-//         var fullPath = config.input + path
-//         var applied = appliedRules[path] ? appliedRules[path] : {}
-
-//         fs.readFile(fullPath, function(err, data) {
-//             if (err) {
-//                 throw err
-//             }
-//             fileInfo.push({
-//                 filePath: path,
-//                 fullPath: fullPath,
-//                 isHidden: applied.hidden || false,
-//                 parser: applied.parser || detectParserFor(fullPath),
-//                 contents: data || undefined
-//             })
-//             if (fileInfo.length === omPaths.length) {
-//                 writeAllFiles(fileInfo)
-//             }
-//         })
-//     })
-// }
-
-// function rmDir(dirPath, rmSelf) {
-//     var files
-//     try {
-//         files = fs.readdirSync(dirPath)
-//     } catch (e) {
-//         return
-//     }
-//     if (files.length > 0) {
-//         for (var i = 0; i < files.length; i++) {
-//             var filePath = dirPath + '/' + files[i]
-//             if (fs.statSync(filePath).isFile()) {
-//                 fs.unlinkSync(filePath)
-//             } else {
-//                 rmDir(filePath, true)
-//             }
-//         }
-//     }
-//     if (rmSelf) {
-//         fs.rmdirSync(dirPath)
-//     }
-// }
-
-// function writeAllFiles(fileInfo) {
-//     rmDir(config.output, false)
-
-//     var om = new Omelet({
-//         outputDirectory: config.output,
-//         context: config.context || {},
-//         permalinks: config.permalinks || false
-//     })
-//     om.render(fileInfo)
-// }
+console.timeEnd('prrgam')
