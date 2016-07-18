@@ -1422,12 +1422,6 @@ describe('Linker (misc.)', function() {
         }, /Linker error/)
     })
 
-    var context = {},
-        options = {
-            filePath: __dirname + '/test',
-            prettyPrint: false
-        }
-
     var bad_examples = [
         {
             name: 'import-dir path is not a directory',
