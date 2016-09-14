@@ -1,0 +1,20 @@
++ sections =
+    -
+        + title = Macros
+        + contents = blah blah
+    -
+        + title = Filters
+        + contents = blah blah
+    -
+        + title = Modes
+        + content = blah blah
+
+@doctype html
+@html
+    @head
+        @title Omelet reference
+    @body
+        >for section in sections
+            @section.section
+                @h1 {section.title}
+                {section.contents}

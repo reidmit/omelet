@@ -6,6 +6,7 @@ var fs = require('fs')
 var pathModule = require('path')
 var exec = require('child_process').exec
 var mkdirp = require('mkdirp')
+var glob = require('glob')
 // var chokidar = require('chokidar')
 var program = require('commander')
 
@@ -24,7 +25,7 @@ program
                 throw err
             }
             if (options.recipe) {
-                fs.stat(fullPath, function(err, stat) {
+                fs.stat(fullPath, function(err, stats) {
                     if (err && err.code === 'ENOENT') {
                         // directory doesn't exist
                         var cmd = 'git clone ' + options.recipe + ' ' + fullPath
@@ -69,38 +70,30 @@ program
         })
     })
 
-// program
-//     .command('render <path>', {isDefault: true})
-//     .option('-o, --output-dir <path>', 'Output directory for rendered files')
-//     .option('-w, --watch', 'Watch input file/directory for changes')
-//     .option('-s, --strip-comments', 'Strip comment tokens before parsing')
-//     .option('-p, --pretty-print', 'Pretty print rendered HTML')
-//     .option('-i, --indent-size <num>', 'Number of characters in indent, when pretty printing', parseInt, 4)
-//     .option('-C, --indent-char <char>', 'Character to use for indent, when pretty printing', '\' \'')
-//     .option('-n, --template-name <name>', 'Name given to compiled template function', 'template')
-//     .option('-m, --minify', 'Minify/uglify compiled JS function')
-//     .option('-e, --extension', 'Extension to given rendered files', 'html')
-//     .option('-M, --modes <path>', 'Path to JS file exporting mode functions')
-//     .option('-c, --context <path>', 'Path to JSON file with context variables')
-//     .action(function(path, options) {
-//         console.log('rendering %s', path)
-//     })
+program
+    .command('render <path>', {isDefault: true})
+    .action(function(path, options) {
+        fs.stat(path, function(err, stats) {
+            if (err) {
+                throw err
+            }
 
-// program
-//     .command('compile <path>')
-//     .option('-o, --output-dir <path>', 'Output directory for rendered files')
-//     .option('-w, --watch', 'Watch input file/directory for changes')
-//     .option('-s, --strip-comments', 'Strip comment tokens before parsing')
-//     .option('-p, --pretty-print', 'Pretty print rendered HTML')
-//     .option('-i, --indent-size <num>', 'Number of characters in indent, when pretty printing', parseInt, 4)
-//     .option('-C, --indent-char <char>', 'Character to use for indent, when pretty printing', '\' \'')
-//     .option('-n, --template-name <name>', 'Name given to compiled template function', 'template')
-//     .option('-m, --minify', 'Minify/uglify compiled JS function')
-//     .option('-e, --extension', 'Extension to given rendered files', 'html')
-//     .option('-M, --modes <path>', 'Path to JS file exporting mode functions')
-//     .option('-c, --context <path>', 'Path to JSON file with context variables')
-//     .action(function(path, options) {
-//         console.log('compiling %s', path)
-//     })
+            if (stats.isFile()) {
+                console.log('rendering single file: %s', path)
+                console.log(omelet.renderFile(path))
+            } else if (stats.isDirectory()) {
+                glob(pathModule.join(path, '**/*.omelet'), {}, function(err, files) {
+                    if (err) {
+                        throw err
+                    }
+                    console.log(files)
+                    files.forEach(function(file) {
+                        console.log('rendering file of many: %s', path)
+                        console.log(omelet.renderFile(file))
+                    })
+                })
+            }
+        })
+    })
 
 program.parse(process.argv)
