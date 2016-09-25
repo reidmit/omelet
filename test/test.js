@@ -1054,6 +1054,21 @@ describe('For loops', function() {
             name: 'loop over empty array',
             input: '>for element in emptyList\n  this will never print',
             output: ''
+        },
+        {
+            name: 'loop over range of numbers (increasing)',
+            input: '>for n in 1..10\n  {n}.',
+            output: '1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n10.\n'
+        },
+        {
+            name: 'loop over range of numbers (decreasing)',
+            input: '>for n in 10..1\n  {n}.',
+            output: '10.\n9.\n8.\n7.\n6.\n5.\n4.\n3.\n2.\n1.\n'
+        },
+        {
+            name: 'loop over range of numbers (w/ negatives)',
+            input: '>for n in -3..3\n  {n}.',
+            output: '-3.\n-2.\n-1.\n0.\n1.\n2.\n3.\n'
         }
     ]
 
@@ -1075,7 +1090,7 @@ describe('For loops', function() {
             error: /Lexer error/
         },
         {
-            name: 'missing identifier after \'in\'',
+            name: 'missing identifier or range after \'in\'',
             input: '>for item in \n',
             error: /Lexer error/
         },
@@ -1083,6 +1098,16 @@ describe('For loops', function() {
             name: 'missing loop body',
             input: '>for num in list\n  \nhello',
             error: /Parser error/
+        },
+        {
+            name: 'missing a \'..\' in range',
+            input: '>for n in 47\n  ...',
+            error: /Lexer error/
+        },
+        {
+            name: 'missing a number after \'..\' in range',
+            input: '>for n in 47..\n  ...',
+            error: /Lexer error/
         }
     ]
 
