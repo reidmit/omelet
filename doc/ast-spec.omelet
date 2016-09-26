@@ -4,12 +4,6 @@
 ##                                                                       ##
 ###########################################################################
 
-+ast-node node =
-    @div.ast-node[id={node.kind}]
-        @ul
-            >for key in node|keys
-                @li {key} - {node[key]}
-
 ##-------------------------------------------------------------------------
 ## Attribute
 ##-------------------------------------------------------------------------
@@ -17,8 +11,8 @@
 >ast-node with
     + node =
         + kind = "Attribute"
-        + name = {String}
-        + value = {String} | {Interpolation}
+        + name = String
+        + value = String | Interpolation
         + line = a number literal
         + lineEnd = a number literal
 
@@ -30,14 +24,14 @@
     + node =
         + kind = "Block"
         + contents =
-            - {Definition}
-            - {Comment}
-            - {Include}
-            - {For}
-            - {If}
-            - {Tag}
-            - {Interpolation}
-            - {String}
+            - Definition
+            - Comment
+            - Include
+            - For
+            - If
+            - Tag
+            - Interpolation
+            - String
         + line = a number literal
         + lineEnd = a number literal
 
@@ -70,11 +64,11 @@
 >ast-node with
     + node =
         + kind = "Definition"
-        + name = {Identifier}
+        + name = Identifier
         + style = "default" | "tag" | "trait"
         + parameters =
-            - {Identifier}
-        + body = {Block} | {Tag} | {Dictionary} | {List} | {Number} | {String} | {Boolean}
+            - Identifier
+        + body = Block | Tag | Dictionary | List | Number | String | Boolean
         + line = a number literal
         + lineEnd = a number literal
 
@@ -86,7 +80,7 @@
     + node =
         + kind = "Dictionary"
         + entries =
-            - {Definition} | {Comment}
+            - Definition | Comment
         + line = a number literal
         + lineEnd = a number literal
 
@@ -97,7 +91,7 @@
 >ast-node with
     + node =
         + kind = "Doctype"
-        + name = {String}
+        + name = String
         + line = a number literal
         + lineEnd = a number literal
 
@@ -108,22 +102,22 @@
 >ast-node with
     + node =
         + kind = "Document"
-        + extend = {Extend} | null
+        + extend = Extend | null
         + imports =
-            - {Import}
+            - Import
         + contents =
-            - {Doctype}
-            - {Comment}
-            - {Definition}
-            - {Include}
-            - {For}
-            - {If}
-            - {Block}
-            - {Tag}
-            - {Interpolation}
-            - {String}
-            - {Boolean}
-            - {Number}
+            - Doctype
+            - Comment
+            - Definition
+            - Include
+            - For
+            - If
+            - Block
+            - Tag
+            - Interpolation
+            - String
+            - Boolean
+            - Number
         + line = a number literal
         + lineEnd = a number literal
 
@@ -134,7 +128,7 @@
 >ast-node with
     + node =
         + kind = "Extend"
-        + file = {Path}
+        + file = Path
         + line = a number literal
         + lineEnd = a number literal
 
@@ -145,13 +139,13 @@
 >ast-node with
     + node =
         + kind = "Filter"
-        + name = {Identifier}
+        + name = Identifier
         + arguments =
-            - {Number}
-            - {Boolean}
-            - {String}
-            - {Identifier}
-            - {FilterSequence}
+            - Number
+            - Boolean
+            - String
+            - Identifier
+            - FilterSequence
         + line = a number literal
         + lineEnd = a number literal
 
@@ -163,7 +157,7 @@
     + node =
         + kind = "FilterSequence"
         + sequence =
-            - {Filter}
+            - Filter
         + line = a number literal
         + lineEnd = a number literal
 
@@ -174,10 +168,10 @@
 >ast-node with
     + node =
         + kind = "For"
-        + iterator = {Identifier}
-        + data = {Identifier} | {Path} | {List}
-        + filters = {FilterSequence} | null
-        + body = {Block}
+        + iterator = Identifier
+        + data = Identifier | Path | List
+        + filters = FilterSequence | null
+        + body = Block
         + line = a number literal
         + lineEnd = a number literal
 
@@ -190,7 +184,7 @@
         + kind = "Identifier"
         + value = a string literal
         + modifiers =
-            - {Modifier}
+            - Modifier
         + line = a number literal
         + lineEnd = a number literal
 
@@ -201,13 +195,13 @@
 >ast-node with
     + node =
         + kind = "If"
-        + predicate = {Identifier}
+        + predicate = Identifier
         + negated = a boolean literal
-        + filters = {FilterSequence} | null
-        + thenCase = {Block} | null
+        + filters = FilterSequence | null
+        + thenCase = Block | null
         + elifCases =
-            - {If}
-        + elseCase = {Block} | null
+            - If
+        + elseCase = Block | null
         + line = a number literal
         + lineEnd = a number literal
 
@@ -219,8 +213,8 @@
     + node =
         + kind = "Import"
         + style = "file" | "directory" | "tags"
-        + path = {String}
-        + alias = {Identifier} | null
+        + path = String
+        + alias = Identifier | null
         + line = a number literal
         + lineEnd = a number literal
 
@@ -231,8 +225,8 @@
 >ast-node with
     + node =
         + kind = "Include"
-        + included = {Identifier} | {Path}
-        + context = {Dictionary} | null
+        + included = Identifier | Path
+        + context = Dictionary | null
         + line = a number literal
         + lineEnd = a number literal
 
@@ -243,13 +237,13 @@
 >ast-node with
     + node =
         + kind = "Interpolation"
-        + name = {Identifier}
+        + name = Identifier
         + leaveUnescaped = a boolean literal
         + positionalArgs = a boolean literal
-        + context = {Dictionary} | null
+        + context = Dictionary | null
         + arguments =
-            - {Identifier} | {String} | {Number} | {Boolean}
-        + filters = {FilterSequence} | null
+            - Identifier | String | Number | Boolean
+        + filters = FilterSequence | null
         + line = a number literal
         + lineEnd = a number literal
 
@@ -261,7 +255,7 @@
     + node =
         + kind = "List"
         + elements =
-            - {ListElement} | {Comment}
+            - ListElement | Comment
         + line = a number literal
         + lineEnd = a number literal
 
@@ -272,7 +266,7 @@
 >ast-node with
     + node =
         + kind = "ListElement"
-        + body = {Block} | {Dictionary} | {List} | {Number} | {String} | {Boolean}
+        + body = Block | Dictionary | List | Number | String | Boolean
         + line = a number literal
         + lineEnd = a number literal
 
@@ -295,7 +289,7 @@
 >ast-node with
     + node =
         + kind = "Modifier"
-        + value = {String} | {Number} | {Identifier}
+        + value = String | Number | Identifier
         + line = a number literal
         + lineEnd = a number literal
 
@@ -306,7 +300,7 @@
 >ast-node with
     + node =
         + kind = "Number"
-        + value = a number literal literal
+        + value = a number literal
         + line = a number literal
         + lineEnd = a number literal
 
@@ -318,6 +312,18 @@
     + node =
         + kind = "Path"
         + value = a string literal
+        + line = a number literal
+        + lineEnd = a number literal
+
+##-------------------------------------------------------------------------
+## Range
+##-------------------------------------------------------------------------
+
+>ast-node with
+    + node =
+        + kind = "Range"
+        + startValue = a number literal
+        + endValue = a number literal
         + line = a number literal
         + lineEnd = a number literal
 
@@ -343,9 +349,16 @@
         + kind = "Tag"
         + name = a string literal
         + attributes =
-            - {Attribute}
+            - Attribute
         + tagStyle = "header-only" | "block" | "inline" | "interpolated"
-        + inner = {Block}
+        + inner = Block
         + line = a number literal
         + lineEnd = a number literal
 
+##-------------------------------------------------------------------------
+
++ast-node node =
+    @div.ast-node[id={node.kind}]
+        @ul
+            >for key in node|keys
+                @li {key} - {node[key]}

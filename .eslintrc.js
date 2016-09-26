@@ -20,10 +20,6 @@ module.exports = {
             'error',
             {'before': true, 'after': true}
         ],
-        'linebreak-style': [
-            'error',
-            'unix'
-        ],
         'no-console': [
             'error',
             {'allow': ['log', 'warn', 'error', 'time', 'timeEnd']}
