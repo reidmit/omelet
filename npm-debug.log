@@ -1,0 +1,184 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'C:\\Program Files\\nodejs\\node.exe',
+1 verbose cli   'C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js',
+1 verbose cli   'publish',
+1 verbose cli   'omeletjs' ]
+2 info using npm@2.15.9
+3 info using node@v4.5.0
+4 verbose publish [ 'omeletjs' ]
+5 silly cache add args [ 'omeletjs', null ]
+6 verbose cache add spec omeletjs
+7 silly cache add parsed spec Result {
+7 silly cache add   raw: 'omeletjs',
+7 silly cache add   scope: null,
+7 silly cache add   name: 'omeletjs',
+7 silly cache add   rawSpec: '',
+7 silly cache add   spec: 'latest',
+7 silly cache add   type: 'tag' }
+8 silly addNamed omeletjs@latest
+9 verbose addNamed "latest" is being treated as a dist-tag for omeletjs
+10 info addNameTag [ 'omeletjs', 'latest' ]
+11 silly mapToRegistry name omeletjs
+12 silly mapToRegistry using default registry
+13 silly mapToRegistry registry https://registry.npmjs.org/
+14 silly mapToRegistry data Result {
+14 silly mapToRegistry   raw: 'omeletjs',
+14 silly mapToRegistry   scope: null,
+14 silly mapToRegistry   name: 'omeletjs',
+14 silly mapToRegistry   rawSpec: '',
+14 silly mapToRegistry   spec: 'latest',
+14 silly mapToRegistry   type: 'tag' }
+15 silly mapToRegistry uri https://registry.npmjs.org/omeletjs
+16 verbose addNameTag registry:https://registry.npmjs.org/omeletjs not in flight; fetching
+17 verbose request uri https://registry.npmjs.org/omeletjs
+18 verbose request no auth needed
+19 info attempt registry request try #1 at 11:09:49 PM
+20 verbose request using bearer token for auth
+21 verbose request id 88835d2ccd9ba531
+22 http request GET https://registry.npmjs.org/omeletjs
+23 http 200 https://registry.npmjs.org/omeletjs
+24 verbose headers { server: 'CouchDB/1.5.0 (Erlang OTP/R16B03)',
+24 verbose headers   etag: '"79WMDH67R1YHN7ABR9SLHVMTR"',
+24 verbose headers   'content-type': 'application/json',
+24 verbose headers   'content-encoding': 'gzip',
+24 verbose headers   'cache-control': 'max-age=300',
+24 verbose headers   'transfer-encoding': 'chunked',
+24 verbose headers   'accept-ranges': 'bytes',
+24 verbose headers   date: 'Mon, 26 Sep 2016 06:09:53 GMT',
+24 verbose headers   via: '1.1 varnish',
+24 verbose headers   connection: 'keep-alive',
+24 verbose headers   'x-served-by': 'cache-sjc3123-SJC',
+24 verbose headers   'x-cache': 'MISS',
+24 verbose headers   'x-cache-hits': '0',
+24 verbose headers   'x-timer': 'S1474870193.021193,VS0,VE140',
+24 verbose headers   vary: 'Accept-Encoding' }
+25 silly get cb [ 200,
+25 silly get   { server: 'CouchDB/1.5.0 (Erlang OTP/R16B03)',
+25 silly get     etag: '"79WMDH67R1YHN7ABR9SLHVMTR"',
+25 silly get     'content-type': 'application/json',
+25 silly get     'content-encoding': 'gzip',
+25 silly get     'cache-control': 'max-age=300',
+25 silly get     'transfer-encoding': 'chunked',
+25 silly get     'accept-ranges': 'bytes',
+25 silly get     date: 'Mon, 26 Sep 2016 06:09:53 GMT',
+25 silly get     via: '1.1 varnish',
+25 silly get     connection: 'keep-alive',
+25 silly get     'x-served-by': 'cache-sjc3123-SJC',
+25 silly get     'x-cache': 'MISS',
+25 silly get     'x-cache-hits': '0',
+25 silly get     'x-timer': 'S1474870193.021193,VS0,VE140',
+25 silly get     vary: 'Accept-Encoding' } ]
+26 verbose get saving omeletjs to C:\Users\reidm\AppData\Roaming\npm-cache\registry.npmjs.org\omeletjs\.cache.json
+27 verbose correctMkdir C:\Users\reidm\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+28 silly addNameTag next cb for omeletjs with tag latest
+29 silly addNamed omeletjs@1.0.0
+30 verbose addNamed "1.0.0" is a plain semver version for omeletjs
+31 silly cache afterAdd omeletjs@1.0.0
+32 verbose afterAdd C:\Users\reidm\AppData\Roaming\npm-cache\omeletjs\1.0.0\package\package.json not in flight; writing
+33 verbose correctMkdir C:\Users\reidm\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+34 verbose afterAdd C:\Users\reidm\AppData\Roaming\npm-cache\omeletjs\1.0.0\package\package.json written
+35 silly publish { name: 'omeletjs',
+35 silly publish   version: '1.0.0',
+35 silly publish   description: 'A language for writing web pages & templates that compiles into HTML',
+35 silly publish   dependencies:
+35 silly publish    { commander: '^2.9.0',
+35 silly publish      marked: '^0.3.5',
+35 silly publish      mkdirp: '^0.5.1',
+35 silly publish      striptags: '^2.1.1',
+35 silly publish      chokidar: '^1.4.2',
+35 silly publish      'uglify-js': '^2.6.4' },
+35 silly publish   devDependencies:
+35 silly publish    { blanket: '^1.2.3',
+35 silly publish      coveralls: '^2.11.11',
+35 silly publish      eslint: '^2.12.0',
+35 silly publish      'eslint-config-standard': '^5.3.1',
+35 silly publish      'eslint-plugin-standard': '^1.3.2',
+35 silly publish      mocha: '^2.5.3',
+35 silly publish      'mocha-lcov-reporter': '^1.2.0' },
+35 silly publish   scripts:
+35 silly publish    { coverage: 'mocha --require blanket -R html-cov > coverage.html',
+35 silly publish      test: 'NODE_ENV=test YOURPACKAGE_COVERAGE=1 ./node_modules/.bin/mocha --require blanket --reporter mocha-lcov-reporter | ./node_modules/coveralls/bin/coveralls.js',
+35 silly publish      lint: 'eslint --quiet **/*.js' },
+35 silly publish   bin: { omelet: 'bin/command-line.js' },
+35 silly publish   author: { name: 'Reid Mitchell' },
+35 silly publish   license: 'MIT',
+35 silly publish   directories: {},
+35 silly publish   repository: { type: 'git', url: 'git+https://github.com/reid47/omelet.git' },
+35 silly publish   keywords: [ 'parser', 'omelet', 'template', 'engine', 'language' ],
+35 silly publish   bugs: { url: 'https://github.com/reid47/omelet/issues' },
+35 silly publish   homepage: 'https://github.com/reid47/omelet#readme',
+35 silly publish   config: { blanket: { pattern: 'lib', 'data-cover-never': 'node_modules' } },
+35 silly publish   gitHead: '16591adb9d90b4265f8d2d85d3695c797ed60ae9',
+35 silly publish   _id: 'omeletjs@1.0.0',
+35 silly publish   _shasum: '6f6d69b31ce4dc1411a11d57b1d447c4ab2a51e5',
+35 silly publish   _from: 'omeletjs@latest',
+35 silly publish   _npmVersion: '3.9.5',
+35 silly publish   _nodeVersion: '6.2.2',
+35 silly publish   _npmUser: { name: 'reid47', email: 'reidmitchell1@gmail.com' },
+35 silly publish   dist:
+35 silly publish    { shasum: '6f6d69b31ce4dc1411a11d57b1d447c4ab2a51e5',
+35 silly publish      tarball: 'https://registry.npmjs.org/omeletjs/-/omeletjs-1.0.0.tgz' },
+35 silly publish   maintainers: [ { name: 'reid47', email: 'reidmitchell1@gmail.com' } ],
+35 silly publish   _npmOperationalInternal:
+35 silly publish    { host: 'packages-12-west.internal.npmjs.com',
+35 silly publish      tmp: 'tmp/omeletjs-1.0.0.tgz_1472620821253_0.8010254632681608' },
+35 silly publish   _resolved: 'https://registry.npmjs.org/omeletjs/-/omeletjs-1.0.0.tgz',
+35 silly publish   readme: 'ERROR: No README data found!' }
+36 info prepublish omeletjs@1.0.0
+37 verbose getPublishConfig undefined
+38 silly mapToRegistry name omeletjs
+39 silly mapToRegistry using default registry
+40 silly mapToRegistry registry https://registry.npmjs.org/
+41 silly mapToRegistry data Result {
+41 silly mapToRegistry   raw: 'omeletjs',
+41 silly mapToRegistry   scope: null,
+41 silly mapToRegistry   name: 'omeletjs',
+41 silly mapToRegistry   rawSpec: '',
+41 silly mapToRegistry   spec: 'latest',
+41 silly mapToRegistry   type: 'tag' }
+42 silly mapToRegistry uri https://registry.npmjs.org/omeletjs
+43 verbose publish registryBase https://registry.npmjs.org/
+44 silly publish uploading C:\Users\reidm\AppData\Roaming\npm-cache\omeletjs\1.0.0\package.tgz
+45 verbose request uri https://registry.npmjs.org/omeletjs
+46 verbose request sending authorization for write operation
+47 info attempt registry request try #1 at 11:09:50 PM
+48 verbose request using bearer token for auth
+49 http request PUT https://registry.npmjs.org/omeletjs
+50 http 403 https://registry.npmjs.org/omeletjs
+51 verbose headers { 'content-type': 'application/json',
+51 verbose headers   'cache-control': 'max-age=300',
+51 verbose headers   'content-length': '95',
+51 verbose headers   'accept-ranges': 'bytes',
+51 verbose headers   date: 'Mon, 26 Sep 2016 06:09:53 GMT',
+51 verbose headers   via: '1.1 varnish',
+51 verbose headers   connection: 'keep-alive',
+51 verbose headers   'x-served-by': 'cache-sjc3123-SJC',
+51 verbose headers   'x-cache': 'MISS',
+51 verbose headers   'x-cache-hits': '0',
+51 verbose headers   'x-timer': 'S1474870193.366446,VS0,VE146',
+51 verbose headers   vary: 'Accept-Encoding' }
+52 verbose request invalidating C:\Users\reidm\AppData\Roaming\npm-cache\registry.npmjs.org\omeletjs on PUT
+53 error publish Failed PUT 403
+54 verbose stack Error: "You cannot publish over the previously published version 1.0.0." : omeletjs
+54 verbose stack     at makeError (C:\Program Files\nodejs\node_modules\npm\node_modules\npm-registry-client\lib\request.js:264:12)
+54 verbose stack     at CachingRegistryClient.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\npm-registry-client\lib\request.js:252:14)
+54 verbose stack     at Request._callback (C:\Program Files\nodejs\node_modules\npm\node_modules\npm-registry-client\lib\request.js:172:14)
+54 verbose stack     at Request.self.callback (C:\Program Files\nodejs\node_modules\npm\node_modules\request\request.js:200:22)
+54 verbose stack     at emitTwo (events.js:87:13)
+54 verbose stack     at Request.emit (events.js:172:7)
+54 verbose stack     at Request.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\request\request.js:1067:10)
+54 verbose stack     at emitOne (events.js:82:20)
+54 verbose stack     at Request.emit (events.js:169:7)
+54 verbose stack     at IncomingMessage.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\request\request.js:988:12)
+55 verbose statusCode 403
+56 verbose pkgid omeletjs
+57 verbose cwd C:\Users\reidm\Code\omelet\omelet
+58 error Windows_NT 10.0.14393
+59 error argv "C:\\Program Files\\nodejs\\node.exe" "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js" "publish" "omeletjs"
+60 error node v4.5.0
+61 error npm  v2.15.9
+62 error code E403
+63 error "You cannot publish over the previously published version 1.0.0." : omeletjs
+64 error If you need help, you may report this error at:
+64 error     <https://github.com/npm/npm/issues>
+65 verbose exit [ 1, true ]
