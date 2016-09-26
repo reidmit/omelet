@@ -69,7 +69,7 @@ To use:
 
 ## API
 
-**`omelet.compile(source, [options])`**
+### `omelet.compile(source, [options])`
 
 *Parameters:*
 - `source`: A string of Omelet code.
@@ -78,7 +78,7 @@ To use:
 *Returns:*
 - A JavaScript function that takes in a context object and returns an HTML string.
 
-**`omelet.compileFile(path, [options])`**
+### `omelet.compileFile(path, [options])`
 
 *Parameters:*
 - `path`: Path to a file containing Omelet code (relative to current directory).
@@ -87,7 +87,7 @@ To use:
 *Returns:*
 - A JavaScript function that takes in a context object and returns an HTML string.
 
-**`omelet.render(source, context, [options])`**
+### `omelet.render(source, context, [options])`
 
 *Parameters:*
 - `source`: A string of Omelet code.
@@ -97,7 +97,7 @@ To use:
 *Returns:*
 - An HTML string, with variables resolved based on the given context.
 
-**`omelet.renderFile(path, context, [options])`**
+### `omelet.renderFile(path, context, [options])`
 
 *Parameters:*
 - `path`: Path to a file containing Omelet code (relative to current directory).
