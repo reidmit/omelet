@@ -1,12 +1,8 @@
 {
   "name": "omelet",
   "version": "1.0.0",
-  "description": "A language for writing web pages & templates that compiles into HTML",
+  "description": "A language for writing web pages + templates that compiles into HTML",
   "dependencies": {
-    "commander": "^2.9.0",
-    "mkdirp": "^0.5.1",
-    "striptags": "^2.1.1",
-    "chokidar": "^1.4.2",
     "uglify-js": "^2.6.4"
   },
   "devDependencies": {
@@ -15,7 +11,6 @@
     "eslint": "^2.12.0",
     "eslint-config-standard": "^5.3.1",
     "eslint-plugin-standard": "^1.3.2",
-    "glob": "^7.0.6",
     "mocha": "^2.5.3",
     "mocha-lcov-reporter": "^1.2.0"
   },
@@ -23,9 +18,6 @@
     "coverage": "mocha --require blanket -R html-cov > coverage.html",
     "test": "mocha",
     "lint": "eslint --quiet **/*.js"
-  },
-  "bin": {
-    "omelet": "bin/command-line.js"
   },
   "author": "Reid Mitchell",
   "license": "MIT",
@@ -39,7 +31,9 @@
     "omelet",
     "template",
     "engine",
-    "language"
+    "language",
+    "html",
+    "preprocessor"
   ],
   "bugs": {
     "url": "https://github.com/reid47/omelet/issues"

@@ -1582,11 +1582,7 @@ describe('Node API', function() {
 
     it('renders Omelet from source (default options)', function() {
         var source = '@div.content\n  hello {name}!',
-            rendered = omelet.render(source, {
-                context: {
-                    name: 'reid'
-                }
-            })
+            rendered = omelet.render(source, {name: 'reid'})
 
         assert(typeof rendered === 'string')
     })
