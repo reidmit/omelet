@@ -1,6 +1,6 @@
 {
   "name": "omeletjs",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A language for writing web pages + templates that compiles into HTML",
   "main": "lib/omelet.js",
   "dependencies": {
