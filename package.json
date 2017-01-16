@@ -3,9 +3,7 @@
   "version": "2.0.2",
   "description": "A language for writing web pages + templates that compiles into HTML",
   "main": "lib/omelet.js",
-  "dependencies": {
-    "uglify-js": "^2.6.4"
-  },
+  "dependencies": {},
   "devDependencies": {
     "blanket": "^1.2.3",
     "coveralls": "^2.11.11",

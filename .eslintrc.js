@@ -4,6 +4,9 @@ module.exports = {
         'node': true,
         'mocha': true
     },
+    'parserOptions': {
+        'ecmaVersion': 6
+    },
     'extends': 'eslint:recommended',
     'rules': {
         'comma-spacing': [
@@ -30,6 +33,7 @@ module.exports = {
             {'skipBlankLines': true }
         ],
         'no-unneeded-ternary': 'error',
+        'no-var': 'error',
         'quotes': [
             'error',
             'single'

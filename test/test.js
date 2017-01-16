@@ -1,17 +1,16 @@
-var assert = require('assert')
-
-var lexer = require('../lib/lexer.js')
-var parser = require('../lib/parser.js')
-var linker = require('../lib/linker.js')
-var compiler = require('../lib/compiler.js')
-var util = require('../lib/util.js')
-var runtime = require('../lib/runtime.js')
-var omelet = require('../lib/omelet.js')
+const assert = require('assert')
+const lexer = require('../lib/lexer.js')
+const parser = require('../lib/parser.js')
+const linker = require('../lib/linker.js')
+const compiler = require('../lib/compiler.js')
+const util = require('../lib/util.js')
+const runtime = require('../lib/runtime.js')
+const omelet = require('../lib/omelet.js')
 
 function omeletToHtml(input, context, options) {
     context = context || {}
     options = options || {}
-    var tokens = lexer.lex(input, options),
+    const tokens = lexer.lex(input, options),
         ast = parser.parse(tokens, options),
         linkedAst = linker.link(ast, options),
         template = compiler.compile(linkedAst, options)
@@ -19,12 +18,10 @@ function omeletToHtml(input, context, options) {
 }
 
 describe('Tags', function() {
-    var context = {},
-        options = {
-            prettyPrint: false
-        }
+    const context = {}
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'plain tag',
             input: '@h1 hello, world!',
@@ -33,7 +30,7 @@ describe('Tags', function() {
         {
             name: 'several tags',
             input: '@h1 hello, world!\n@h2 hi!\n@h3 this is omelet',
-            output: '<h1>hello, world!</h1><h2>hi!</h2><h3>this is omelet</h3>'
+            output: '<h1>hello, world!</h1>\n<h2>hi!</h2>\n<h3>this is omelet</h3>'
         },
         {
             name: 'tags with attributes',
@@ -58,7 +55,7 @@ describe('Tags', function() {
         {
             name: 'nested block tags',
             input: '@div\n  @div\n    @h1 hello!\n  @div\n    @h2 hello!',
-            output: '<div><div><h1>hello!</h1></div><div><h2>hello!</h2></div></div>'
+            output: '<div>\n    <div>\n        <h1>hello!</h1>\n    </div>\n    <div>\n        <h2>hello!</h2>\n    </div>\n</div>'
         }
     ]
 
@@ -68,7 +65,7 @@ describe('Tags', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'invalid characters in attributes',
             input: '@div[key=val <] something',
@@ -96,59 +93,59 @@ describe('Tags', function() {
 })
 
 describe('Filters', function() {
-    var context = {
-            word: 'omelet',
-            sentence: 'Omelet is cool!',
-            padded: '     lots of spaces        ',
-            number: 47,
-            listOfNumbers: [4, 8, 15, 16, 23, 42],
-            listUnsorted: [42, 8, 16, 4, 23, 15],
-            listOfMixed: [true, 47, 'hello', 23, 42, 23],
-            listShort: ['lol'],
-            listOfObjects: [
-                {
-                    name: 'book',
-                    price: 20,
-                    date: new Date('12/23/1993')
-                },
-                {
-                    name: 'sandwich',
-                    price: 7,
-                    date: new Date('5/15/2016')
-                },
-                {
-                    name: 'coffee',
-                    price: 2,
-                    date: new Date('10/20/2014')
-                }
-            ],
-            listOfLists: [
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9]
-            ],
-            object: {
-                price: 20,
+    const context = {
+        word: 'omelet',
+        sentence: 'Omelet is cool!',
+        padded: '     lots of spaces        ',
+        number: 47,
+        listOfNumbers: [4, 8, 15, 16, 23, 42],
+        listUnsorted: [42, 8, 16, 4, 23, 15],
+        listOfMixed: [true, 47, 'hello', 23, 42, 23],
+        listShort: ['lol'],
+        listOfObjects: [
+            {
                 name: 'book',
+                price: 20,
                 date: new Date('12/23/1993')
             },
-            cat: {
-                age: 7
+            {
+                name: 'sandwich',
+                price: 7,
+                date: new Date('5/15/2016')
             },
-            date1: new Date('12/23/1993'),
-            date2: new Date('5/15/2016'),
-            dateString: '12/23/1993',
-            htmlString: '<h1 id="anchor">hello, world!</h1>',
-            unsafeString1: '<script>console.log("gotcha");</script>',
-            unsafeString2: 'x & y',
-            emptyString: '',
-            nullValue: null,
-            undefinedValue: undefined
+            {
+                name: 'coffee',
+                price: 2,
+                date: new Date('10/20/2014')
+            }
+        ],
+        listOfLists: [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ],
+        object: {
+            price: 20,
+            name: 'book',
+            date: new Date('12/23/1993')
         },
-        options = {
-            prettyPrint: false
-        }
-    var examples = [
+        cat: {
+            age: 7
+        },
+        date1: new Date('12/23/1993'),
+        date2: new Date('5/15/2016'),
+        dateString: '12/23/1993',
+        htmlString: '<h1 id="anchor">hello, world!</h1>',
+        unsafeString1: '<script>console.log("gotcha");</script>',
+        unsafeString2: 'x & y',
+        emptyString: '',
+        nullValue: null,
+        undefinedValue: undefined
+    }
+
+    const options = {}
+
+    const examples = [
         {
             name: 'eq',
             input: '{word | eq "omelet"}, {word | eq 47}, {number | eq 47}, {object | eq object}, {object | eq listOfObjects[0]}, {listOfMixed | eq listShort}, {listOfMixed | eq listOfNumbers}, {listOfNumbers | eq listOfNumbers}, {object | eq cat}, {listOfObjects[0] | eq listOfObjects[1]}, {date1 | eq date2}',
@@ -362,7 +359,7 @@ describe('Filters', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing filter name after |',
             input: '{word |}',
@@ -395,12 +392,10 @@ describe('Filters', function() {
 })
 
 describe('Doctypes', function() {
-    var context = {},
-        options = {
-            prettyPrint: false
-        }
+    const context = {}
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'html',
             input: '@doctype html',
@@ -494,7 +489,7 @@ describe('Doctypes', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'multiple doctypes in same file',
             input: '@doctype 5\n@doctype html',
@@ -512,12 +507,10 @@ describe('Doctypes', function() {
 })
 
 describe('Comments', function() {
-    var context = {},
-        options = {
-            prettyPrint: false
-        }
+    const context = {}
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'full-line comment',
             input: '## this is a full-line comment\n',
@@ -543,16 +536,14 @@ describe('Comments', function() {
 })
 
 describe('Interpolations', function() {
-    var context = {
-            word: 'omelet',
-            unsafe: '<script>&\'\"</script>',
-            number: 47
-        },
-        options = {
-            prettyPrint: false
-        }
+    const context = {
+        word: 'omelet',
+        unsafe: '<script>&\'\"</script>',
+        number: 47
+    }
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'simple interpolation',
             input: '{word}',
@@ -596,7 +587,7 @@ describe('Interpolations', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'no variable name in interpolation',
             input: 'bad: {}',
@@ -619,20 +610,18 @@ describe('Interpolations', function() {
 })
 
 describe('If statements', function() {
-    var context = {
-            valueT: true,
-            valueF: false,
-            valueF2: false,
-            word: 'omelet',
-            empty: '',
-            nullValue: null,
-            list: [1, 2, 3, 4, 5]
-        },
-        options = {
-            prettyPrint: false
-        }
+    const context = {
+        valueT: true,
+        valueF: false,
+        valueF2: false,
+        word: 'omelet',
+        empty: '',
+        nullValue: null,
+        list: [1, 2, 3, 4, 5]
+    }
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'just if (true)',
             input: '>if valueT\n  this',
@@ -701,7 +690,7 @@ describe('If statements', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing predicate after >if',
             input: '>if \n  ok',
@@ -724,21 +713,19 @@ describe('If statements', function() {
 })
 
 describe('Indents & newlines', function() {
-    var context = {},
-        options = {
-            prettyPrint: false
-        }
+    const context = {}
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'indented, nested tags',
             input: '@div hello\n@ul\n  @li|a[href=#] item\n  @li|a[href=#] item\n  @li|a[href=#]\n    @h1 headline',
-            output: '<div>hello</div><ul><li><a href="#">item</a></li><li><a href="#">item</a></li><li><a href="#"><h1>headline</h1></a></li></ul>'
+            output: '<div>hello</div>\n<ul>\n    <li><a href="#">item</a></li>\n    <li><a href="#">item</a></li>\n    <li><a href="#">\n        <h1>headline</h1>\n    </a></li>\n</ul>'
         },
         {
             name: '\\r\\n linebreaks',
             input: '@div\r\n  @div hello, world',
-            output: '<div><div>hello, world</div></div>'
+            output: '<div>\n    <div>hello, world</div>\n</div>'
         },
         {
             name: 'consecutive blank lines',
@@ -753,7 +740,7 @@ describe('Indents & newlines', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'first line of input is indented',
             input: '   hello!',
@@ -776,14 +763,12 @@ describe('Indents & newlines', function() {
 })
 
 describe('Definitions', function() {
-    var context = {
-            word: 'omelet'
-        },
-        options = {
-            prettyPrint: false
-        }
+    const context = {
+        word: 'omelet'
+    }
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'number definition (positive integer)',
             input: '+ number = 47\n{number}, {number | type_of}',
@@ -847,7 +832,7 @@ describe('Definitions', function() {
         {
             name: 'dictionary with blocks taking parameters',
             input: '+ obj =\n  + greet name = hello {name}\n  + article title subtitle =\n    @div\n      @h1 {title}\n      @h2 {subtitle}\n\n{obj.greet "Reid"}\n{obj.article "Hello" "This is an article"}',
-            output: 'hello Reid\n<div><h1>Hello</h1><h2>This is an article</h2></div>'
+            output: 'hello Reid\n<div>\n    <h1>Hello</h1>\n    <h2>This is an article</h2>\n</div>'
         },
         {
             name: 'list of simple values',
@@ -877,7 +862,7 @@ describe('Definitions', function() {
         {
             name: 'definition with parameters',
             input: '+headline title author =\n  @h1.headline {title}\n  @h6.byline by {author}\n\n{headline "hello!" "reid"}',
-            output: '<h1 class="headline">hello!</h1><h6 class="byline">by reid</h6>'
+            output: '<h1 class="headline">hello!</h1>\n<h6 class="byline">by reid</h6>'
         }
     ]
 
@@ -887,7 +872,7 @@ describe('Definitions', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing identifier after +',
             input: '+ 47 = thing',
@@ -940,22 +925,20 @@ describe('Definitions', function() {
 })
 
 describe('Modifiers', function() {
-    var context = {
-            object: {
-                name: 'omelet',
-                list: [4, 8, 15, 16, 23, 42],
-                person: {
-                    name: 'reid',
-                    age: 22
-                },
-                3: 'indexed by number'
-            }
-        },
-        options = {
-            prettyPrint: false
+    const context = {
+        object: {
+            name: 'omelet',
+            list: [4, 8, 15, 16, 23, 42],
+            person: {
+                name: 'reid',
+                age: 22
+            },
+            3: 'indexed by number'
         }
+    }
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'object property access with .key',
             input: '{object.name}',
@@ -989,7 +972,7 @@ describe('Modifiers', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing identifier after .',
             input: '{object.}',
@@ -1017,29 +1000,27 @@ describe('Modifiers', function() {
 })
 
 describe('For loops', function() {
-    var context = {
-            items: [
-                {
-                    name: 'book',
-                    price: 15
-                },
-                {
-                    name: 'sandwich',
-                    price: 7
-                },
-                {
-                    name: 'coffee',
-                    price: 3
-                }
-            ],
-            list: [4, 8, 15, 16, 23, 42],
-            emptyList: []
-        },
-        options = {
-            prettyPrint: false
-        }
+    const context = {
+        items: [
+            {
+                name: 'book',
+                price: 15
+            },
+            {
+                name: 'sandwich',
+                price: 7
+            },
+            {
+                name: 'coffee',
+                price: 3
+            }
+        ],
+        list: [4, 8, 15, 16, 23, 42],
+        emptyList: []
+    }
+    const options = {}
 
-    var examples = [
+    const examples = [
         {
             name: 'loop over array of objects',
             input: '>for item in items\n  the {item.name} costs ${item.price}\n\nonce',
@@ -1078,7 +1059,7 @@ describe('For loops', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing identifier after >for',
             input: '>for \n',
@@ -1121,32 +1102,31 @@ describe('For loops', function() {
 })
 
 describe('Modes', function() {
-    var context = {},
-        options = {
-            modes: {
-                uppercase: function(input) {
-                    return input.toUpperCase()
-                },
-                bad: 'hello!'
+    const context = {}
+    const options = {
+        modes: {
+            uppercase: function(input) {
+                return input.toUpperCase()
             },
-            prettyPrint: false
+            bad: 'hello!'
         }
+    }
 
-    var examples = [
+    const examples = [
         {
             name: 'default mode (raw text)',
             input: ':modeName\n  this is raw text in a default mode{\n  and {}it will be rendered\n  >exactly as it { was written}',
-            output: '\nthis is raw text in a default mode{\nand {}it will be rendered\n>exactly as it { was written}\n'
+            output: 'this is raw text in a default mode{\nand {}it will be rendered\n>exactly as it { was written}\n'
         },
         {
             name: 'custom mode',
             input: ':uppercase\n  this is raw text that will\n  be converted to uppercase\n  by the "uppercase" mode',
-            output: '\nTHIS IS RAW TEXT THAT WILL\nBE CONVERTED TO UPPERCASE\nBY THE "UPPERCASE" MODE\n'
+            output: 'THIS IS RAW TEXT THAT WILL\nBE CONVERTED TO UPPERCASE\nBY THE "UPPERCASE" MODE\n'
         },
         {
             name: 'invalid mode (not a function)',
-            input: ':bad\n  this text will not be changed',
-            output: '\nthis text will not be changed\n'
+            input: ':bad\n  this text will not be changed{}!',
+            output: 'this text will not be changed{}!\n'
         },
         {
             name: 'text beginning with : (not a mode)',
@@ -1161,12 +1141,22 @@ describe('Modes', function() {
         {
             name: 'extra spaces after mode name',
             input: ':uppercase   \n  this is raw text',
-            output: '\nTHIS IS RAW TEXT\n'
+            output: 'THIS IS RAW TEXT\n'
         },
         {
             name: 'text following mode',
             input: ':uppercase\n  this is\n  raw text\nand this is regular text',
-            output: '\nTHIS IS\nRAW TEXT\nand this is regular text'
+            output: 'THIS IS\nRAW TEXT\nand this is regular text'
+        },
+        {
+            name: 'text with consecutive newlines',
+            input: ':uppercase\n  this is one line\n\n\n  this is another line\nthis is not included',
+            output: 'THIS IS ONE LINE\n\nTHIS IS ANOTHER LINE\nthis is not included'
+        },
+        {
+            name: 'text with only spaces on blank lines',
+            input: ':uppercase\n  this is one line\n  \n   \n\n  this is another line\nthis is not included',
+            output: 'THIS IS ONE LINE\n\n\n\nTHIS IS ANOTHER LINE\nthis is not included'
         }
     ]
 
@@ -1178,13 +1168,12 @@ describe('Modes', function() {
 })
 
 describe('Imports', function() {
-    var context = {},
-        options = {
-            filePath: __dirname + '/test',
-            prettyPrint: false
-        }
+    const context = {}
+    const options = {
+        filePath: __dirname + '/test'
+    }
 
-    var examples = [
+    const examples = [
         {
             name: 'file import',
             input: '>import omelet-files/testMacros as tm\n{tm.word}',
@@ -1213,7 +1202,7 @@ describe('Imports', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing path after \'>import\'',
             input: '>import \n',
@@ -1276,22 +1265,21 @@ describe('Imports', function() {
 })
 
 describe('Extends', function() {
-    var context = {},
-        options = {
-            filePath: __dirname + '/test',
-            prettyPrint: false
-        }
+    const context = {}
+    const options = {
+        filePath: __dirname + '/test'
+    }
 
-    var examples = [
+    const examples = [
         {
             name: 'simple extend statement',
             input: '>extend omelet-files/base\n+theHead = the head!\n+theBody = the body!',
-            output: '<html><head>the head!</head><body>the body!</body></html>'
+            output: '<html>\n    <head>\n        the head!\n    </head>\n    <body>\n        the body!\n    </body>\n</html>'
         },
         {
             name: 'chain of extended files',
             input: '>extend omelet-files/intermediate\n+subHead = OMELET!\n+subBody = so cool!',
-            output: '<html><head>the head is OMELET!</head><body>the body is so cool!</body></html>'
+            output: '<html>\n    <head>\n        the head is OMELET!\n    </head>\n    <body>\n        the body is so cool!\n    </body>\n</html>'
         }
     ]
 
@@ -1301,7 +1289,7 @@ describe('Extends', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing path after >extend',
             input: '>extend \n',
@@ -1334,13 +1322,12 @@ describe('Extends', function() {
 })
 
 describe('Includes', function() {
-    var context = {},
-        options = {
-            filePath: __dirname + '/test',
-            prettyPrint: false
-        }
+    const context = {}
+    const options = {
+        filePath: __dirname + '/test'
+    }
 
-    var examples = [
+    const examples = [
         {
             name: 'include w/ external file (no context)',
             input: '>include omelet-files/simple',
@@ -1379,7 +1366,7 @@ describe('Includes', function() {
         })
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'missing path after >include',
             input: '>include \n',
@@ -1412,8 +1399,7 @@ describe('Includes', function() {
  * manually-constructed list of tokens.
  */
 describe('Parser (misc.)', function() {
-
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'unexpected token',
             tokens: [{kind: 'end-interpolation', value: '}', line: 1}],
@@ -1436,7 +1422,7 @@ describe('Parser (misc.)', function() {
  */
 describe('Linker (misc.)', function() {
     it('fails when node kind is unrecognized', function() {
-        var ast = {
+        const ast = {
             kind: 'Document',
             extend: null,
             imports: [],
@@ -1447,7 +1433,7 @@ describe('Linker (misc.)', function() {
         }, /Linker error/)
     })
 
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'import-dir path is not a directory',
             input: '>import-dir omelet-files/base as b\n',
@@ -1480,8 +1466,7 @@ describe('Linker (misc.)', function() {
  * manually-constructed linked AST.
  */
 describe('Compiler (misc.)', function() {
-
-    var bad_examples = [
+    const bad_examples = [
         {
             name: 'Include/Import/Extend/Path node seen by compiler',
             ast: {
@@ -1518,7 +1503,7 @@ describe('Utility functions', function() {
     })
 
     it('util#printAST should work', function() {
-        var input = '@h1 hello, world',
+        const input = '@h1 hello, world',
             tokens = lexer.lex(input),
             ast = parser.parse(tokens)
         assert.equal(util.printAST(ast),
@@ -1543,7 +1528,7 @@ describe('Utility functions', function() {
 describe('Runtime', function() {
     it('fails when a variable is re-defined in the same scope', function() {
         assert.throws(function() {
-            var scope = new runtime.Scope()
+            const scope = new runtime.Scope()
             scope.add('key', 'value')
             scope.add('key', 'another value')
         }, /Runtime error/)
@@ -1551,14 +1536,14 @@ describe('Runtime', function() {
 
     it('fails when trying to find an undefined variable', function() {
         assert.throws(function() {
-            var scope = new runtime.Scope()
+            const scope = new runtime.Scope()
             scope.find('key')
         }, /Runtime error/)
     })
 
     it('fails when accessing a non-existent property of an object in scope', function() {
         assert.throws(function() {
-            var scope = new runtime.Scope()
+            const scope = new runtime.Scope()
             scope.add('obj', {word: 'omelet'})
             scope.find('obj', 'undefinedProperty')
         }, /Runtime error/)
@@ -1567,28 +1552,28 @@ describe('Runtime', function() {
 
 describe('Node API', function() {
     it('compiles Omelet from source (default options)', function() {
-        var source = '@div.content\n  hello {name}!',
+        const source = '@div.content\n  hello {name}!',
             template = omelet.compile(source)
 
         assert(typeof template === 'function')
     })
 
     it('compiles Omelet from file (default options)', function() {
-        var file = __dirname + '/omelet-files/child.omelet',
+        const file = __dirname + '/omelet-files/child.omelet',
             template = omelet.compileFile(file)
 
         assert(typeof template === 'function')
     })
 
     it('renders Omelet from source (default options)', function() {
-        var source = '@div.content\n  hello {name}!',
+        const source = '@div.content\n  hello {name}!',
             rendered = omelet.render(source, {name: 'reid'})
 
         assert(typeof rendered === 'string')
     })
 
     it('renders Omelet from file (default options)', function() {
-        var file = __dirname + '/omelet-files/child.omelet',
+        const file = __dirname + '/omelet-files/child.omelet',
             rendered = omelet.renderFile(file)
 
         assert(typeof rendered === 'string')
