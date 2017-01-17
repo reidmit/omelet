@@ -18,7 +18,7 @@ Here's an example of what it looks like:
 
     >import-dir path/to/posts as posts
 
-    ## a macro called 'preview' that takes 3 parameters
+    ## define a macro called 'preview' that takes 3 parameters
 
     +preview title date url =
       @li.post-preview
@@ -26,7 +26,7 @@ Here's an example of what it looks like:
         @span.post-date posted on {date}
         @a[href={url}] read more...
 
-    ## some markup, including a for-loop over 'posts'
+    ## some markup, including a for loop over 'posts'
 
     @html
       @head
@@ -55,11 +55,11 @@ To use:
     // compile Omelet string into template function
     template = omelet.compile('@h1 Hello, {name}!');
 
+    // or, compile Omelet file into template function
+    template = omelet.compileFile('path/to/file.omelet');
+
     // render template into HTML string by passing in a context
     html = template({name: 'Reid'}); // -> '<h1>Hello, Reid!</h1>'
-
-    // compile Omelet file into template function
-    template = omelet.compileFile('path/to/file.omelet');
 
     // render Omelet string into HTML string by passing in a context
     html = omelet.render('@h1 Hello, {name}!', {name: 'Reid'});

@@ -213,18 +213,18 @@ describe('Filters', function() {
         },
         {
             name: 'trim',
-            input: '{padded | trim}, {number | trim}',
-            output: 'lots of spaces, 47'
+            input: '(BEGIN){padded | trim}, {number | trim}(END)',
+            output: '(BEGIN)lots of spaces, 47(END)'
         },
         {
             name: 'ltrim',
-            input: '{padded | ltrim}, {number | ltrim}',
-            output: 'lots of spaces        , 47'
+            input: '(BEGIN){padded | ltrim}, {number | ltrim}(END)',
+            output: '(BEGIN)lots of spaces        , 47(END)'
         },
         {
             name: 'rtrim',
-            input: '{padded | rtrim}, {number | rtrim}',
-            output: '     lots of spaces, 47'
+            input: '(BEGIN){padded | rtrim}, {number | rtrim}(END)',
+            output: '(BEGIN)     lots of spaces, 47(END)'
         },
         {
             name: 'replace',
@@ -319,12 +319,12 @@ describe('Filters', function() {
         {
             name: 'nth',
             input: '{listOfNumbers | nth 4}, {listOfNumbers | nth 100}, {word | nth 0}, {number | nth 7}, {word | nth 1000}',
-            output: '23, , o, , '
+            output: '23, , o, ,'
         },
         {
             name: 'get',
             input: '{object | get "price"}, {listOfObjects[1] | get "name"}, {listOfObjects[1] | get "something undefined"}, {number | get "prop"}',
-            output: '20, sandwich, , '
+            output: '20, sandwich, ,'
         },
         {
             name: 'type_of',
@@ -519,7 +519,7 @@ describe('Comments', function() {
         {
             name: 'partial-line comment',
             input: 'something ## this is a partial-line comment\n',
-            output: 'something '
+            output: 'something'
         },
         {
             name: 'escaped non-comment',
@@ -720,7 +720,7 @@ describe('Indents & newlines', function() {
         {
             name: 'indented, nested tags',
             input: '@div hello\n@ul\n  @li|a[href=#] item\n  @li|a[href=#] item\n  @li|a[href=#]\n    @h1 headline',
-            output: '<div>hello</div>\n<ul>\n    <li><a href="#">item</a></li>\n    <li><a href="#">item</a></li>\n    <li><a href="#">\n        <h1>headline</h1>\n    </a></li>\n</ul>'
+            output: '<div>hello</div>\n<ul>\n    <li><a href="#">item</a></li>\n    <li><a href="#">item</a></li>\n    <li>\n    <a href="#">\n        <h1>headline</h1>\n    </a>\n    </li>\n</ul>'
         },
         {
             name: '\\r\\n linebreaks',
@@ -1029,7 +1029,7 @@ describe('For loops', function() {
         {
             name: 'loop over array of numbers with filters',
             input: '>for num in list | filter (gt 20)\n  greater than 20: {num}',
-            output: 'greater than 20: 23\ngreater than 20: 42\n'
+            output: 'greater than 20: 23\ngreater than 20: 42'
         },
         {
             name: 'loop over empty array',
@@ -1039,17 +1039,17 @@ describe('For loops', function() {
         {
             name: 'loop over range of numbers (increasing)',
             input: '>for n in 1..10\n  {n}.',
-            output: '1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n10.\n'
+            output: '1.\n2.\n3.\n4.\n5.\n6.\n7.\n8.\n9.\n10.'
         },
         {
             name: 'loop over range of numbers (decreasing)',
             input: '>for n in 10..1\n  {n}.',
-            output: '10.\n9.\n8.\n7.\n6.\n5.\n4.\n3.\n2.\n1.\n'
+            output: '10.\n9.\n8.\n7.\n6.\n5.\n4.\n3.\n2.\n1.'
         },
         {
             name: 'loop over range of numbers (w/ negatives)',
             input: '>for n in -3..3\n  {n}.',
-            output: '-3.\n-2.\n-1.\n0.\n1.\n2.\n3.\n'
+            output: '-3.\n-2.\n-1.\n0.\n1.\n2.\n3.'
         }
     ]
 
@@ -1116,17 +1116,17 @@ describe('Modes', function() {
         {
             name: 'default mode (raw text)',
             input: ':modeName\n  this is raw text in a default mode{\n  and {}it will be rendered\n  >exactly as it { was written}',
-            output: 'this is raw text in a default mode{\nand {}it will be rendered\n>exactly as it { was written}\n'
+            output: 'this is raw text in a default mode{\nand {}it will be rendered\n>exactly as it { was written}'
         },
         {
             name: 'custom mode',
             input: ':uppercase\n  this is raw text that will\n  be converted to uppercase\n  by the "uppercase" mode',
-            output: 'THIS IS RAW TEXT THAT WILL\nBE CONVERTED TO UPPERCASE\nBY THE "UPPERCASE" MODE\n'
+            output: 'THIS IS RAW TEXT THAT WILL\nBE CONVERTED TO UPPERCASE\nBY THE "UPPERCASE" MODE'
         },
         {
             name: 'invalid mode (not a function)',
             input: ':bad\n  this text will not be changed{}!',
-            output: 'this text will not be changed{}!\n'
+            output: 'this text will not be changed{}!'
         },
         {
             name: 'text beginning with : (not a mode)',
@@ -1141,7 +1141,7 @@ describe('Modes', function() {
         {
             name: 'extra spaces after mode name',
             input: ':uppercase   \n  this is raw text',
-            output: 'THIS IS RAW TEXT\n'
+            output: 'THIS IS RAW TEXT'
         },
         {
             name: 'text following mode',
@@ -1151,12 +1151,12 @@ describe('Modes', function() {
         {
             name: 'text with consecutive newlines',
             input: ':uppercase\n  this is one line\n\n\n  this is another line\nthis is not included',
-            output: 'THIS IS ONE LINE\n\nTHIS IS ANOTHER LINE\nthis is not included'
+            output: 'THIS IS ONE LINE\n\n\nTHIS IS ANOTHER LINE\nthis is not included'
         },
         {
             name: 'text with only spaces on blank lines',
-            input: ':uppercase\n  this is one line\n  \n   \n\n  this is another line\nthis is not included',
-            output: 'THIS IS ONE LINE\n\n\n\nTHIS IS ANOTHER LINE\nthis is not included'
+            input: ':uppercase\n  this is one line\n  \n  \n  this is another line\nthis is not included',
+            output: 'THIS IS ONE LINE\n\n\nTHIS IS ANOTHER LINE\nthis is not included'
         }
     ]
 
@@ -1187,7 +1187,7 @@ describe('Imports', function() {
         {
             name: 'directory import',
             input: '>import-dir omelet-files/testPosts as posts\n>for post in posts\n  title: {post.title}',
-            output: 'title: the first post\ntitle: the second post\ntitle: the third post\n'
+            output: 'title: the first post\ntitle: the second post\ntitle: the third post'
         },
         {
             name: 'tags import',
