@@ -134,6 +134,7 @@ describe('Filters', function() {
         },
         date1: new Date('12/23/1993'),
         date2: new Date('5/15/2016'),
+        dateWithTime: new Date("Thu, 23 Dec 1993 17:43:00 GMT"),
         dateString: '12/23/1993',
         htmlString: '<h1 id="anchor">hello, world!</h1>',
         unsafeString1: '<script>console.log("gotcha");</script>',
@@ -310,6 +311,11 @@ describe('Filters', function() {
             name: 'to_date',
             input: '{dateString | to_date | type_of}',
             output: 'Date'
+        },
+        {
+            name: 'date_format',
+            input: '{dateWithTime | date_format "%MM %d, %yyyy"}; {dateWithTime | date_format "%hh:%nn:%ss"}',
+            output: 'December 23, 1993; 09:43:00'
         },
         {
             name: 'default',
