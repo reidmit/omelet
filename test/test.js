@@ -145,6 +145,7 @@ describe('Filters', function() {
             saturday: new Date('1/10/1920')
         },
         dateString: '12/23/1993',
+        dateStringList: ['2/1/2016', 'March 3, 2016', '4 April 2016', 'Jun 5 2016', 'October 31 2016'],
         htmlString: '<h1 id="anchor">hello, world!</h1>',
         unsafeString1: '<script>console.log("gotcha");</script>',
         unsafeString2: 'x & y',
@@ -331,7 +332,12 @@ describe('Filters', function() {
                    '{multiDate.wednesday | date_format "%DD in %MM"}; {multiDate.wednesday | date_format "%D in %M"}\n' +
                    '{multiDate.thursday | date_format "%DD in %MM"}; {multiDate.thursday | date_format "%D in %M"}\n' +
                    '{multiDate.friday | date_format "%DD in %MM"}; {multiDate.friday | date_format "%D in %M"}\n' +
-                   '{multiDate.saturday | date_format "%DD in %MM"}; {multiDate.saturday | date_format "%D in %M"}\n',
+                   '{multiDate.saturday | date_format "%DD in %MM"}; {multiDate.saturday | date_format "%D in %M"}\n' +
+                   '{dateStringList[0] | to_date | date_format "%dd of %MM at %HH:%nn:%ss"}\n' +
+                   '{dateStringList[1] | to_date | date_format "%dd of %MM at %HH:%nn:%ss"}\n' +
+                   '{dateStringList[2] | to_date | date_format "%dd of %MM at %HH:%nn:%ss"}\n' +
+                   '{dateStringList[3] | to_date | date_format "%dd of %MM at %HH:%nn:%ss"}\n' +
+                   '{dateStringList[4] | to_date | date_format "%dd of %MM at %HH:%nn:%ss"}',
             output: 'December 23, 1993\n' +
                     '09:43:00\n' +
                     'Sunday in May; Sun in May\n' +
@@ -340,7 +346,12 @@ describe('Filters', function() {
                     'Wednesday in November; Wed in Nov\n' +
                     'Thursday in December; Thurs in Dec\n' +
                     'Friday in July; Fri in Jul\n' +
-                    'Saturday in January; Sat in Jan'
+                    'Saturday in January; Sat in Jan\n' +
+                    '01 of February at 00:00:00\n' +
+                    '03 of March at 00:00:00\n' +
+                    '04 of April at 00:00:00\n' +
+                    '05 of June at 00:00:00\n' +
+                    '31 of October at 00:00:00'
         },
         {
             name: 'default',
