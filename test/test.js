@@ -1204,6 +1204,11 @@ describe('Modes', function() {
             name: 'mode block with blank lines and various indent levels',
             input: ':uppercase\n  one indent level\n\n    another indent level\n  first level again\nthis is not included',
             output: 'ONE INDENT LEVEL\n\n  ANOTHER INDENT LEVEL\nFIRST LEVEL AGAIN\nthis is not included'
+        },
+        {
+            name: 'mode block inside indented block tag',
+            input: '@head\n  @style\n    :css\n      .selector {\n        background-color: #f0f0f0;\n      }',
+            output: '<head>\n    <style>\n        .selector {\n          background-color: #f0f0f0;\n        }\n    </style>\n</head>'
         }
     ]
 
