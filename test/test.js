@@ -134,7 +134,16 @@ describe('Filters', function() {
         },
         date1: new Date('12/23/1993'),
         date2: new Date('5/15/2016'),
-        dateWithTime: new Date("Thu, 23 Dec 1993 17:43:00 GMT"),
+        dateWithTime: new Date('Thu, 23 Dec 1993 17:43:00 GMT'),
+        multiDate: {
+            sunday: new Date('5/15/2016'),
+            monday: new Date('8/15/1994'),
+            tuesday: new Date('9/4/2007'),
+            wednesday: new Date('11/4/1964'),
+            thursday: new Date('12/23/1993'),
+            friday: new Date('7/18/1986'),
+            saturday: new Date('1/10/1920')
+        },
         dateString: '12/23/1993',
         htmlString: '<h1 id="anchor">hello, world!</h1>',
         unsafeString1: '<script>console.log("gotcha");</script>',
@@ -314,8 +323,24 @@ describe('Filters', function() {
         },
         {
             name: 'date_format',
-            input: '{dateWithTime | date_format "%MM %d, %yyyy"}; {dateWithTime | date_format "%hh:%nn:%ss"}',
-            output: 'December 23, 1993; 09:43:00'
+            input: '{dateWithTime | date_format "%MM %d, %yyyy"}\n' +
+                   '{dateWithTime | date_format "%hh:%nn:%ss"}\n' +
+                   '{multiDate.sunday | date_format "%DD in %MM"}; {multiDate.sunday | date_format "%D in %M"}\n' +
+                   '{multiDate.monday | date_format "%DD in %MM"}; {multiDate.monday | date_format "%D in %M"}\n' +
+                   '{multiDate.tuesday | date_format "%DD in %MM"}; {multiDate.tuesday | date_format "%D in %M"}\n' +
+                   '{multiDate.wednesday | date_format "%DD in %MM"}; {multiDate.wednesday | date_format "%D in %M"}\n' +
+                   '{multiDate.thursday | date_format "%DD in %MM"}; {multiDate.thursday | date_format "%D in %M"}\n' +
+                   '{multiDate.friday | date_format "%DD in %MM"}; {multiDate.friday | date_format "%D in %M"}\n' +
+                   '{multiDate.saturday | date_format "%DD in %MM"}; {multiDate.saturday | date_format "%D in %M"}\n',
+            output: 'December 23, 1993\n' +
+                    '09:43:00\n' +
+                    'Sunday in May; Sun in May\n' +
+                    'Monday in August; Mon in Aug\n' +
+                    'Tuesday in September; Tues in Sept\n' +
+                    'Wednesday in November; Wed in Nov\n' +
+                    'Thursday in December; Thurs in Dec\n' +
+                    'Friday in July; Fri in Jul\n' +
+                    'Saturday in January; Sat in Jan'
         },
         {
             name: 'default',
@@ -1163,6 +1188,11 @@ describe('Modes', function() {
             name: 'text with only spaces on blank lines',
             input: ':uppercase\n  this is one line\n  \n  \n  this is another line\nthis is not included',
             output: 'THIS IS ONE LINE\n\n\nTHIS IS ANOTHER LINE\nthis is not included'
+        },
+        {
+            name: 'mode block with blank lines and various indent levels',
+            input: ':uppercase\n  one indent level\n\n    another indent level\n  first level again\nthis is not included',
+            output: 'ONE INDENT LEVEL\n\n  ANOTHER INDENT LEVEL\nFIRST LEVEL AGAIN\nthis is not included'
         }
     ]
 
