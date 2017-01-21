@@ -1245,6 +1245,36 @@ describe('Imports', function() {
             name: 'tags import',
             input: '>import-tags from omelet-files/tags\n@special hello, world!',
             output: '<span class="classy"><b><i><u><a href="#">hello, world!</a></u></i></b></span>'
+        },
+        {
+            name: 'extend + file import',
+            input: '>extend omelet-files/base\n>import omelet-files/testMacros as tm\n+theHead = the word is {tm.word}!\n+theBody = the body!',
+            output: '<html>\n    <head>\n        the word is omelet!\n    </head>\n    <body>\n        the body!\n    </body>\n</html>'
+        },
+        {
+            name: 'extend + directory import',
+            input: '>extend omelet-files/base\n>import-dir omelet-files/testPosts as posts\n+theHead = the head!\n+theBody =\n    >for post in posts\n        {post.title}',
+            output: '<html>\n    <head>\n        the head!\n    </head>\n    <body>\n        the first post\nthe second post\nthe third post\n    </body>\n</html>'
+        },
+        {
+            name: 'extend + tags import',
+            input: '>extend omelet-files/base\n>import-tags from omelet-files/tags\n+theHead = hello!\n+theBody = @special hi there',
+            output: '<html>\n    <head>\n        hello!\n    </head>\n    <body>\n<span class="classy"><b><i><u><a href="#">hi there</a></u></i></b></span>\n    </body>\n</html>'
+        },
+        {
+            name: 'file import + include',
+            input: '>import omelet-files/testMacros as tm\n>include omelet-files/base with\n    +theHead = the word is {tm.word}!\n    +theBody = the body!',
+            output: '<html>\n    <head>\n        the word is omelet!\n    </head>\n    <body>\n        the body!\n    </body>\n</html>'
+        },
+        {
+            name: 'directory import + include',
+            input: '>import-dir omelet-files/testPosts as posts\n>include omelet-files/base with\n    +theHead = the head!\n    +theBody =\n        >for post in posts\n            {post.title}',
+            output: '<html>\n    <head>\n        the head!\n    </head>\n    <body>\n        the first post\nthe second post\nthe third post\n    </body>\n</html>'
+        },
+        {
+            name: 'tags import + include',
+            input: '>import-tags from omelet-files/tags\n\n>include omelet-files/base with\n    +theHead = hello!\n    +theBody = @special hi there',
+            output: '<html>\n    <head>\n        hello!\n    </head>\n    <body>\n<span class="classy"><b><i><u><a href="#">hi there</a></u></i></b></span>\n    </body>\n</html>'
         }
     ]
 
@@ -1303,6 +1333,11 @@ describe('Imports', function() {
         {
             name: 'import statement in indented block',
             input: '@div\n  >import testMacros as tm',
+            error: /Parser error/
+        },
+        {
+            name: 'bad indentation when expecting indented block',
+            input: '>import-dir omelet-files/testPosts as posts\n>include omelet-files/base with\n    +theHead = the head!\n    +theBody =\n    >for post in posts\n            {post.title}',
             error: /Parser error/
         }
     ]
@@ -1409,6 +1444,11 @@ describe('Includes', function() {
             name: 'include w/ a macro (with context)',
             input: '+ greeting name = @h1 hello, {name}!!\n\n>greeting with\n  + name = reid',
             output: '<h1>hello, reid!!</h1>'
+        },
+        {
+            name: 'include w/ a block parameter in context',
+            input: '>include omelet-files/base with\n    +theHead = the head!\n    +theBody =\n        @div\n            hello, world',
+            output: '<html>\n    <head>\n        the head!\n    </head>\n    <body>\n<div>\n    hello, world\n</div>\n    </body>\n</html>'
         }
     ]
 
@@ -1432,6 +1472,11 @@ describe('Includes', function() {
         {
             name: 'non-definition in \'with\' block',
             input: '>include omelet-files/complex with\n  hello, world!',
+            error: /Parser error/
+        },
+        {
+            name: 'no indented definitions after \'with\'',
+            input: '>include omelet-files/base with\n+theHead = hello\n+theBody = world',
             error: /Parser error/
         }
     ]

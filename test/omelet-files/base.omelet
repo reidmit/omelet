@@ -2,4 +2,4 @@
     @head
         {theHead}
     @body
-        {theBody}
+        {~theBody}
