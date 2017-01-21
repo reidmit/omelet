@@ -33,7 +33,6 @@ module.exports = {
             {'skipBlankLines': true }
         ],
         'no-unneeded-ternary': 'error',
-        'no-var': 'error',
         'quotes': [
             'error',
             'single'
