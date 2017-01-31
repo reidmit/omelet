@@ -1631,19 +1631,32 @@ describe('Runtime', function() {
         }, /Runtime error/)
     })
 
-    it('fails when trying to find an undefined variable', function() {
+    it('fails when throws=true & trying to find an undefined variable', function() {
         assert.throws(function() {
             const scope = new runtime.Scope()
-            scope.find('key')
+            scope.find('key', true)
         }, /Runtime error/)
     })
 
-    it('fails when accessing a non-existent property of an object in scope', function() {
+    it('fails when throws=true & accessing a non-existent property of an object in scope', function() {
         assert.throws(function() {
             const scope = new runtime.Scope()
             scope.add('obj', {word: 'omelet'})
-            scope.find('obj', 'undefinedProperty')
+            scope.find('obj', true, 'undefinedProperty')
         }, /Runtime error/)
+    })
+
+    it('does not fail when throws=false & trying to find an undefined variable', function() {
+        const scope = new runtime.Scope()
+        const result = scope.find('key', false)
+        assert(typeof result === 'undefined')
+    })
+
+    it('does not fail when throws=false & accessing a non-existent property of an object in scope', function() {
+        const scope = new runtime.Scope()
+        scope.add('obj', {word: 'omelet'})
+        const result = scope.find('obj', false, 'undefinedProperty')
+        assert(typeof result === 'undefined')
     })
 })
 

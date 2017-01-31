@@ -2,3 +2,4 @@ node_modules/
 ignored/
 coverage/
 coverage.html
+ts/
