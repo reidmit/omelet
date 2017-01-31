@@ -134,7 +134,7 @@ describe('Filters', function() {
         },
         date1: new Date('12/23/1993'),
         date2: new Date('5/15/2016'),
-        dateWithTime: new Date('Thu, 23 Dec 1993 17:43:00 GMT'),
+        dateWithTime: new Date('Thu, 23 Dec 1993 9:43:00'),
         multiDate: {
             sunday: new Date('5/15/2016'),
             monday: new Date('8/15/1994'),
